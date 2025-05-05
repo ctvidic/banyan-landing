@@ -27,6 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      {/* Remove manual link tag */}
+      {/* <head>
+         <link rel="icon" href="/favicon.png" sizes="any" />
+      </head> */}
+      {/* Next.js will automatically handle the head based on metadata and app/icon.tsx */}
       <body className={`${inter.variable} ${outfit.variable}`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}

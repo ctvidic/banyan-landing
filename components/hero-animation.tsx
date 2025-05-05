@@ -252,9 +252,12 @@ export default function HeroAnimation() {
             transition={{ duration: 6, repeat: Infinity }}
           />
         </svg>
-        <div className="absolute text-center">
-          <p className="text-xs text-emerald-700/70">Savings Goal</p>
-          <p className="text-lg font-bold text-emerald-600">62 %</p>
+        {/* Revert to flex centering, use translate-y to nudge label up */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          {/* Increase negative translate-y again */}
+          <p className="text-xs font-medium text-emerald-700 -translate-y-10">Savings Goal</p>
+          {/* Keep percentage centered */} 
+          <p className="text-lg font-bold text-emerald-600 -translate-y-2">62 %</p> 
         </div>
       </motion.div>
 

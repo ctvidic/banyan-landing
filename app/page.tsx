@@ -31,9 +31,13 @@ const ParentDashboardCard = () => {
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-            <User size={20} className="text-gray-500" />
-          </div>
+          <Image
+            src="/unnamed.jpg"
+            alt="Alex's Profile Photo"
+            width={40}
+            height={40}
+            className="rounded-full"
+          />
           <div>
             <p className="font-semibold text-gray-800">Alex's Account</p>
             <p className="text-xs text-gray-500">Managed by You</p>
