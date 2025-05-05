@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
-import { Leaf, Wifi } from "lucide-react"
+import { Leaf, Wifi, Lightbulb, ShieldCheck } from "lucide-react"
 
 export default function HeroAnimation() {
   const [mounted, setMounted] = useState(false)
@@ -65,12 +65,23 @@ export default function HeroAnimation() {
             <div className="h-2 w-24 rounded-full bg-gray-800"></div>
           </div>
           <div className="pt-6 h-full bg-white">
-            {/* App Header */}
-            <div className="bg-emerald-500 text-white p-4 flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center">
-                <Leaf className="h-5 w-5 text-emerald-500" />
+            {/* App Header - Updated */}
+            <div className="bg-emerald-500 text-white p-4 flex items-center justify-between gap-2">
+              {/* Left Side: Logo + Title */}
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center">
+                  <Leaf className="h-5 w-5 text-emerald-500" />
+                </div>
+                <div className="text-lg font-bold font-display">Banyan</div>
               </div>
-              <div className="text-lg font-bold font-display">Banyan</div>
+              {/* Right Side: Banyan Score */}
+              <div className="flex flex-col items-end">
+                <span className="text-xs font-medium text-white/80 leading-none">Score</span>
+                <div className="flex items-center gap-1">
+                  <ShieldCheck size={14} className="text-white/90"/>
+                  <span className="text-lg font-bold leading-none">720</span>
+                </div>
+              </div>
             </div>
             {/* App Content */}
             <div className="p-4 space-y-4">
@@ -116,14 +127,32 @@ export default function HeroAnimation() {
                   ))}
                 </div>
               </motion.div>
+
+              {/* AI Assist Card - Updated Text */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+                className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 shadow-sm border border-blue-100"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 bg-blue-100 rounded-full mt-1">
+                    <Lightbulb size={16} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800 mb-1">AI Suggestion</p>
+                    <p className="text-xs text-gray-600">Nice progress on saving! 🎯 Consider allocating a bit more towards your 'College Fund' goal this week.</p> 
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Credit Card Element */}
+      {/* Credit Card Element - Hidden on smaller screens */}
       <motion.div
-        className="absolute top-[65%] left-[40%] w-72 h-44 bg-gradient-to-br from-emerald-500 to-emerald-400 rounded-2xl shadow-xl z-50 -rotate-6"
+        className="hidden xl:block absolute top-[65%] left-[38%] w-80 h-52 bg-gradient-to-br from-emerald-500 to-emerald-400 rounded-2xl shadow-xl z-50 -rotate-6"
         animate={{
           y: [0, -10, 0],
           rotate: [-6, -5, -6],
@@ -203,10 +232,10 @@ export default function HeroAnimation() {
         {/* Hologram Effect */}
       </motion.div>
 
-      {/* Savings Progress Ring - Moved here */}
+      {/* Savings Progress Ring - Hidden on smaller screens */}
       <motion.div
-        className="absolute right-[10%] top-[15%] h-40 w-40 rounded-full
-                   bg-white/10 backdrop-blur-md flex items-center justify-center
+        className="hidden xl:flex absolute right-[32%] top-[15%] h-40 w-40 rounded-full
+                   bg-white/10 backdrop-blur-md items-center justify-center
                    ring-4 ring-emerald-500/30 z-20"
         style={{ rotateX, rotateY }}        // reuse existing transforms for 3-D feel
         animate={{ scale: [1, 1.05, 1] }}
@@ -226,6 +255,65 @@ export default function HeroAnimation() {
         <div className="absolute text-center">
           <p className="text-xs text-emerald-700/70">Savings Goal</p>
           <p className="text-lg font-bold text-emerald-600">62 %</p>
+        </div>
+      </motion.div>
+
+      {/* Parent Notification - Hidden on smaller screens */}
+      <motion.div
+        className="hidden xl:flex absolute left-[-30%] top-[15%] w-52 bg-white rounded-xl shadow-lg p-2 z-[100]"
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ 
+          opacity: 1, 
+          x: 0,
+          y: [0, -5, 0]
+        }}
+        transition={{
+          opacity: { delay: 0.8, duration: 0.5 },
+          x: { delay: 0.8, duration: 0.5 },
+          y: { delay: 1.3, duration: 3, repeat: Infinity }
+        }}
+        style={{ rotateX, rotateY }}
+      >
+        <div className="flex items-start gap-2">
+          <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="font-semibold text-gray-800 text-xs">Parent Deposit</h4>
+            <p className="text-xs text-gray-600 mt-1">Mom just added $25 to your account! 🎉</p>
+            <p className="text-xs text-emerald-600 mt-1">2 min ago</p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* New Bottom Left Notification - Hidden on smaller screens */}
+      <motion.div
+        className="hidden xl:flex absolute left-[-32%] bottom-[20%] w-56 bg-blue-50 rounded-xl shadow-lg p-3 z-[100]"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ 
+          opacity: 1, 
+          scale: 1,
+          y: [0, -5, 0]
+        }}
+        transition={{
+          opacity: { delay: 1.7, duration: 0.5 },
+          scale: { delay: 1.7, duration: 0.5 },
+          y: { delay: 2.2, duration: 3, repeat: Infinity }
+        }}
+        style={{ rotateX, rotateY }}
+      >
+        <div className="flex items-center gap-3 mb-2">
+          <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="font-semibold text-blue-800">Module Completed</h4>
+            <p className="text-sm text-gray-600">You've earned +25 points for your savings skills!</p>
+          </div>
         </div>
       </motion.div>
 
