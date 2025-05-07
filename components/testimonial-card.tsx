@@ -79,7 +79,7 @@ export default function TestimonialCard({ quote, author, role, avatar }: Testimo
             </motion.div>
           </div>
         </div>
-        <div className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+        <div className="absolute -bottom-1 left-4 right-4 h-1 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
       </div>
     </motion.div>
   )

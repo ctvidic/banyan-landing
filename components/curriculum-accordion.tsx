@@ -5,91 +5,94 @@ export default function CurriculumAccordion() {
     // Foundational (Modules 1-5)
     {
       title: "Foundations of Money",
-      description: "Understanding income sources, the functions of money, differentiating needs vs. wants, and opportunity cost.",
+      description: "Understand what money is, its functions (e.g., medium of exchange, store of value), and its evolution (e.g., barter to digital). Differentiate between earned income (e.g., wages, chores) and unearned income (e.g., gifts, allowances). Distinguish needs (e.g., food, shelter) from wants (e.g., toys, games) and grasp opportunity cost (what's sacrificed when choosing). For K-6: Learn to earn pocket money through simple tasks (e.g., chores, lemonade stands).",
     },
     {
       title: "Financial Psychology & Decision-Making",
-      description: "Exploring emotional influences on spending, setting SMART goals, building financial habits, and avoiding common decision biases.",
+      description: "Recognize how emotions (e.g., excitement, peer pressure) influence spending and how to avoid impulsive decisions. Set SMART financial goals (Specific, Measurable, Achievable, Relevant, Time-bound), like saving for a purchase. Understand mental shortcuts (e.g., price anchoring) and how to make rational financial choices.",
     },
     {
       title: "Payment Methods & Digital Transactions",
-      description: "Comparing payment types (cash, cards, digital wallets, P2P), understanding digital banking security, and protecting financial data.",
+      description: "Know the differences between cash, checks, debit cards, credit cards, and digital wallets. Use mobile payment apps (e.g., Venmo) and peer-to-peer transfers safely. Practice basic cybersecurity (e.g., spotting phishing emails, using two-factor authentication). Protect personal financial information (e.g., not sharing PINs for K-6, understanding data breaches for 9-12).",
     },
     {
       title: "Banking & Account Management",
-      description: "Learning about different financial institutions, managing checking and savings accounts effectively, and using basic financial tools.",
+      description: "Differentiate between banks, credit unions, and other financial institutions. Manage checking accounts (e.g., writing checks, avoiding overdrafts) and savings accounts (e.g., earning interest). Use financial tools like budgeting apps (e.g., virtual piggy banks for K-6, Mint for 9-12).",
     },
     {
       title: "Budgeting & Expense Management",
-      description: "Creating and adjusting budgets, building emergency funds, the 'pay yourself first' principle, automation, and budgeting tools.",
+      description: "Apply the 50/30/20 budgeting rule (needs, wants, savings) and create a simple budget. Adjust budgets for variable expenses and unexpected costs. Understand the importance of emergency funds and how to start one. Set up automatic savings or payments to build financial discipline.",
     },
     // Intermediate (Modules 6-10)
     {
       title: "Cost of Money & Inflation",
-      description: "Grasping simple vs. compound interest, the impact of inflation, understanding APR vs. APY, and the role of the Federal Reserve.",
+      description: "Understand simple vs. compound interest and how compounding grows savings or debt. Explain how inflation reduces purchasing power over time. Differentiate APR (Annual Percentage Rate for loans) from APY (Annual Percentage Yield for savings).",
     },
     {
       title: "Credit Fundamentals & Loans",
-      description: "Defining credit, exploring different loan types and terms (like BNPL), and understanding APR, fees, and total loan cost.",
+      description: "Define credit as borrowing and repaying money. Identify types of loans (e.g., secured vs. unsecured, auto, student) and their purposes. Calculate the total cost of a loan, including APR, fees, and interest.",
     },
     {
       title: "Credit Reports & Debt Management",
-      description: "Understanding credit reports and scores (FICO factors), learning debt repayment strategies, and recognizing predatory lending.",
+      description: "Understand credit reports, how credit scores (e.g., FICO) are calculated, and their importance. Use debt repayment strategies like the snowball (smallest debt first) or avalanche (highest interest first) methods. Avoid predatory lending (e.g., payday loans) and over-borrowing.",
     },
     {
       title: "Insurance & Risk Management",
-      description: "Basics of insurance, overview of key insurance types (auto, health, life, renters), and protecting against identity theft and fraud.",
+      description: "Explain why insurance matters and how it protects against risks. Know the basics of auto, health, renters, and life insurance. Protect against identity theft and financial fraud (e.g., monitoring accounts, reporting scams).",
     },
     {
-      title: "Saving, Investing & Stock Market Basics",
-      description: "Setting saving goals, understanding asset classes (stocks, bonds, ETFs), risk/return, market basics, virtual trading, and retirement/education accounts.",
+      title: "Saving, Investing & Stock-Market Basics",
+      description: "Set short- and long-term savings goals with clear strategies. Understand asset classes (stocks, bonds) and their risk-return profiles. Explain how the stock market works and build a mock investment portfolio. Use the Rule of 72 to estimate investment doubling time. Know retirement (e.g., 401(k), IRA) and education (e.g., 529) savings options.",
+    },
+    {
+      title: "Practical Investing Playbook",
+      description: "Open and fund a brokerage account (IDs, bank link, first fractional share). Compare core investment choices: broad ETFs vs. individual stocks vs. themed funds. Automate contributions with dollar‑cost averaging to smooth market ups and downs. Spot and minimize hidden drags — fees, bid‑ask spreads, and basic capital‑gains taxes. Manage risk and behavior: position‑size rules, stop‑loss alerts, FOMO & bias checkpoints. Draft a starter Investing Policy Statement (goal, timeline, asset mix, automation schedule).",
+    },
+    {
+      title: "Understanding Investment Metrics",
+      description: "Learn how the P/E ratio helps you judge whether a stock is 'expensive' or priced fairly based on its earnings. Use beta to understand how volatile an investment is compared to the overall market. Apply the Sharpe ratio to evaluate whether an investment's returns are worth the risk. Explore how dividend yield can generate passive income—even if you never sell your shares. Get fluent in key stats like market cap, volume, EPS, debt-to-equity and 52-week range to better evaluate stocks at a glance.",
     },
     // Advanced / Practical Applications (Modules 11-15)
     {
       title: "Taxes & Government Influences",
-      description: "Understanding gross vs. net pay, tax withholdings, basic filing forms (W-2, 1040), and tax credits/deductions.",
+      description: "Differentiate gross pay (total earnings) from net pay (after deductions). Understand basic tax filing (e.g., W-2s, 1040 forms) and how to complete a simple return. Maximize tax refunds with credits (e.g., education) and deductions.",
     },
     {
       title: "Entrepreneurship & Career Development",
-      description: "Exploring income potential of jobs vs. careers, entrepreneurship basics, resume building, interview skills (STAR method), and negotiation.",
+      description: "Explore career paths, their income potential, and job requirements. Learn to start a small business or side hustle (e.g., planning, pricing). Write a resume and prepare for interviews using the STAR method (Situation, Task, Action, Result).",
     },
     {
       title: "Paying for Higher Education",
-      description: "Analyzing college costs, understanding FAFSA/TASFA and aid types, loan repayment options, and evaluating education ROI.",
+      description: "Understand college costs (tuition, net price) and financial aid options. Complete FAFSA/TASFA applications for federal and state aid. Evaluate student loan repayment plans and forgiveness programs. Assess the return on investment (ROI) of degrees and careers.",
     },
     {
       title: "Consumer Protection & Ethics",
-      description: "Developing consumer research skills, recognizing advertising manipulation, understanding financial documents, and comparison shopping.",
+      description: "Research products using price, features, and value (e.g., unit pricing). Spot misleading ads and dark patterns (e.g., hidden fees, subscription traps). Interpret financial documents (e.g., receipts, contracts, terms of service).",
     },
     {
       title: "Real-World Simulation & Capstone",
-      description: "Applying learned skills in a 'life-in-a-month' budget simulation and developing an integrated personal financial plan.",
+      description: "Manage a simulated monthly budget, including emergencies and trade-offs. Create and defend a comprehensive financial plan in a peer debate.",
     },
-     // Advanced / Specialized (Modules 16-20 - Often Optional/Restricted)
+    // Advanced / Specialized (Modules 16-20 - Often Optional/Restricted)
     {
       title: "Economic Systems & Public Policy",
-      description: "Basics of supply/demand, macroeconomic goals, fiscal and monetary policy, and international trade concepts.",
+      description: "Explain supply and demand, market equilibrium, and price changes. Understand macroeconomic indicators (e.g., GDP, inflation, unemployment). Describe fiscal policy (government budgets, taxes) and monetary policy (central banking).",
     },
     {
       title: "Philanthropy, Ethics & Social Finance",
-      description: "Budgeting for charitable giving, introduction to social impact investing (ESG), ethical consumerism, and financial inclusion.",
+      description: "Budget for charitable giving and understand donor-advised funds. Explore social impact investing (e.g., ESG: Environmental, Social, Governance). Make ethical purchasing decisions (e.g., sustainable, fair-trade products).",
     },
     {
       title: "Digital & Emerging Finance",
-      description: "Fundamentals of cryptocurrency and blockchain, stablecoins/CBDCs, fintech innovations (neobanks), DeFi concepts, and advanced cybersecurity.",
+      description: "Understand cryptocurrency (e.g., Bitcoin), stablecoins, and blockchain basics. Explore fintech innovations like neobanks, smart contracts, and advanced cybersecurity.",
     },
     {
       title: "Regulatory Environment & Consumer Rights",
-      description: "Understanding consumer protection agencies (CFPB), key regulations (Truth-in-Lending), deposit insurance (FDIC), and fraud reporting.",
+      description: "Know the roles of consumer protection agencies (e.g., CFPB). Understand borrower rights under Truth-in-Lending and debt collection laws. Explain how FDIC/NCUA insurance protects bank deposits.",
     },
     {
       title: "Global Finance & Currency Exchange",
-      description: "Basics of foreign currencies, exchange rates, comparative advantage, global financial crises, and cross-border payments.",
-    },
-    // Added Module
-    {
-      title: "Branding and Selling Yourself",
-      description: "Discovering your personal brand, growing on social media (TikTok/YouTube), monetization strategies (sponsorships, affiliates, digital goods), and professional showcasing (portfolio, resume, interviews).",
+      description: "Convert currencies and interpret exchange rates. Understand international trade principles (e.g., comparative advantage). Analyze global financial crises (e.g., 2008) and preventive measures.",
     },
   ]
 
@@ -115,4 +118,6 @@ export default function CurriculumAccordion() {
     </Accordion>
   )
 }
+
+
 

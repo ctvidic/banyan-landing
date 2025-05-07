@@ -544,7 +544,7 @@ export default function Home() {
                 },
                 {
                   icon: <Lock size={18} className="text-gray-500 mr-2" />, 
-                  feature: "Learn-to-Unlock Real Tools",
+                  feature: "Learn-to-Unlock Real Money",
                   banyan: 'yes',
                   traditional: 'na',
                   allowance: 'no',
@@ -552,7 +552,7 @@ export default function Home() {
                 },
                 {
                   icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}> <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /> </svg>,
-                  feature: "Real Spending Card",
+                  feature: "Debit Card",
                   banyan: 'yes',
                   traditional: 'no',
                   allowance: 'yes',
@@ -560,7 +560,7 @@ export default function Home() {
                 },
                 {
                   icon: <TrendingUp size={18} className="text-gray-500 mr-2" />, 
-                  feature: "Real Investing Platform",
+                  feature: "Investing Platform",
                   banyan: 'yes',
                   traditional: 'no',
                   allowance: 'limited',
@@ -568,7 +568,7 @@ export default function Home() {
                 },
                 {
                   icon: <Shield size={18} className="text-gray-500 mr-2" />, 
-                  feature: "Granular Parental Controls",
+                  feature: "Optional Parental Controls",
                   banyan: 'yes',
                   traditional: 'na',
                   allowance: 'yes',
@@ -590,33 +590,11 @@ export default function Home() {
                   allowance: 'limited',
                   investing: 'no',
                 },
-                {
-                  icon: <Code size={18} className="text-gray-500 mr-2" />, 
-                  feature: "Tier 1 Engineering Team",
-                  banyan: 'yes',
-                  traditional: 'na',
-                  allowance: 'limited',
-                  investing: 'limited',
-                },
-                {
-                  icon: <DollarSign size={18} className="text-gray-500 mr-2" />, 
-                  feature: "Tier 1 Investors",
-                  banyan: 'yes',
-                  traditional: 'na',
-                  allowance: 'limited',
-                  investing: 'limited',
-                },
-                {
-                  icon: <Zap size={18} className="text-gray-500 mr-2" />, 
-                  feature: "AI-First Development",
-                  banyan: 'yes',
-                  traditional: 'no',
-                  allowance: 'limited',
-                  investing: 'limited',
-                },
+                
+                
                 {
                   icon: <HeartHandshake size={18} className="text-gray-500 mr-2" />, 
-                  feature: "Focus on Long-Term Financial Health",
+                  feature: "Long-Term Financial Focus",
                   banyan: 'yes',
                   traditional: 'limited',
                   allowance: 'limited',
@@ -676,29 +654,67 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            <ModuleCard
-              number="01"
-              title="Foundations of Money"
-              description="Income, functions of money, needs vs. wants, and opportunity cost."
-              progress={85}
-            />
-            <ModuleCard
-              number="02"
-              title="Financial Psychology"
-              description="Emotional influences, SMART goals, habit formation, and debiasing techniques."
-              progress={65}
-            />
-            <ModuleCard
-              number="03"
-              title="Payment Methods"
-              description="Cash, checks, debit/credit, mobile wallets, P2P apps, and digital banking security."
-              progress={40}
-            />
-          </div>
+          {/* Horizontal Carousel */}
+          <div className="relative overflow-hidden">
+            <motion.div 
+              className="flex gap-8 py-8"
+              animate={{
+                x: ['0%', '-100%']
+              }}
+              transition={{
+                duration: 60,
+                ease: 'linear',
+                repeat: Infinity,
+                repeatType: "loop"
+              }}
+            >
+              {/* First set of cards */}
+              <ModuleCard number="1" title="Foundations of Money" progress={100} />
+              <ModuleCard number="2" title="Financial Psychology & Decision-Making" progress={0} />
+              <ModuleCard number="3" title="Payment Methods & Digital Transactions" progress={0} />
+              <ModuleCard number="4" title="Banking & Account Management" progress={0} />
+              <ModuleCard number="5" title="Budgeting & Expense Management" progress={0} />
+              <ModuleCard number="6" title="Cost of Money & Inflation" progress={0} />
+              <ModuleCard number="7" title="Credit Fundamentals & Loans" progress={0} />
+              <ModuleCard number="8" title="Credit Reports & Debt Management" progress={0} />
+              <ModuleCard number="9" title="Insurance & Risk Management" progress={0} />
+              <ModuleCard number="10" title="Saving, Investing & Stock-Market Basics" progress={0} />
+              <ModuleCard number="11" title="Practical Investing Playbook" progress={0} />
+              <ModuleCard number="12" title="Understanding Investment Metrics" progress={0} />
+              <ModuleCard number="13" title="Taxes & Government Influences" progress={0} />
+              <ModuleCard number="14" title="Entrepreneurship & Career Development" progress={0} />
+              <ModuleCard number="15" title="Paying for Higher Education" progress={0} />
+              <ModuleCard number="16" title="Consumer Protection & Ethics" progress={0} />
+              <ModuleCard number="17" title="Economic Systems & Public Policy" progress={0} />
+              <ModuleCard number="18" title="Philanthropy, Ethics & Social Finance" progress={0} />
+              <ModuleCard number="19" title="Digital & Emerging Finance" progress={0} />
+              <ModuleCard number="20" title="Global Finance & Currency Exchange" progress={0} />
 
-          <div className="max-w-3xl mx-auto">
-            <CurriculumAccordion />
+              {/* Duplicate set for seamless loop */}
+              <ModuleCard number="1" title="Foundations of Money" progress={100} />
+              <ModuleCard number="2" title="Financial Psychology & Decision-Making" progress={0} />
+              <ModuleCard number="3" title="Payment Methods & Digital Transactions" progress={0} />
+              <ModuleCard number="4" title="Banking & Account Management" progress={0} />
+              <ModuleCard number="5" title="Budgeting & Expense Management" progress={0} />
+              <ModuleCard number="6" title="Cost of Money & Inflation" progress={0} />
+              <ModuleCard number="7" title="Credit Fundamentals & Loans" progress={0} />
+              <ModuleCard number="8" title="Credit Reports & Debt Management" progress={0} />
+              <ModuleCard number="9" title="Insurance & Risk Management" progress={0} />
+              <ModuleCard number="10" title="Saving, Investing & Stock-Market Basics" progress={0} />
+              <ModuleCard number="11" title="Practical Investing Playbook" progress={0} />
+              <ModuleCard number="12" title="Understanding Investment Metrics" progress={0} />
+              <ModuleCard number="13" title="Taxes & Government Influences" progress={0} />
+              <ModuleCard number="14" title="Entrepreneurship & Career Development" progress={0} />
+              <ModuleCard number="15" title="Paying for Higher Education" progress={0} />
+              <ModuleCard number="16" title="Consumer Protection & Ethics" progress={0} />
+              <ModuleCard number="17" title="Economic Systems & Public Policy" progress={0} />
+              <ModuleCard number="18" title="Philanthropy, Ethics & Social Finance" progress={0} />
+              <ModuleCard number="19" title="Digital & Emerging Finance" progress={0} />
+              <ModuleCard number="20" title="Global Finance & Currency Exchange" progress={0} />
+            </motion.div>
+            {/* Gradient overlays for smooth fade effect */}
+            <div className="absolute inset-y-0 left-0 w-48 bg-gradient-to-r from-white to-transparent pointer-events-none"></div>
+            <div className="absolute inset-y-0 right-0 w-48 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
           </div>
         </div>
       </section>
@@ -722,19 +738,19 @@ export default function Home() {
               quote="My daughter learned more about investing in three months with Banyan than I learned in my entire life."
               author="Jennifer K."
               role="Parent of 11th grader"
-              avatar="/placeholder.svg?height=40&width=40"
+              avatar="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8d29tYW4lMjBoZWFkc2hvdHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=80"
             />
             <TestimonialCard
               quote="I love that I can deposit funds but still control what my son can access. It's the perfect balance of freedom and supervision."
               author="Michael T."
               role="Parent of 10th grader"
-              avatar="/placeholder.svg?height=40&width=40"
+              avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             />
             <TestimonialCard
               quote="The curriculum is impressive. My child is actually excited about learning financial concepts and has started saving money."
               author="Sarah L."
               role="Parent of 9th grader"
-              avatar="/placeholder.svg?height=40&width=40"
+              avatar="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             />
           </div>
         </div>
@@ -755,15 +771,16 @@ export default function Home() {
           <div className="max-w-md mx-auto glass rounded-2xl shadow-md overflow-hidden border border-white/20">
             <div className="p-8 text-center">
               <h3 className="text-2xl font-bold mb-2">Family Plan</h3>
-              <div className="flex justify-center items-baseline my-8">
-                <span className="text-5xl font-extrabold">$9.99</span>
-                <span className="text-gray-500 ml-1">/month</span>
+              <div className="flex justify-center items-start my-8">
+                <span className="text-5xl font-extrabold">$9</span>
+                <span className="text-2xl font-extrabold">99</span>
+                <span className="text-gray-500 ml-1 mt-2">/month</span>
               </div>
               <ul className="space-y-4 mb-8">
                 {[
                   "Full access to all 20 curriculum modules 📚",
                   "Parent dashboard with progress tracking 📊",
-                  "Real investing experience with parental controls 📈",
+                  "Guided investing with parental controls 📈",
                   "Up to 3 child accounts included 👨‍👩‍👧‍👦",
                   "Cancel anytime ✅",
                 ].map((feature, i) => (
