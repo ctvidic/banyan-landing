@@ -794,7 +794,7 @@ export default function Home() {
             <div className="p-8 text-center">
               <h3 className="text-2xl font-bold mb-2">Family Plan</h3>
               <div className="flex justify-center items-start my-8">
-                <span className="text-5xl font-extrabold">$99</span>
+                <span className="text-5xl font-extrabold">$49</span>
                 <span className="text-2xl font-extrabold">.99</span>
                 <span className="text-gray-500 ml-1 mt-2">/month</span>
               </div>
