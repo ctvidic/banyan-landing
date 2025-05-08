@@ -280,7 +280,7 @@ export default function Home() {
             </div>
             <h2 className="text-3xl md:text-4xl font-bold">Master Real-World Finance, Then Practice Safely ✨</h2>
             <p className="text-lg text-gray-600">
-              Banyan first builds a strong foundation in essential financial skills like <span className="font-semibold">investing, saving, and budgeting</span>. Once mastered through engaging, interactive modules and rigorous testing, teens progress to understanding modern topics such as interpreting market news, online income streams, and startup fundamentals. This comprehensive learning unlocks the Banyan Card & investing platform for safe, hands-on practice.
+              Banyan builds core financial skills—<span className="font-semibold">earning, investing, saving, and budgeting</span>—via interactive modules and testing. Mastery unlocks modern financial topics like market analysis, online income, and startup basics, leading to safe practice with the Banyan Card & investing platform.
             </p>
             <ul className="space-y-3 text-gray-700">
               <li className="flex items-center gap-3">
