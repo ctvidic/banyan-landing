@@ -48,13 +48,6 @@ export default function MobileMenu() {
             Pricing
           </Link>
           <div className="flex flex-col gap-4 mt-4">
-            <Link
-              href="/login"
-              className="text-lg font-medium hover:text-emerald-600 transition-colors"
-              onClick={() => setOpen(false)}
-            >
-              Log in
-            </Link>
             <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-full w-full" onClick={() => setOpen(false)}>
               Get Started
             </Button>

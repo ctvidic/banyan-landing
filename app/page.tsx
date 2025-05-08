@@ -10,6 +10,7 @@ import FeatureCard from "@/components/feature-card"
 import HeroAnimation from "@/components/hero-animation"
 import MobileMenu from "@/components/mobile-menu"
 import ModuleCard from "@/components/module-card"
+import { WaitlistForm } from "./components/WaitlistForm"
 import { motion } from "framer-motion"
 import { useState } from "react"
 import React from "react"
@@ -39,7 +40,7 @@ const ParentDashboardCard = () => {
             className="rounded-full"
           />
           <div>
-            <p className="font-semibold text-gray-800">Alex's Account</p>
+            <p className="font-semibold text-gray-800">Tom's Account</p>
             <p className="text-xs text-gray-500">Managed by You</p>
           </div>
         </div>
@@ -809,24 +810,14 @@ export default function Home() {
           </h2>
           <p className="text-xl mb-8 max-w-2xl mx-auto">Join the Banyan waitlist for early access and updates.</p>
           
-          {/* Simple Waitlist Form Placeholder */}
+          {/* Replace placeholder form with the WaitlistForm component */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="max-w-md mx-auto mt-8"
           >
-            <form className="flex flex-col sm:flex-row gap-4 justify-center">
-              <input 
-                type="email" 
-                placeholder="Enter your email address" 
-                className="flex-grow px-4 py-3 rounded-full text-gray-800 focus:outline-none focus:ring-2 focus:ring-white/50"
-              />
-              <Button size="lg" type="submit" variant="secondary" className="bg-white text-emerald-600 hover:bg-gray-100 rounded-full">
-                Join Waitlist
-          </Button>
-            </form>
-            <p className="text-sm mt-4 text-white/70">We'll notify you as soon as Banyan is ready!</p>
+            <WaitlistForm /> 
           </motion.div>
         </div>
       </section>
