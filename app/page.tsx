@@ -735,8 +735,8 @@ export default function Home() {
               <ModuleCard number="20" title="Global Finance & Currency Exchange" progress={0} />
             </motion.div>
             {/* Gradient overlays for smooth fade effect */}
-            <div className="absolute inset-y-0 left-0 w-48 bg-gradient-to-r from-white to-transparent pointer-events-none"></div>
-            <div className="absolute inset-y-0 right-0 w-48 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
+            <div className="absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white to-transparent pointer-events-none"></div>
+            <div className="absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
           </div>
         </div>
       </section>
