@@ -12,8 +12,7 @@ import MobileMenu from "@/components/mobile-menu"
 import ModuleCard from "@/components/module-card"
 import { WaitlistForm } from "./components/WaitlistForm"
 import { motion } from "framer-motion"
-import { useState } from "react"
-import React from "react"
+import React, { useState, useRef, useEffect } from "react"
 
 // Parent Dashboard Card Component (Optional Helper)
 const ParentDashboardCard = () => {
@@ -103,6 +102,18 @@ const ParentDashboardCard = () => {
 }
 
 export default function Home() {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const constraintsRef = useRef<HTMLDivElement>(null);
+  const [dragConstraintsWidth, setDragConstraintsWidth] = useState(0);
+
+  useEffect(() => {
+    if (carouselRef.current && constraintsRef.current) {
+      const scrollableWidth = carouselRef.current.scrollWidth;
+      const viewportWidth = constraintsRef.current.offsetWidth;
+      setDragConstraintsWidth(Math.max(0, scrollableWidth - viewportWidth));
+    }
+  }, []);
+
   return (
     <main className="flex min-h-screen flex-col">
       {/* Navigation */}
@@ -269,12 +280,16 @@ export default function Home() {
             </div>
             <h2 className="text-3xl md:text-4xl font-bold">Master Real-World Finance, Then Practice Safely ✨</h2>
             <p className="text-lg text-gray-600">
-              Banyan teaches practical, relevant skills like interpreting market news, understanding online income streams (e.g., social media), and startup fundamentals. Mastery unlocks the Banyan Card & investing platform for hands-on experience, guided by learned principles.
+              Banyan first builds a strong foundation in essential financial skills like <span className="font-semibold">investing, saving, and budgeting</span>. Once mastered through engaging, interactive modules and rigorous testing, teens progress to understanding modern topics such as interpreting market news, online income streams, and startup fundamentals. This comprehensive learning unlocks the Banyan Card & investing platform for safe, hands-on practice.
             </p>
             <ul className="space-y-3 text-gray-700">
               <li className="flex items-center gap-3">
                 <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-                <span>Navigate modern topics: fintech, basic crypto concepts, personal branding online. 🚀</span>
+                <span>Explore advanced modern topics: fintech evolution, crypto's role, and online entrepreneurship. 🚀</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                <span>Engage with interactive modules and simulations to solidify understanding. 🎮</span>
               </li>
               <li className="flex items-center gap-3">
                 <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
@@ -304,11 +319,14 @@ export default function Home() {
               // Modern / Practical
               { icon: MessageCircle, label: "News Literacy" },
               { icon: Globe, label: "Startup Fundamentals" },
-              { icon: Bitcoin, label: "Fintech & Crypto Basics" },              
+              { icon: Bitcoin, label: "Fintech & Crypto Basics" },
+              { icon: GraduationCap, label: "Affording University" },
+              { icon: TrendingUp, label: "Career Growth Paths" },
               // Extras
               { icon: Users, label: "Online Income Streams" },
               { icon: Settings, label: "Personal Branding" },
               { icon: BarChart3, label: "Market Analysis" },
+              { icon: LifeBuoy, label: "Insurance & Risk" },
             ].map((item, i) => (
               <motion.div 
                 key={item.label}
@@ -651,13 +669,14 @@ export default function Home() {
             </div>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Comprehensive financial curriculum 📊</h2>
             <p className="text-lg text-gray-600">
-              Our 20-module curriculum covers everything your child needs for financial success, focusing on practical skills for the modern world like interpreting news and understanding entrepreneurship.
+              Our 20-module curriculum first establishes a strong base in <span className="font-semibold">investing, budgeting, and saving</span>. We then build upon this with essential modern skills like market analysis, digital entrepreneurship, and emerging financial tech, preparing teens for real-world financial success.
             </p>
           </div>
 
           {/* Horizontal Carousel */}
-          <div className="relative overflow-hidden">
+          <div ref={constraintsRef} className="relative overflow-hidden">
             <motion.div 
+              ref={carouselRef}
               className="flex gap-8 py-8"
               animate={{
                 x: ['0%', '-100%']
@@ -668,6 +687,8 @@ export default function Home() {
                 repeat: Infinity,
                 repeatType: "loop"
               }}
+              drag="x"
+              dragConstraints={{ right: 0, left: -dragConstraintsWidth }}
             >
               {/* First set of cards */}
               <ModuleCard number="1" title="Foundations of Money" progress={100} />
@@ -773,8 +794,8 @@ export default function Home() {
             <div className="p-8 text-center">
               <h3 className="text-2xl font-bold mb-2">Family Plan</h3>
               <div className="flex justify-center items-start my-8">
-                <span className="text-5xl font-extrabold">$9</span>
-                <span className="text-2xl font-extrabold">99</span>
+                <span className="text-5xl font-extrabold">$99</span>
+                <span className="text-2xl font-extrabold">.99</span>
                 <span className="text-gray-500 ml-1 mt-2">/month</span>
               </div>
               <ul className="space-y-4 mb-8">
