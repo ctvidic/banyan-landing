@@ -166,12 +166,12 @@ export default function Home() {
           <div className="flex flex-col gap-6 max-w-lg lg:col-span-2">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold">
               <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 animate-gradient-x">
-                Grow
+                Learn
               </span>{" "}
-              your child's financial future 🌱
+              about finance, <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 animate-gradient-x">Earn</span> real money
             </h1>
             <p className="text-lg text-gray-600">
-              Empower your teen with practical financial skills for today's world. Banyan uses interactive lessons on modern topics to unlock access to a real spending card and investing platform—all under your control.
+              Empower your teen with practical financial skills and reward their learning! Our Learn to Earn program lets kids earn real money as they master modern finance topics.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-2">
               <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 rounded-full" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}> 
@@ -179,18 +179,8 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <Button size="lg" variant="outline" className="rounded-full" asChild>
-                <Link href="#features">Learn More</Link>
+                <Link href="#how-it-works">See how it works</Link>
               </Button>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
-              <div className="flex items-center">
-                <CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />
-                No credit card required
-              </div>
-              <div className="flex items-center">
-                <CheckCircle className="mr-2 h-4 w-4 text-emerald-600" />
-                Parent-controlled
-              </div>
             </div>
           </div>
           <div className="relative h-[400px] sm:h-[450px] md:h-[550px] lg:col-span-3 lg:translate-x-[25%] xl:translate-x-[35%]">
@@ -200,12 +190,13 @@ export default function Home() {
       </section>
 
       {/* Curriculum Alignment Section - With Logo Carousel */}
+      {/*
       <section className="py-12 md:py-16 border-y bg-gray-50/50">
         <div className="container">
           <h2 className="text-center text-lg font-medium text-gray-600 mb-10">
             Curriculum Aligned with Global Financial Literacy Frameworks & Leading Research
           </h2>
-          {/* Carousel Wrapper */}
+          {/* Carousel Wrapper * /}
           <div className="relative overflow-hidden group">
             <motion.div 
               className="flex gap-x-12 md:gap-x-16 lg:gap-x-20"
@@ -218,7 +209,7 @@ export default function Home() {
                 repeat: Infinity
               }}
             >
-              {/* First set of logos */}
+              {/* First set of logos * /}
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
                 <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={0} style={{ width: 'auto', height: '40px' }} unoptimized />
               </div>
@@ -238,7 +229,7 @@ export default function Home() {
                 <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
               </div>
               
-              {/* Second set of logos (duplicate for seamless loop) */}
+              {/* Second set of logos (duplicate for seamless loop) * /}
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
                 <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={0} style={{ width: 'auto', height: '40px' }} unoptimized />
               </div>
@@ -258,12 +249,13 @@ export default function Home() {
                 <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
                 </div>
             </motion.div>
-            {/* Gradient fade edges */}
+            {/* Gradient fade edges * /}
             <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-gray-50/50 to-transparent"></div>
             <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-gray-50/50 to-transparent"></div>
           </div>
         </div>
       </section>
+      */}
 
       {/* --- NEW SECTION 1: Modern Skills -> Real Tools --- */}
       <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white to-emerald-50/50 overflow-hidden">
@@ -300,9 +292,9 @@ export default function Home() {
                 <span>Build confidence by applying learned strategies in a controlled environment. 🛡️</span>
               </li>
             </ul>
-            <Button size="lg" variant="outline" className="rounded-full self-start mt-4" asChild>
+            {/* <Button size="lg" variant="outline" className="rounded-full self-start mt-4" asChild>
               <Link href="#curriculum">Explore the Curriculum</Link>
-            </Button>
+            </Button> */}
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -312,21 +304,19 @@ export default function Home() {
             className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6"
           >
             {[ 
-              // Foundational
-              { icon: PiggyBank, label: "Budgeting Basics" },
-              { icon: CircleDollarSign, label: "Saving Strategies" },
-              { icon: LineChart, label: "Investing Fundamentals" },
-              // Modern / Practical
-              { icon: MessageCircle, label: "News Literacy" },
-              { icon: Globe, label: "Startup Fundamentals" },
-              { icon: Bitcoin, label: "Fintech & Crypto Basics" },
-              { icon: GraduationCap, label: "Affording University" },
-              { icon: TrendingUp, label: "Career Growth Paths" },
-              // Extras
-              { icon: Users, label: "Online Income Streams" },
-              { icon: Settings, label: "Personal Branding" },
-              { icon: BarChart3, label: "Market Analysis" },
-              { icon: LifeBuoy, label: "Insurance & Risk" },
+              // Selected Modules based on provided curriculum
+              { icon: PiggyBank, label: "Budgeting & Expenses" },        // Module 5
+              { icon: CircleDollarSign, label: "Saving Strategies" },     // Implicit Module 10
+              { icon: LineChart, label: "Investing & Stocks" },       // Module 10
+              { icon: TrendingUp, label: "Practical Investing" },     // Module 10a
+              // { icon: BarChart3, label: "Investment Metrics" },       // Module 10b
+              { icon: CreditCard, label: "Credit Fundamentals" },    // Module 7
+              { icon: Globe, label: "Entrepreneurship Basics" },   // Module 12
+              // { icon: Bitcoin, label: "Fintech & Crypto" },        // Module 18
+              // { icon: Users, label: "Online Income Streams" },    // Module 12 (Implied)
+              { icon: GraduationCap, label: "Paying for College" },     // Module 13
+              { icon: Shield, label: "Insurance & Risk" },       // Module 9
+              { icon: Zap, label: "Digital Payments" },        // Module 3
             ].map((item, i) => (
               <motion.div 
                 key={item.label}
@@ -498,6 +488,7 @@ export default function Home() {
       </section>
 
       {/* --- NEW SECTION 4: Comparison Table --- */}
+      {false && (
       <section className="py-16 md:py-20 lg:py-24 bg-white overflow-hidden">
         <div className="container">
           <motion.div
@@ -544,9 +535,9 @@ export default function Home() {
               </div>
 
               {/* Data Rows - Updated Again */}
-              {[ 
+              {[
                 {
-                  icon: <BookCopy size={18} className="text-gray-500 mr-2" />, 
+                  icon: <BookCopy size={18} className="text-gray-500 mr-2" />,
                   feature: "Modern Practical Curriculum",
                   banyan: 'yes',
                   traditional: 'no',
@@ -554,7 +545,7 @@ export default function Home() {
                   investing: 'limited',
                 },
                 {
-                  icon: <GraduationCap size={18} className="text-gray-500 mr-2" />, 
+                  icon: <GraduationCap size={18} className="text-gray-500 mr-2" />,
                   feature: "Structured & Adaptive Learning",
                   banyan: 'yes',
                   traditional: 'no',
@@ -562,7 +553,7 @@ export default function Home() {
                   investing: 'no',
                 },
                 {
-                  icon: <Lock size={18} className="text-gray-500 mr-2" />, 
+                  icon: <Lock size={18} className="text-gray-500 mr-2" />,
                   feature: "Learn-to-Unlock Real Money",
                   banyan: 'yes',
                   traditional: 'na',
@@ -578,7 +569,7 @@ export default function Home() {
                   investing: 'limited',
                 },
                 {
-                  icon: <TrendingUp size={18} className="text-gray-500 mr-2" />, 
+                  icon: <TrendingUp size={18} className="text-gray-500 mr-2" />,
                   feature: "Investing Platform",
                   banyan: 'yes',
                   traditional: 'no',
@@ -586,7 +577,7 @@ export default function Home() {
                   investing: 'yes',
                 },
                 {
-                  icon: <Shield size={18} className="text-gray-500 mr-2" />, 
+                  icon: <Shield size={18} className="text-gray-500 mr-2" />,
                   feature: "Optional Parental Controls",
                   banyan: 'yes',
                   traditional: 'na',
@@ -594,7 +585,7 @@ export default function Home() {
                   investing: 'limited',
                 },
                 {
-                  icon: <Cpu size={18} className="text-gray-500 mr-2" />, 
+                  icon: <Cpu size={18} className="text-gray-500 mr-2" />,
                   feature: "AI Personalization & Guidance",
                   banyan: 'yes',
                   traditional: 'no',
@@ -602,17 +593,17 @@ export default function Home() {
                   investing: 'no',
                 },
                 {
-                  icon: <Gamepad2 size={18} className="text-gray-500 mr-2" />, 
+                  icon: <Gamepad2 size={18} className="text-gray-500 mr-2" />,
                   feature: "Engaging Gamification",
                   banyan: 'yes',
                   traditional: 'no',
                   allowance: 'limited',
                   investing: 'no',
                 },
-                
-                
+
+
                 {
-                  icon: <HeartHandshake size={18} className="text-gray-500 mr-2" />, 
+                  icon: <HeartHandshake size={18} className="text-gray-500 mr-2" />,
                   feature: "Long-Term Financial Focus",
                   banyan: 'yes',
                   traditional: 'limited',
@@ -656,92 +647,72 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+      )}
 
-      
-
-      {/* Curriculum Section */}
-      <section id="curriculum" className="py-16 md:py-20 lg:py-24 relative overflow-hidden">
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-accent/20 rounded-full filter blur-3xl opacity-20 animate-pulse-slow"></div>
+      {/* --- NEW How it Works Section --- */}
+      <section id="how-it-works" className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-emerald-50/50 to-white relative overflow-hidden">
+        <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-emerald-300/20 rounded-full filter blur-3xl opacity-30 animate-pulse-slow"></div>
         <div className="container relative">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="inline-flex items-center rounded-full border border-emerald-200 px-4 py-1.5 text-sm font-medium bg-emerald-50 text-emerald-700 mb-4">
-              Curriculum
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.5 }}
+            className="text-center max-w-3xl mx-auto mb-12 md:mb-16"
+          >
+            <div className="inline-flex items-center rounded-full border border-emerald-200 px-4 py-1.5 text-sm font-medium bg-emerald-100 text-emerald-700 mb-4">
+              Learn to Earn Explained
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Comprehensive financial curriculum 📊</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Turn Learning into Earning 💡</h2>
             <p className="text-lg text-gray-600">
-              Our 20-module curriculum first establishes a strong base in <span className="font-semibold">investing, budgeting, and saving</span>. We then build upon this with essential modern skills like market analysis, digital entrepreneurship, and emerging financial tech, preparing teens for real-world financial success.
+              Our unique Learn to Earn program directly rewards your teen's engagement. A portion of your monthly subscription fee is set aside, and your child can earn back up to 80% of it—that's potentially $40 each month!—based on their progress through the curriculum, quiz scores, and consistent learning habits.
             </p>
-          </div>
+          </motion.div>
 
-          {/* Horizontal Carousel */}
-          <div ref={constraintsRef} className="relative overflow-hidden">
-            <motion.div 
-              ref={carouselRef}
-              className="flex gap-8 py-8"
-              animate={{
-                x: ['0%', '-100%']
-              }}
-              transition={{
-                duration: 60,
-                ease: 'linear',
-                repeat: Infinity,
-                repeatType: "loop"
-              }}
-              drag="x"
-              dragConstraints={{ right: 0, left: -dragConstraintsWidth }}
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="grid md:grid-cols-3 gap-8 md:gap-12 text-center"
+          >
+            <div className="flex flex-col items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="p-3 bg-emerald-100 rounded-full mb-4">
+                <BookOpen size={24} className="text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-gray-800">Complete Modules</h3>
+              <p className="text-sm text-gray-600">Earn rewards for finishing lessons and mastering new financial concepts.</p>
+            </div>
+            <div className="flex flex-col items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="p-3 bg-emerald-100 rounded-full mb-4">
+                <CheckCircle size={24} className="text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-gray-800">Ace Quizzes</h3>
+              <p className="text-sm text-gray-600">Demonstrate understanding and earn more by scoring well on assessments.</p>
+            </div>
+            <div className="flex flex-col items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="p-3 bg-emerald-100 rounded-full mb-4">
+                <CalendarDays size={24} className="text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-gray-800">Build Habits</h3>
+              <p className="text-sm text-gray-600">Consistent learning streaks contribute to maximizing monthly earnings.</p>
+            </div>
+          </motion.div>
+
+           <motion.p 
+             initial={{ opacity: 0, y: 10 }}
+             whileInView={{ opacity: 1, y: 0 }}
+             viewport={{ once: true }}
+             transition={{ duration: 0.5, delay: 0.4 }}
+             className="text-center text-gray-500 text-sm mt-12 max-w-xl mx-auto"
             >
-              {/* First set of cards */}
-              <ModuleCard number="1" title="Foundations of Money" progress={100} />
-              <ModuleCard number="2" title="Financial Psychology & Decision-Making" progress={0} />
-              <ModuleCard number="3" title="Payment Methods & Digital Transactions" progress={0} />
-              <ModuleCard number="4" title="Banking & Account Management" progress={0} />
-              <ModuleCard number="5" title="Budgeting & Expense Management" progress={0} />
-              <ModuleCard number="6" title="Cost of Money & Inflation" progress={0} />
-              <ModuleCard number="7" title="Credit Fundamentals & Loans" progress={0} />
-              <ModuleCard number="8" title="Credit Reports & Debt Management" progress={0} />
-              <ModuleCard number="9" title="Insurance & Risk Management" progress={0} />
-              <ModuleCard number="10" title="Saving, Investing & Stock-Market Basics" progress={0} />
-              <ModuleCard number="11" title="Practical Investing Playbook" progress={0} />
-              <ModuleCard number="12" title="Understanding Investment Metrics" progress={0} />
-              <ModuleCard number="13" title="Taxes & Government Influences" progress={0} />
-              <ModuleCard number="14" title="Entrepreneurship & Career Development" progress={0} />
-              <ModuleCard number="15" title="Paying for Higher Education" progress={0} />
-              <ModuleCard number="16" title="Consumer Protection & Ethics" progress={0} />
-              <ModuleCard number="17" title="Economic Systems & Public Policy" progress={0} />
-              <ModuleCard number="18" title="Philanthropy, Ethics & Social Finance" progress={0} />
-              <ModuleCard number="19" title="Digital & Emerging Finance" progress={0} />
-              <ModuleCard number="20" title="Global Finance & Currency Exchange" progress={0} />
-
-              {/* Duplicate set for seamless loop */}
-              <ModuleCard number="1" title="Foundations of Money" progress={100} />
-              <ModuleCard number="2" title="Financial Psychology & Decision-Making" progress={0} />
-              <ModuleCard number="3" title="Payment Methods & Digital Transactions" progress={0} />
-              <ModuleCard number="4" title="Banking & Account Management" progress={0} />
-              <ModuleCard number="5" title="Budgeting & Expense Management" progress={0} />
-              <ModuleCard number="6" title="Cost of Money & Inflation" progress={0} />
-              <ModuleCard number="7" title="Credit Fundamentals & Loans" progress={0} />
-              <ModuleCard number="8" title="Credit Reports & Debt Management" progress={0} />
-              <ModuleCard number="9" title="Insurance & Risk Management" progress={0} />
-              <ModuleCard number="10" title="Saving, Investing & Stock-Market Basics" progress={0} />
-              <ModuleCard number="11" title="Practical Investing Playbook" progress={0} />
-              <ModuleCard number="12" title="Understanding Investment Metrics" progress={0} />
-              <ModuleCard number="13" title="Taxes & Government Influences" progress={0} />
-              <ModuleCard number="14" title="Entrepreneurship & Career Development" progress={0} />
-              <ModuleCard number="15" title="Paying for Higher Education" progress={0} />
-              <ModuleCard number="16" title="Consumer Protection & Ethics" progress={0} />
-              <ModuleCard number="17" title="Economic Systems & Public Policy" progress={0} />
-              <ModuleCard number="18" title="Philanthropy, Ethics & Social Finance" progress={0} />
-              <ModuleCard number="19" title="Digital & Emerging Finance" progress={0} />
-              <ModuleCard number="20" title="Global Finance & Currency Exchange" progress={0} />
-            </motion.div>
-            {/* Gradient overlays for smooth fade effect */}
-            <div className="absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white to-transparent pointer-events-none"></div>
-            <div className="absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
-          </div>
+             The earned amount is added to the teen's Banyan account balance, available for spending or investing through the platform.
+           </motion.p>
         </div>
       </section>
 
       {/* Testimonials Section */}
+      {/*
       <section id="testimonials" className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
         <div className="absolute inset-0 bg-hero-pattern opacity-5"></div>
         <div className="container relative">
@@ -777,6 +748,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      */}
 
       {/* Pricing Section */}
       <section id="pricing" className="py-16 md:py-20 lg:py-24 relative overflow-hidden">
@@ -844,9 +816,9 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 md:py-16 bg-gray-900 text-gray-300">
+      <footer className="py-8 md:py-10 bg-gray-900 text-gray-300">
         <div className="container">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+          {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             <div>
               <h3 className="font-bold text-white mb-4">Banyan</h3>
               <ul className="space-y-2">
@@ -947,8 +919,8 @@ export default function Home() {
                 </li>
               </ul>
             </div>
-          </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+          </div> */}
+          <div className="border-t border-gray-800 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
               <Leaf className="h-5 w-5 text-emerald-500" />
               <span className="font-bold text-white">Banyan</span>

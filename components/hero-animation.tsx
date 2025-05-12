@@ -247,17 +247,17 @@ export default function HeroAnimation() {
             cx="50" cy="50" r="40"
             stroke="#10B981" strokeWidth="8" fill="none" strokeLinecap="round"
             strokeDasharray="251"          // 2πr
-            strokeDashoffset="100"         // % complete (251 * (1 - 0.62))
-            animate={{ strokeDashoffset: [100, 90, 100] }}  // little pulse around 62%
+            strokeDashoffset="100.4"         // % complete (251 * (1 - 0.60))
+            animate={{ strokeDashoffset: [100.4, 90, 100.4] }}  // little pulse around 60%
             transition={{ duration: 6, repeat: Infinity }}
           />
         </svg>
         {/* Revert to flex centering, use translate-y to nudge label up */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           {/* Increase negative translate-y again */}
-          <p className="text-xs font-medium text-emerald-700 -translate-y-10">Savings Goal</p>
-          {/* Keep percentage centered */} 
-          <p className="text-lg font-bold text-emerald-600 -translate-y-2">62 %</p> 
+          <p className="text-xs font-medium text-emerald-700 -translate-y-10">Monthly Earnings</p>
+          {/* Keep percentage centered */}
+          <p className="text-lg font-bold text-emerald-600 -translate-y-2">60 %</p>
         </div>
       </motion.div>
 
@@ -284,9 +284,9 @@ export default function HeroAnimation() {
             </svg>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-800 text-xs">Parent Deposit</h4>
-            <p className="text-xs text-gray-600 mt-1">Mom just added $25 to your account! 🎉</p>
-            <p className="text-xs text-emerald-600 mt-1">2 min ago</p>
+            <h4 className="font-semibold text-gray-800 text-xs">Module Earnings!</h4>
+            <p className="text-xs text-gray-600 mt-1">You earned $5 for mastering Budgeting! 🚀</p>
+            <p className="text-xs text-emerald-600 mt-1">Just now</p>
           </div>
         </div>
       </motion.div>
@@ -314,7 +314,7 @@ export default function HeroAnimation() {
             </svg>
           </div>
           <div>
-            <h4 className="font-semibold text-blue-800">Module Completed</h4>
+            <h4 className="font-semibold text-blue-800">Module Mastery</h4>
             <p className="text-sm text-gray-600">You've earned +25 points for your savings skills!</p>
           </div>
         </div>
