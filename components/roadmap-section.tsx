@@ -180,7 +180,7 @@ export default function RoadmapSection() {
                         }`}
                         style={{ pointerEvents: 'auto', zIndex: 10 }}
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-50 to-blue-50 opacity-0 transition-opacity group-hover:opacity-100 rounded-xl pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-50 to-blue-50 opacity-0 transition-opacity group-hover:opacity-0 rounded-xl pointer-events-none" />
                         
                         <div className="relative z-10">
                           <div
