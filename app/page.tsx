@@ -14,6 +14,7 @@ import { WaitlistForm } from "./components/WaitlistForm"
 import { motion } from "framer-motion"
 import React, { useState, useRef, useEffect } from "react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import InteractiveDemo from "@/components/interactive-demo/InteractiveDemo"
 
 // Parent Dashboard Card Component (Optional Helper)
 const ParentDashboardCard = () => {
@@ -184,6 +185,17 @@ export default function Home() {
           <div className="relative h-[400px] sm:h-[450px] md:h-[550px] lg:col-span-3 lg:translate-x-[25%] xl:translate-x-[35%]">
             <HeroAnimation />
           </div>
+        </div>
+      </section>
+
+      {/* --- NEW SECTION FOR INTERACTIVE DEMO --- */}
+      <section id="interactive-demo" className="py-6 md:py-8 lg:py-10">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Try Our Interactive Lesson!</h2>
+            <p className="text-lg text-gray-600 mt-2">Get a taste of how Banyan makes learning fun and engaging.</p>
+          </div>
+          <InteractiveDemo /> 
         </div>
       </section>
 
