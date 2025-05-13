@@ -152,7 +152,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-4"
           >
-            <Button className="bg-emerald-800 hover:bg-emerald-900 rounded-full" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}>Join Waitlist</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-full" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}>Join Waitlist</Button>
             <MobileMenu />
           </motion.div>
         </div>
@@ -173,7 +173,7 @@ export default function Home() {
               They'll master real‑world money skills and earn up to $40/mo back from your subscription.
             </p>
             <div className="flex flex-col md:flex-row gap-4 mt-2">
-              <Button size="lg" className="bg-emerald-800 hover:bg-emerald-900 rounded-full w-full sm:w-auto" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}> 
+              <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 rounded-full w-full sm:w-auto" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}>
                 Join the Waitlist – It's Free
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -185,17 +185,6 @@ export default function Home() {
           <div className="relative h-[400px] sm:h-[450px] md:h-[550px] lg:col-span-3 lg:translate-x-[25%] xl:translate-x-[35%]">
             <HeroAnimation />
           </div>
-        </div>
-      </section>
-
-      {/* --- NEW SECTION FOR INTERACTIVE DEMO --- */}
-      <section id="interactive-demo" className="py-6 md:py-8 lg:py-10">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Try Our Interactive Lesson!</h2>
-            <p className="text-lg text-gray-600 mt-2">Get a taste of how Banyan makes learning fun and engaging.</p>
-          </div>
-          <InteractiveDemo /> 
         </div>
       </section>
 
@@ -686,6 +675,17 @@ export default function Home() {
         </div>
       </section>
 
+      {/* --- NEW SECTION FOR INTERACTIVE DEMO --- */}
+      <section id="interactive-demo" className="py-6 md:py-8 lg:py-10">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Try Our Interactive Lesson!</h2>
+            <p className="text-lg text-gray-600 mt-2">Get a taste of how Banyan makes learning fun and engaging.</p>
+          </div>
+          <InteractiveDemo />
+        </div>
+      </section>
+
       {/* Testimonials Section */}
       {/*
       <section id="testimonials" className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
@@ -759,7 +759,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Button className="w-full bg-emerald-800 hover:bg-emerald-900 rounded-full" size="lg" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}> 
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 rounded-full" size="lg" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}>
                 Join the Waitlist
               </Button>
               <p className="text-sm text-gray-500 mt-4">Be the first to know when we launch!</p>

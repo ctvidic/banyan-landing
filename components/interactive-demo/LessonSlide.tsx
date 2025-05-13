@@ -14,7 +14,7 @@ const LessonSlide: React.FC<LessonSlideProps> = ({ title, content, imageSrc }) =
         <img src={imageSrc} alt={title} className="w-32 h-32 object-contain mb-4" />
       )}
       <h2 className="text-2xl font-bold mb-4 text-gray-800">{title}</h2>
-      <div className="text-gray-700 text-sm text-center">
+      <div className="text-gray-700 text-xs text-center">
         {content}
       </div>
       {/* Placeholder for slide number or other indicators */}
