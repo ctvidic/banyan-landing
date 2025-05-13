@@ -129,7 +129,7 @@ export default function Home() {
             <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-emerald-400">Banyan</span>
           </motion.div>
           <nav className="hidden md:flex items-center gap-6">
-            {["Features", "Curriculum", "Roadmap", "Testimonials", "Pricing"].map((item, i) => (
+            {["Features", "Curriculum", "Testimonials", "Pricing"].map((item, i) => (
               <motion.div
                 key={item}
                 initial={{ opacity: 0, y: -10 }}
@@ -265,6 +265,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Roadmap Section */}
+      <RoadmapSection />
 
       {/* --- NEW SECTION 1: Modern Skills -> Real Tools --- */}
       <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white to-emerald-50/50 overflow-hidden">
@@ -741,9 +744,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Add Roadmap Section Here */}
-      <RoadmapSection />
 
       {/* Testimonials Section */}
       <section id="testimonials" className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
