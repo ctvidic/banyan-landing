@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight, CheckCircle, Leaf, BookOpen, TrendingUp, Shield, XCircle, AlertTriangle, MinusCircle, GraduationCap, Gamepad2, Lock, Cpu, Users, BookCopy, MessageCircle, BarChart3, Globe, Bitcoin, Settings, Award, LifeBuoy, ScrollText, HeartHandshake, PiggyBank, CircleDollarSign, LineChart, Code, CalendarDays, DollarSign, Zap, User, CreditCard, BarChartHorizontal, Bell, ToggleRight, ToggleLeft, Map } from "lucide-react"
+import { ArrowRight, CheckCircle, Leaf, BookOpen, TrendingUp, Shield, XCircle, AlertTriangle, MinusCircle, GraduationCap, Gamepad2, Lock, Cpu, Users, BookCopy, MessageCircle, BarChart3, Globe, Bitcoin, Settings, Award, LifeBuoy, ScrollText, HeartHandshake, PiggyBank, CircleDollarSign, LineChart, Code, CalendarDays, DollarSign, Zap, User, CreditCard, BarChartHorizontal, Bell, ToggleRight, ToggleLeft, Map, FileQuestion } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TestimonialCard from "@/components/testimonial-card"
 import CurriculumAccordion from "@/components/curriculum-accordion"
@@ -13,6 +13,7 @@ import ModuleCard from "@/components/module-card"
 import { WaitlistForm } from "./components/WaitlistForm"
 import { motion } from "framer-motion"
 import React, { useState, useRef, useEffect } from "react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Parent Dashboard Card Component (Optional Helper)
 const ParentDashboardCard = () => {
@@ -127,7 +128,7 @@ export default function Home() {
             <Leaf className="h-6 w-6 text-emerald-600" />
             <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-emerald-400">Banyan</span>
           </motion.div>
-          <nav className="hidden md:flex items-center gap-6">
+          {/* <nav className="hidden md:flex items-center gap-6">
             {["Features", "Curriculum", "Testimonials", "Pricing"].map((item, i) => (
               <motion.div
                 key={item}
@@ -144,13 +145,13 @@ export default function Home() {
             </Link>
               </motion.div>
             ))}
-          </nav>
+          </nav> */}
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-4"
           >
-            <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-full" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}>Join Waitlist</Button>
+            <Button className="bg-emerald-800 hover:bg-emerald-900 rounded-full" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}>Join Waitlist</Button>
             <MobileMenu />
           </motion.div>
         </div>
@@ -164,22 +165,19 @@ export default function Home() {
 
         <div className="container grid gap-8 md:grid-cols-2 lg:grid-cols-5 items-center relative">
           <div className="flex flex-col gap-6 max-w-lg lg:col-span-2">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold">
-              <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 animate-gradient-x">
-                Learn
-              </span>{" "}
-              about finance, <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-400 animate-gradient-x">Earn</span> real money
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900">
+              <span className="font-bold text-emerald-600">Pay</span> Your Child to Learn
             </h1>
             <p className="text-lg text-gray-600">
-              Empower your teen with practical financial skills and reward their learning! Our Learn to Earn program lets kids earn real money as they master modern finance topics.
+              They'll master real‑world money skills and earn up to $40/mo back from your subscription.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 mt-2">
-              <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 rounded-full" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}> 
-                Join the Waitlist
+            <div className="flex flex-col md:flex-row gap-4 mt-2">
+              <Button size="lg" className="bg-emerald-800 hover:bg-emerald-900 rounded-full w-full sm:w-auto" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}> 
+                Join the Waitlist – It's Free
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" className="rounded-full" asChild>
-                <Link href="#how-it-works">See how it works</Link>
+              <Button size="lg" variant="ghost" className="rounded-full w-full sm:w-auto" asChild>
+                <Link href="#how-it-works">How It Works</Link>
               </Button>
             </div>
           </div>
@@ -188,74 +186,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Curriculum Alignment Section - With Logo Carousel */}
-      {/*
-      <section className="py-12 md:py-16 border-y bg-gray-50/50">
-        <div className="container">
-          <h2 className="text-center text-lg font-medium text-gray-600 mb-10">
-            Curriculum Aligned with Global Financial Literacy Frameworks & Leading Research
-          </h2>
-          {/* Carousel Wrapper * /}
-          <div className="relative overflow-hidden group">
-            <motion.div 
-              className="flex gap-x-12 md:gap-x-16 lg:gap-x-20"
-              animate={{
-                x: ['0%', '-50%']
-              }}
-              transition={{
-                ease: 'linear', 
-                duration: 20,
-                repeat: Infinity
-              }}
-            >
-              {/* First set of logos * /}
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={0} style={{ width: 'auto', height: '40px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/stanford.png" alt="Stanford University Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/texas.png" alt="University of Texas Logo" height={50} width={0} style={{ width: 'auto', height: '50px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/ngpf.svg" alt="Next Gen Personal Finance Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/jumpstart.webp" alt="JumpStart Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
-              </div>
-              
-              {/* Second set of logos (duplicate for seamless loop) * /}
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={0} style={{ width: 'auto', height: '40px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/stanford.png" alt="Stanford University Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/texas.png" alt="University of Texas Logo" height={50} width={0} style={{ width: 'auto', height: '50px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/ngpf.svg" alt="Next Gen Personal Finance Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/jumpstart.webp" alt="JumpStart Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
-              </div>
-              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
-                </div>
-            </motion.div>
-            {/* Gradient fade edges * /}
-            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-gray-50/50 to-transparent"></div>
-            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-gray-50/50 to-transparent"></div>
-          </div>
-        </div>
-      </section>
-      */}
 
       {/* --- NEW SECTION 1: Modern Skills -> Real Tools --- */}
       <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white to-emerald-50/50 overflow-hidden">
@@ -669,35 +599,68 @@ export default function Home() {
             </p>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="grid md:grid-cols-3 gap-8 md:gap-12 text-center"
-          >
-            <div className="flex flex-col items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="p-3 bg-emerald-100 rounded-full mb-4">
-                <BookOpen size={24} className="text-emerald-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-gray-800">Complete Modules</h3>
-              <p className="text-sm text-gray-600">Earn rewards for finishing lessons and mastering new financial concepts.</p>
-            </div>
-            <div className="flex flex-col items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="p-3 bg-emerald-100 rounded-full mb-4">
-                <CheckCircle size={24} className="text-emerald-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-gray-800">Ace Quizzes</h3>
-              <p className="text-sm text-gray-600">Demonstrate understanding and earn more by scoring well on assessments.</p>
-            </div>
-            <div className="flex flex-col items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="p-3 bg-emerald-100 rounded-full mb-4">
-                <CalendarDays size={24} className="text-emerald-600" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-gray-800">Build Habits</h3>
-              <p className="text-sm text-gray-600">Consistent learning streaks contribute to maximizing monthly earnings.</p>
-            </div>
-          </motion.div>
+          {/* --- Moved Learn -> Quiz -> Earn Steps Here --- */}
+          <TooltipProvider delayDuration={200}>
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 items-start text-center mb-12 md:mb-16" // Added margin-bottom
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }} // Adjusted amount for earlier trigger
+              transition={{ duration: 0.5, delay: 0.2 }} // Adjusted delay
+            >
+              {/* Step 1: Learn */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex flex-col items-center cursor-default bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
+                    <div className="p-3 bg-emerald-100 rounded-full mb-4 relative">
+                      <BookOpen size={24} className="text-emerald-600" />
+                      <div className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">1</div>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2 text-gray-800">Learn</h3>
+                    <p className="text-sm text-gray-600 mt-auto pt-2">Master Finance Skills</p> { /* Adjusted styling */}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p>Complete interactive modules covering essential modern financial topics.</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Step 2: Quiz */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex flex-col items-center cursor-default bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
+                    <div className="p-3 bg-emerald-100 rounded-full mb-4 relative">
+                      <FileQuestion size={24} className="text-emerald-600" />
+                       <div className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">2</div>
+                   </div>
+                    <h3 className="text-lg font-semibold mb-2 text-gray-800">Quiz</h3>
+                    <p className="text-sm text-gray-600 mt-auto pt-2">Test Your Knowledge</p> { /* Adjusted styling */}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p>Solidify your understanding by passing quizzes after each module.</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Step 3: Earn */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex flex-col items-center cursor-default bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
+                    <div className="p-3 bg-emerald-100 rounded-full mb-4 relative">
+                      <DollarSign size={24} className="text-emerald-600" />
+                      <div className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">3</div>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2 text-gray-800">Earn $</h3>
+                    <p className="text-sm text-gray-600 mt-auto pt-2">Get Rewarded Daily</p> { /* Adjusted styling */}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p>Earn real money back from your subscription based on your progress.</p>
+                </TooltipContent>
+              </Tooltip>
+            </motion.div>
+          </TooltipProvider>
+          {/* --- End Moved Steps --- */}
 
            <motion.p 
              initial={{ opacity: 0, y: 10 }}
@@ -784,7 +747,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 rounded-full" size="lg" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}> 
+              <Button className="w-full bg-emerald-800 hover:bg-emerald-900 rounded-full" size="lg" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}> 
                 Join the Waitlist
               </Button>
               <p className="text-sm text-gray-500 mt-4">Be the first to know when we launch!</p>

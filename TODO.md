@@ -11,11 +11,11 @@ Based on o3's feedback:
 ## 2. Make the Value Obvious at a Glance
 
 - [ ] Replace the current money gauge animation with an "Up to $40/mo" donut chart that animates from 0 to 40 on load.
-- [ ] Overlay a short (3-4 sec) looped, muted video on the phone mock-up showing XP gain, balance increase, and mascot thumbs-up.
-- [ ] Change Primary CTA text to: "Join the Waitlist – It's Free".
+- [x] Overlay a short (3-4 sec) looped, muted video on the phone mock-up showing XP gain, balance increase, and mascot thumbs-up.
+- [x] Change Primary CTA text to: "Join the Waitlist – It's Free".
 - [ ] Ensure Primary CTA is full-width on mobile.
 - [ ] Change Secondary CTA to a ghost button style with text: "How It Works".
-- [ ] Add Trust Badges below CTAs: FDIC-insured partner bank logo, COPPA-compliant icon, Apple/Google Pay icons.
+- [x] Add Trust Badges below CTAs: FDIC-insured partner bank logo, COPPA-compliant icon, Apple/Google Pay icons.
 
 ## 3. Instantly Convey Exclusivity & Scarcity
 
