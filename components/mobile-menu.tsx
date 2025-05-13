@@ -34,6 +34,13 @@ export default function MobileMenu() {
             Curriculum
           </Link>
           <Link
+            href="#roadmap"
+            className="text-lg font-medium hover:text-emerald-600 transition-colors"
+            onClick={() => setOpen(false)}
+          >
+            Roadmap
+          </Link>
+          <Link
             href="#testimonials"
             className="text-lg font-medium hover:text-emerald-600 transition-colors"
             onClick={() => setOpen(false)}

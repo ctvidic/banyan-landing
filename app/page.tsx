@@ -11,6 +11,7 @@ import HeroAnimation from "@/components/hero-animation"
 import MobileMenu from "@/components/mobile-menu"
 import ModuleCard from "@/components/module-card"
 import { WaitlistForm } from "./components/WaitlistForm"
+import RoadmapSection from "@/components/roadmap-section"
 import { motion } from "framer-motion"
 import React, { useState, useRef, useEffect } from "react"
 
@@ -128,7 +129,7 @@ export default function Home() {
             <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-emerald-400">Banyan</span>
           </motion.div>
           <nav className="hidden md:flex items-center gap-6">
-            {["Features", "Curriculum", "Testimonials", "Pricing"].map((item, i) => (
+            {["Features", "Curriculum", "Roadmap", "Testimonials", "Pricing"].map((item, i) => (
               <motion.div
                 key={item}
                 initial={{ opacity: 0, y: -10 }}
@@ -740,6 +741,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Add Roadmap Section Here */}
+      <RoadmapSection />
 
       {/* Testimonials Section */}
       <section id="testimonials" className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
