@@ -696,7 +696,7 @@ export default function Home() {
             >
               {/* First set of cards */}
               <ModuleCard number="1" title="Foundations of Money" progress={100} />
-              <ModuleCard number="2" title="Financial Psychology & Decision-Making" progress={0} />
+              <ModuleCard number="2" title="Financial Psychology & Decision-Making" progress={50} />
               <ModuleCard number="3" title="Payment Methods & Digital Transactions" progress={0} />
               <ModuleCard number="4" title="Banking & Account Management" progress={0} />
               <ModuleCard number="5" title="Budgeting & Expense Management" progress={0} />
