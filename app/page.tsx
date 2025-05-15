@@ -106,8 +106,12 @@ export default function Home() {
   const carouselRef = useRef<HTMLDivElement>(null);
   const constraintsRef = useRef<HTMLDivElement>(null);
   const [dragConstraintsWidth, setDragConstraintsWidth] = useState(0);
+  const [isBrowser, setIsBrowser] = useState(false);
 
   useEffect(() => {
+    // Mark that we're in the browser now
+    setIsBrowser(true);
+    
     if (carouselRef.current && constraintsRef.current) {
       const scrollableWidth = carouselRef.current.scrollWidth;
       const viewportWidth = constraintsRef.current.offsetWidth;
@@ -142,9 +146,24 @@ export default function Home() {
                 >
                   {item}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-600 transition-all group-hover:w-full" />
-            </Link>
+                </Link>
               </motion.div>
             ))}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Link 
+                href="/bill-negotiator" 
+                className="relative flex flex-col items-center group"
+              >
+                <span className="text-[10px] font-bold text-emerald-600 -mb-1">TRY</span>
+                <span className="text-sm font-medium bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200 hover:bg-emerald-100 transition-colors">
+                  Bill Negotiator
+                </span>
+              </Link>
+            </motion.div>
           </nav>
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
@@ -691,8 +710,10 @@ export default function Home() {
                 repeat: Infinity,
                 repeatType: "loop"
               }}
-              drag="x"
-              dragConstraints={{ right: 0, left: -dragConstraintsWidth }}
+              {...(isBrowser ? {
+                drag: "x",
+                dragConstraints: { right: 0, left: -dragConstraintsWidth }
+              } : {})}
             >
               {/* First set of cards */}
               <ModuleCard number="1" title="Foundations of Money" progress={100} />
