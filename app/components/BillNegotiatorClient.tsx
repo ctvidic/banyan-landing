@@ -209,15 +209,58 @@ export default function BillNegotiatorClient() {
     </div>
   )
 
-  const renderReport = () => (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Negotiation Report</h1>
-      {report
-        ? <pre className="bg-gray-50 p-4 rounded-lg text-sm">{JSON.stringify(report,null,2)}</pre>
-        : <p>Loading…</p>}
-      <Button variant="outline" className="mt-6" onClick={()=>location.reload()}>Try Again</Button>
-    </div>
-  )
+  const renderReport = () => {
+    // Helper to clean and parse the report
+    function parseReport(report: any) {
+      if (!report) return null;
+      let text = typeof report === "string" ? report : report.text || "";
+      // Remove code block markers and trim
+      text = text.replace(/```json|```/g, "").trim();
+      try {
+        return JSON.parse(text);
+      } catch {
+        // If already an object or parsing fails, return as is
+        return typeof report === "object" ? report : null;
+      }
+    }
+
+    const parsed = parseReport(report);
+
+    return (
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Negotiation Report</h1>
+        {parsed ? (
+          <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
+            {parsed.strengths && (
+              <div>
+                <h2 className="font-semibold mb-1">Strengths</h2>
+                <ul className="list-disc pl-5">
+                  {parsed.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                </ul>
+              </div>
+            )}
+            {parsed.improvements && (
+              <div>
+                <h2 className="font-semibold mb-1">Improvements</h2>
+                <ul className="list-disc pl-5">
+                  {parsed.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                </ul>
+              </div>
+            )}
+            {parsed.outcome && (
+              <div>
+                <h2 className="font-semibold mb-1">Outcome</h2>
+                <p>{parsed.outcome}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p>Loading…</p>
+        )}
+        <Button variant="outline" className="mt-6" onClick={()=>location.reload()}>Try Again</Button>
+      </div>
+    );
+  }
 
   /*-------------------------------------------------------------------------*/
   /*  Recording with 1-second silence VAD                                    */
