@@ -156,12 +156,10 @@ export default function Home() {
             >
               <Link 
                 href="/bill-negotiator" 
-                className="relative flex flex-col items-center group"
+                className="inline-flex items-center bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200 hover:bg-emerald-100 transition-colors"
               >
-                <span className="text-[10px] font-bold text-emerald-600 -mb-1">TRY</span>
-                <span className="text-sm font-medium bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-200 hover:bg-emerald-100 transition-colors">
-                  Bill Negotiator
-                </span>
+                <span className="font-medium text-sm">Bill Negotiator</span>
+                <span className="ml-2 text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">TRY</span>
               </Link>
             </motion.div>
           </nav>
