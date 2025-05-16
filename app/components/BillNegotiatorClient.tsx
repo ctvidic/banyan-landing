@@ -105,7 +105,7 @@ export default function BillNegotiatorClient() {
   )
 
   const renderTranscriptDrawer = () => (
-    <aside className="absolute right-0 top-0 w-72 h-full bg-white shadow-lg p-4 overflow-y-auto">
+    <aside className="absolute right-0 top-16 w-72 h-[calc(100%-4rem)] bg-white shadow-lg p-4 overflow-y-auto">
       <h3 className="font-semibold mb-4">Transcript</h3>
       {messages.map(m=>(
         <p key={m.id} className={`text-sm mb-2 ${m.role==="agent"?"text-gray-800":"text-blue-600"}`}>
