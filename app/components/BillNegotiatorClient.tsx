@@ -135,34 +135,44 @@ export default function BillNegotiatorClient() {
   // Multi-tab Drawer
   const renderDrawer = () => (
     <aside
-      className="fixed right-0 top-0 h-full w-72 max-w-full bg-white shadow-lg p-4 overflow-y-auto z-50 flex flex-col md:absolute md:top-16 md:h-[calc(100%-4rem)] md:w-72"
+      className="fixed right-0 top-0 h-full w-72 max-w-full bg-white shadow-lg pb-4 px-4 overflow-y-auto z-50 flex flex-col md:absolute md:top-16 md:h-[calc(100%-4rem)] md:w-72"
       style={{maxWidth: '18rem'}}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-2">
+      <div className="sticky top-0 z-10 bg-white pb-2 mb-4 -mx-4 px-4 min-h-[3.5rem] border-b border-gray-100 pt-5 md:pt-0">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            <button
+              className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="transcript" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
+              onClick={()=>setActiveDrawerTab("transcript")}
+            >Transcript</button>
+            <button
+              className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="mission" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
+              onClick={()=>setActiveDrawerTab("mission")}
+            >Mission</button>
+            <button
+              className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
+              onClick={()=>setActiveDrawerTab("tips")}
+            >Tips</button>
+          </div>
           <button
-            className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="transcript" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
-            onClick={()=>setActiveDrawerTab("transcript")}
-          >Transcript</button>
-          <button
-            className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="mission" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
-            onClick={()=>setActiveDrawerTab("mission")}
-          >Mission</button>
-          <button
-            className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
-            onClick={()=>setActiveDrawerTab("tips")}
-          >Tips</button>
+            className="ml-auto text-gray-400 hover:text-gray-700 text-xl font-bold"
+            aria-label="Close drawer"
+            onClick={()=>setActiveDrawerTab(null)}
+          >&times;</button>
         </div>
-        <button
-          className="ml-auto text-gray-400 hover:text-gray-700 text-xl font-bold"
-          aria-label="Close drawer"
-          onClick={()=>setActiveDrawerTab(null)}
-        >&times;</button>
+        {/* Section header for each tab */}
+        <div>
+          {activeDrawerTab==="transcript"}
+          {activeDrawerTab==="mission"}
+          {activeDrawerTab==="tips"}
+          {/* {activeDrawerTab==="transcript" && <h3 className="font-semibold mt-4 mb-2">Transcript</h3>}
+          {activeDrawerTab==="mission" && <h3 className="font-semibold mt-4 mb-2">Mission</h3>}
+          {activeDrawerTab==="tips" && <h3 className="font-semibold mt-4 mb-2">Tips</h3>} */}
+        </div>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 pt-4">
         {activeDrawerTab==="transcript" && (
           <div>
-            <h3 className="font-semibold mb-4">Transcript</h3>
             {messages.map(m=>(
               <p key={m.id} className={`text-sm mb-2 ${m.role==="agent"?"text-gray-800":"text-blue-600"}`}>
                 <strong>{m.role==="agent"?"Agent":"You"}:</strong> {m.text}
@@ -413,7 +423,7 @@ export default function BillNegotiatorClient() {
   async function score(){
     const transcript = messages.map(m=>`${m.role.toUpperCase()}: ${m.text}`).join("\n")
     const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, list strengths[], improvements[], outcome as JSON.\n\n${transcript}`})})
+      body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, list strengths[], improvements[], outcome for the customer as JSON.\n\n${transcript}`})})
     const j = await r.json(); setReport(j)
   }
   function endCall(){ mediaRec.current?.stop(); setPhase("report"); score() }
