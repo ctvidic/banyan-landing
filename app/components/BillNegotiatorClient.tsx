@@ -234,7 +234,40 @@ export default function BillNegotiatorClient() {
       }
     }
 
-    const parsed = parseReport(report);
+    // Normalization function to ensure flat structure
+    function normalizeReport(report: any) {
+      // If wrapped in a single key, unwrap it
+      if (
+        report &&
+        typeof report === "object" &&
+        !Array.isArray(report) &&
+        Object.keys(report).length === 1
+      ) {
+        const first = Object.values(report)[0];
+        if (
+          first &&
+          typeof first === "object" &&
+          ("strengths" in first || "improvements" in first || "outcome" in first)
+        ) {
+          return first;
+        }
+      }
+      // If already in the right shape, return as is
+      if (
+        report &&
+        typeof report === "object" &&
+        ("strengths" in report || "improvements" in report || "outcome" in report)
+      ) {
+        return report;
+      }
+      // Otherwise, return null or a default
+      return null;
+    }
+
+    const parsedRaw = parseReport(report);
+    // let parsed = parsedRaw;
+    // if (parsed && parsed.customer) parsed = parsed.customer;
+    const parsed = normalizeReport(parsedRaw);
 
     return (
       <div className="max-w-2xl mx-auto">
@@ -423,7 +456,7 @@ export default function BillNegotiatorClient() {
   async function score(){
     const transcript = messages.map(m=>`${m.role.toUpperCase()}: ${m.text}`).join("\n")
     const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, list strengths[], improvements[], outcome for the customer as JSON.\n\n${transcript}`})})
+      body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer's negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string). Do not nest the result under any other key.\n\n${transcript}`})})
     const j = await r.json(); setReport(j)
   }
   function endCall(){ mediaRec.current?.stop(); setPhase("report"); score() }
