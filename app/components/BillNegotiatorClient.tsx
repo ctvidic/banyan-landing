@@ -50,7 +50,7 @@ export default function BillNegotiatorClient() {
   const [messages,  setMsgs]      = useState<Message[]>([])
   const [stepId,    setStepId]    = useState("greeting")
   const [recording, setRec]       = useState(false)
-  const [showTx,    setShowTx]    = useState(false)
+  const [activeDrawerTab, setActiveDrawerTab] = useState<null|"transcript"|"mission"|"tips">(null)
   const [report,    setReport]    = useState<any>(null)
   const roleRef                  = useRef<"agent_frontline"|"agent_supervisor">("agent_frontline")
 
@@ -104,14 +104,75 @@ export default function BillNegotiatorClient() {
     </div>
   )
 
-  const renderTranscriptDrawer = () => (
-    <aside className="absolute right-0 top-16 w-72 h-[calc(100%-4rem)] bg-white shadow-lg p-4 overflow-y-auto">
-      <h3 className="font-semibold mb-4">Transcript</h3>
-      {messages.map(m=>(
-        <p key={m.id} className={`text-sm mb-2 ${m.role==="agent"?"text-gray-800":"text-blue-600"}`}>
-          <strong>{m.role==="agent"?"Agent":"You"}:</strong> {m.text}
-        </p>
-      ))}
+  // Drawer content for Mission
+  const renderMission = () => (
+    <div>
+      <h3 className="font-semibold mb-2">Your Scenario</h3>
+      <p className="text-gray-700 mb-4">
+        You notice your internet bill has increased from $69 to $89 per month without any prior notification. You're calling customer service to get this resolved.
+      </p>
+      <h4 className="font-semibold mb-1">Your Goal</h4>
+      <p className="text-gray-700">
+        Try to get your bill reduced back to the original price or negotiate for additional services to justify the price increase.
+      </p>
+    </div>
+  )
+
+  // Drawer content for Tips
+  const renderTips = () => (
+    <div>
+      <h3 className="font-semibold mb-2">Negotiation Tips</h3>
+      <ul className="list-disc pl-5 text-gray-700 text-sm space-y-2">
+        <li>Stay calm and polite, even if frustrated.</li>
+        <li>Clearly state your issue and desired outcome.</li>
+        <li>Ask clarifying questions if you don't understand something.</li>
+        <li>Mention your loyalty or history as a customer if relevant.</li>
+        <li>Be persistent but respectful if you need to escalate.</li>
+      </ul>
+    </div>
+  )
+
+  // Multi-tab Drawer
+  const renderDrawer = () => (
+    <aside
+      className="fixed right-0 top-0 h-full w-72 max-w-full bg-white shadow-lg p-4 overflow-y-auto z-50 flex flex-col md:absolute md:top-16 md:h-[calc(100%-4rem)] md:w-72"
+      style={{maxWidth: '18rem'}}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-2">
+          <button
+            className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="transcript" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
+            onClick={()=>setActiveDrawerTab("transcript")}
+          >Transcript</button>
+          <button
+            className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="mission" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
+            onClick={()=>setActiveDrawerTab("mission")}
+          >Mission</button>
+          <button
+            className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
+            onClick={()=>setActiveDrawerTab("tips")}
+          >Tips</button>
+        </div>
+        <button
+          className="ml-auto text-gray-400 hover:text-gray-700 text-xl font-bold"
+          aria-label="Close drawer"
+          onClick={()=>setActiveDrawerTab(null)}
+        >&times;</button>
+      </div>
+      <div className="flex-1">
+        {activeDrawerTab==="transcript" && (
+          <div>
+            <h3 className="font-semibold mb-4">Transcript</h3>
+            {messages.map(m=>(
+              <p key={m.id} className={`text-sm mb-2 ${m.role==="agent"?"text-gray-800":"text-blue-600"}`}>
+                <strong>{m.role==="agent"?"Agent":"You"}:</strong> {m.text}
+              </p>
+            ))}
+          </div>
+        )}
+        {activeDrawerTab==="mission" && renderMission()}
+        {activeDrawerTab==="tips" && renderTips()}
+      </div>
     </aside>
   )
 
@@ -137,14 +198,14 @@ export default function BillNegotiatorClient() {
 
       {/* controls */}
       <div className="mt-4 flex items-center gap-4">
-        <Button variant="outline" onClick={()=>setShowTx(!showTx)}>
-          <List className="h-4 w-4 mr-2"/> Transcript
-        </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("transcript")}> <List className="h-4 w-4 mr-2"/> Transcript </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("mission")}> Mission </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("tips")}> Tips </Button>
         <Button variant="ghost" onClick={endCall}>End Call</Button>
       </div>
 
       {/* optional drawer */}
-      {showTx && renderTranscriptDrawer()}
+      {activeDrawerTab && renderDrawer()}
     </div>
   )
 
