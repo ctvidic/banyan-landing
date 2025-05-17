@@ -14,13 +14,13 @@ export type Message = { id: string; role: "agent" | "user"; text: string };
 
 export type AgentRole = "agent_frontline" | "agent_supervisor";
 
-export interface UseRealtimeNegotiationProps {
+interface UseRealtimeNegotiationProps {
   onMessagesUpdate: (messages: Message[]) => void;
   onAgentSpeakingChange: (isSpeaking: boolean) => void;
   onSessionStatusChange: (status: SessionStatus) => void;
   currentAgentRole: AgentRole;
   onUserTranscriptCompleted: (transcript: string) => void;
-  onAgentSignaledEndForClientHandling?: () => void;
+  onAgentEndedCall: () => void;
 }
 
 export function useRealtimeNegotiation({
@@ -29,7 +29,7 @@ export function useRealtimeNegotiation({
   onSessionStatusChange,
   currentAgentRole,
   onUserTranscriptCompleted,
-  onAgentSignaledEndForClientHandling,
+  onAgentEndedCall,
 }: UseRealtimeNegotiationProps) {
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
@@ -40,7 +40,6 @@ export function useRealtimeNegotiation({
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const ephemeralKeyRef = useRef<string | null>(null);
   const assistantMessageDeltasRef = useRef<{ [itemId: string]: string }>({}); // To accumulate deltas
-  const agentHasSignaledCompletionRef = useRef<boolean>(false); // To signal call completion
 
   // Effect to propagate internal state changes to the parent component
   useEffect(() => {
@@ -164,8 +163,8 @@ export function useRealtimeNegotiation({
 
         // Send initial session.update to configure the agent (Phase 2, Step 7)
         const agentInstructions = currentAgentRole === "agent_frontline" 
-          ? "You are Sarah, an Indian woman call-centre rep with an Indian woman accent, friendly. Your job is to resolve a billing issue: the customer's internet bill jumped from $69 to $89 after a 12-month promo expired. Ask their name, get their issue, then explain the promo. The ONLY ways forward are: get them to admit that it was a promo price, acknowledge loyalty and offer slightly (but not fully) reduced price, or escalate to supervisor IF THEY INSIST. Keep things courteous, concise and guide toward resolution. When the conversation is completely resolved and you have said your final goodbye, end your VERY LAST sentence with the exact sequence: CALL_COMPLETE_SEQUENCE"
-          : "You are Marco, a Filipino male supervisor, authoritative with a Filipino male accent. You join after escalation. Help the customer reach one of: full discount, partial discount, added features, or downgrading plan to a cheaper one (lower speed). Close the call once resolved. When the conversation is completely resolved and you have said your final goodbye, end your VERY LAST sentence with the exact sequence: CALL_COMPLETE_SEQUENCE";
+          ? "You are Sarah, an Indian woman call-centre rep (friendly but tired, fake enthusiasm). Your job is to resolve a billing issue: the customer's internet bill jumped from $69 to $89 after a 12-month promo expired. Ask their name, get their issue, then explain the promo. The ONLY ways forward are: get them to admit that it was a promo price, acknowledge loyalty and offer slightly (but not fully) reduced price, or escalate to supervisor IF THEY INSIST. Keep things courteous, concise and guide toward resolution. When the conversation is definitively over and you have provided all necessary information or resolution, end your final message with 'Goodbye!'."
+          : "You are Marco, a Filipino man supervisor—authoritative yet polite. You join after escalation. Help the customer reach one of: full discount, partial discount, added features, or downgrading plan to a cheaper one (lower speed). Close the call once resolved. When the conversation is definitively over and you have provided all necessary information or resolution, end your final message with 'Goodbye!'."
         
         const agentVoice = currentAgentRole === "agent_frontline" ? "coral" : "sage"; // As per original BillNegotiatorClient
         console.log("REALTIME_HOOK: Configuring agent for role:", currentAgentRole, "Voice:", agentVoice, "Instructions:", agentInstructions);
@@ -265,7 +264,7 @@ export function useRealtimeNegotiation({
         dcRef.current = null;
       }
     }
-  }, [sessionStatus, fetchEphemeralKey, currentAgentRole, onUserTranscriptCompleted]);
+  }, [sessionStatus, fetchEphemeralKey, currentAgentRole, onUserTranscriptCompleted, onAgentEndedCall]);
 
   const disconnect = useCallback(() => {
     console.log("Disconnect function called.");
@@ -351,24 +350,14 @@ export function useRealtimeNegotiation({
 
       case "output_audio_buffer.stopped":
         setIsAgentSpeaking(false);
-        if (agentHasSignaledCompletionRef.current) {
-          console.log("REALTIME_HOOK: Agent finished speaking after signaling completion. Calling onAgentSignaledEndForClientHandling and then internal disconnect.");
-          onAgentSignaledEndForClientHandling?.();
-          disconnect();
-          agentHasSignaledCompletionRef.current = false;
-        }
         break;
 
       case "conversation.item.created": {
         const { item } = serverEvent;
         if (item?.id && item.role && item.content?.[0]?.text) {
-          let textToStore = item.content[0].text;
-          if (item.role === "agent") {
-            textToStore = textToStore.replace("CALL_COMPLETE_SEQUENCE", "").trim();
-          }
           setInternalMessages(prevMessages => {
             if (!prevMessages.find(msg => msg.id === item.id)) {
-              return [...prevMessages, { id: item.id, role: item.role, text: textToStore }];
+              return [...prevMessages, { id: item.id, role: item.role, text: item.content[0].text }];
             }
             return prevMessages;
           });
@@ -408,21 +397,17 @@ export function useRealtimeNegotiation({
             assistantMessageDeltasRef.current[item_id] = "";
           }
           assistantMessageDeltasRef.current[item_id] += delta;
-          let fullText = assistantMessageDeltasRef.current[item_id];
-          const cleanedFullTextForDisplay = fullText.replace("CALL_COMPLETE_SEQUENCE", "").trim();
+          const fullText = assistantMessageDeltasRef.current[item_id];
 
           setInternalMessages(prevMessages => {
             const existingMsgIndex = prevMessages.findIndex(msg => msg.id === item_id);
             if (existingMsgIndex !== -1) {
               const updatedMessages = [...prevMessages];
-              if (updatedMessages[existingMsgIndex].role === "agent") {
-                updatedMessages[existingMsgIndex] = { ...updatedMessages[existingMsgIndex], text: cleanedFullTextForDisplay };
-              } else {
-                 updatedMessages[existingMsgIndex] = { ...updatedMessages[existingMsgIndex], text: fullText };
-              }
+              updatedMessages[existingMsgIndex] = { ...updatedMessages[existingMsgIndex], text: fullText };
               return updatedMessages;
             } else {
-              return [...prevMessages, { id: item_id, role: "agent", text: cleanedFullTextForDisplay }];
+              // Agent started speaking, create a new message item
+              return [...prevMessages, { id: item_id, role: "agent", text: fullText }];
             }
           });
         }
@@ -430,36 +415,40 @@ export function useRealtimeNegotiation({
       }
       
       case "response.done": {
+        // If there was any accumulated delta, ensure it's finalized.
+        // The example repo also processes function calls here, but we omit for MVP.
         const responseOutput = serverEvent.response?.output;
         if (responseOutput && Array.isArray(responseOutput)) {
             responseOutput.forEach((outputItem: any) => {
                 if (outputItem.type === "message" && outputItem.role === "assistant" && outputItem.id) {
                     const finalAssistantText = outputItem.content?.[0]?.transcript || assistantMessageDeltasRef.current[outputItem.id] || "";
-                    let textForDisplay = finalAssistantText;
-                    
-                    if (finalAssistantText.includes("CALL_COMPLETE_SEQUENCE")) {
-                        console.log("REALTIME_HOOK: Agent used CALL_COMPLETE_SEQUENCE in final text. Will trigger end after audio stops.");
-                        agentHasSignaledCompletionRef.current = true;
-                        textForDisplay = finalAssistantText.replace("CALL_COMPLETE_SEQUENCE", "").trim();
-                    } else {
-                        textForDisplay = textForDisplay.replace("CALL_COMPLETE_SEQUENCE", "").trim();
-                    }
-
-                     if (textForDisplay || finalAssistantText) {
+                     if (finalAssistantText) {
                         setInternalMessages(prevMessages => {
                             const existingMsgIndex = prevMessages.findIndex(msg => msg.id === outputItem.id);
                             if (existingMsgIndex !== -1) {
                                 const updatedMessages = [...prevMessages];
-                                updatedMessages[existingMsgIndex] = { ...updatedMessages[existingMsgIndex], text: textForDisplay };
+                                updatedMessages[existingMsgIndex] = { ...updatedMessages[existingMsgIndex], text: finalAssistantText };
                                 return updatedMessages;
                             } else {
-                                return [...prevMessages, { id: outputItem.id, role: "agent", text: textForDisplay }];
+                                // Should have been created by delta, but as a fallback:
+                                return [...prevMessages, { id: outputItem.id, role: "agent", text: finalAssistantText }];
                             }
                         });
+
+                        // Check if agent ended the call
+                        if (finalAssistantText.trim().endsWith("Goodbye!")) {
+                          console.log("REALTIME_HOOK: Agent said Goodbye!, calling onAgentEndedCall.");
+                          onAgentEndedCall();
+                        }
+                    }
+                    // Clear accumulated delta for this item_id as it's now final
+                    if (assistantMessageDeltasRef.current[outputItem.id]) {
+                        delete assistantMessageDeltasRef.current[outputItem.id];
                     }
                 }
             });
         }
+        // Any other finalization logic for response.done for MVP?
         console.log("Server response.done event received.");
         break;
       }
@@ -468,7 +457,7 @@ export function useRealtimeNegotiation({
         // console.log("Unhandled server event type:", serverEvent.type);
         break;
     }
-  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted]);
+  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall]);
 
   return {
     connect,
