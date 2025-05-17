@@ -56,6 +56,14 @@ export default function BillNegotiatorClient() {
   // New state for Realtime API
   const [currentSessionStatus, setCurrentSessionStatus] = useState<RealtimeSessionStatus>("DISCONNECTED");
   const [isRealtimeAgentSpeaking, setIsRealtimeAgentSpeaking] = useState<boolean>(false);
+  const [isSwitchingRoles, setIsSwitchingRoles] = useState<boolean>(false);
+
+  // Ref to store the previous session status
+  const prevSessionStatusRef = useRef<RealtimeSessionStatus>(currentSessionStatus);
+
+  useEffect(() => {
+    prevSessionStatusRef.current = currentSessionStatus;
+  }, [currentSessionStatus]);
 
   // Callbacks for the hook
   const handleMessagesUpdate = useCallback((newMessages: Message[]) => {
@@ -70,6 +78,24 @@ export default function BillNegotiatorClient() {
     setCurrentSessionStatus(status);
   }, [setCurrentSessionStatus]);
 
+  const [currentRoleForEffect, setCurrentRoleForEffect] = useState<RealtimeAgentRole>(roleRef.current); // Helper state to trigger effect for roleRef changes
+
+  const score = useCallback(async () => {
+    const transcript = messages.map(m=>`${m.role.toUpperCase()}: ${m.text}`).join("\n");
+    const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer's negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string). Do not nest the result under any other key.\n\n${transcript}`})});
+    const j = await r.json(); 
+    setReport(j);
+  }, [messages, setReport]);
+
+  // Must be defined before useRealtimeNegotiation if passed as a prop.
+  // This handles UI changes after the hook internally disconnects due to agent signal.
+  const handleAgentSignaledEnd = useCallback(() => {
+    console.log("BN_CLIENT: Agent signaled end; hook has/will disconnect. Setting phase to report and scoring.");
+    setPhase("report");
+    score();
+  }, [setPhase, score]);
+
   // Instantiate the hook
   const {
     connect: realtimeConnect,
@@ -80,8 +106,16 @@ export default function BillNegotiatorClient() {
     onSessionStatusChange: handleSessionStatusChange,
     currentAgentRole: roleRef.current,
     onUserTranscriptCompleted: agentLogic,
+    onAgentSignaledEndForClientHandling: handleAgentSignaledEnd,
   });
-
+  
+  // This is for the user-initiated "End Call" button.
+  const endCall = useCallback(() => {
+    console.log("BN_CLIENT: endCall invoked by user action.");
+    realtimeDisconnect(); // Disconnect the WebRTC session via the hook
+    setPhase("report");   // Transition to the report page
+    score();              // Generate the score
+  }, [realtimeDisconnect, setPhase, score]);
 
   /* --- Start connection when phase switches to "call" --- */
   useEffect(() => {
@@ -102,8 +136,6 @@ export default function BillNegotiatorClient() {
   // Effect to handle agent role change (e.g. escalation to supervisor)
   // This effect needs careful management of how roleRef.current changes are propagated if not tied to a state re-render.
   // For now, assuming roleRef.current is updated correctly before this effect is (re)triggered indirectly.
-  const [currentRoleForEffect, setCurrentRoleForEffect] = useState<RealtimeAgentRole>(roleRef.current); // Helper state to trigger effect for roleRef changes
-  
   useEffect(() => {
     console.log(
       "BN_CLIENT: Role change useEffect triggered. ",
@@ -129,11 +161,18 @@ export default function BillNegotiatorClient() {
       console.log(
         "BN_CLIENT: Role change useEffect: Reconnecting! ",
         "Transitioning from role (currentRoleForEffect):", currentRoleForEffect,
-        "to role (roleRef.current):", roleRef.current
+        "to role (roleRef.current):", roleRef.current,
+        "Setting isSwitchingRoles = true"
       );
+      setIsSwitchingRoles(true); // Signal start of role switch
       realtimeDisconnect();
       console.log("BN_CLIENT: Role change useEffect: Calling realtimeConnect in 100ms with current roleRef:", roleRef.current);
-      setTimeout(() => realtimeConnect(), 100); 
+      setTimeout(() => {
+        realtimeConnect();
+        // Reset isSwitchingRoles after a short delay, allowing connect to begin
+        console.log("BN_CLIENT: Role change: Reconnect initiated for new role. Setting isSwitchingRoles = false in 500ms.");
+        setTimeout(() => setIsSwitchingRoles(false), 500); 
+      }, 100); 
     } else {
       let logReason = "BN_CLIENT: Role change useEffect: No reconnect. Reasons: ";
       if (currentSessionStatus !== "CONNECTED") logReason += "Not connected. ";
@@ -146,6 +185,22 @@ export default function BillNegotiatorClient() {
       });
     }
   }, [roleRef.current, currentSessionStatus, realtimeConnect, realtimeDisconnect, currentRoleForEffect]); // Added currentRoleForEffect to deps
+
+  // Effect to transition to report page if call disconnects unexpectedly (e.g., agent ends call)
+  useEffect(() => {
+    // Only act if we are in the 'call' phase and the session becomes disconnected.
+    // This prevents action if disconnected in other phases or if already transitioning to 'report'.
+    if (
+      phase === "call" &&
+      currentSessionStatus === "DISCONNECTED" &&
+      prevSessionStatusRef.current !== "DISCONNECTED" && // Only if it *became* disconnected
+      !isSwitchingRoles // And not during a role switch
+    ) {
+      console.log("BN_CLIENT: Call disconnected (was not initially/already disconnected, not switching roles). Transitioning to report.");
+      setPhase("report");
+      score(); // Call score to generate the report
+    }
+  }, [phase, currentSessionStatus, setPhase, score, isSwitchingRoles]); // Added isSwitchingRoles to dependencies
 
 
   /*-------------------------------------------------------------------------*/
@@ -410,20 +465,6 @@ export default function BillNegotiatorClient() {
     // The userText is sent to Realtime API by the hook's internal mechanisms.
     // If we need to send a text message explicitly from here (e.g. after user types in a box)
     // we would call a function exposed by useRealtimeNegotiation like `sendUserTextMessage(userText)`.
-  }
-
-  async function score(){ // Unchanged, but called by endCall
-    const transcript = messages.map(m=>`${m.role.toUpperCase()}: ${m.text}`).join("\n")
-    const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer's negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string). Do not nest the result under any other key.\n\n${transcript}`})})
-    const j = await r.json(); setReport(j)
-  }
-  
-  function endCall(){ 
-    console.log("End Call requested.");
-    realtimeDisconnect(); 
-    setPhase("report"); 
-    score(); 
   }
 
   /*-------------------------------------------------------------------------*/
