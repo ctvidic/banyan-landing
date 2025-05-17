@@ -40,6 +40,7 @@ export function useRealtimeNegotiation({
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const ephemeralKeyRef = useRef<string | null>(null);
   const assistantMessageDeltasRef = useRef<{ [itemId: string]: string }>({}); // To accumulate deltas
+  const agentHasSaidGoodbyeRef = useRef<boolean>(false); // Added this ref
 
   // Effect to propagate internal state changes to the parent component
   useEffect(() => {
@@ -184,6 +185,7 @@ export function useRealtimeNegotiation({
               create_response: true, // Important: tells server to respond after VAD detects end of user speech
               interrupt_response: true // Allows agent to be interrupted
             },
+            start_first_turn: true,
             // For MVP, no client-side tools are defined here. 
             // Tools would be: tools: currentAgent?.tools || [] from the example.
           },
@@ -350,6 +352,12 @@ export function useRealtimeNegotiation({
 
       case "output_audio_buffer.stopped":
         setIsAgentSpeaking(false);
+        // Check if this audio stop corresponds to the agent saying goodbye
+        if (agentHasSaidGoodbyeRef.current) {
+          console.log("REALTIME_HOOK: Agent finished speaking 'Goodbye!', calling onAgentEndedCall.");
+          onAgentEndedCall();
+          agentHasSaidGoodbyeRef.current = false; // Reset the flag
+        }
         break;
 
       case "conversation.item.created": {
@@ -437,8 +445,10 @@ export function useRealtimeNegotiation({
 
                         // Check if agent ended the call
                         if (finalAssistantText.trim().endsWith("Goodbye!")) {
-                          console.log("REALTIME_HOOK: Agent said Goodbye!, calling onAgentEndedCall.");
-                          onAgentEndedCall();
+                          // console.log("REALTIME_HOOK: Agent said Goodbye!, calling onAgentEndedCall.");
+                          // onAgentEndedCall(); // Moved to output_audio_buffer.stopped
+                          console.log("REALTIME_HOOK: Agent text includes Goodbye! Setting flag.");
+                          agentHasSaidGoodbyeRef.current = true;
                         }
                     }
                     // Clear accumulated delta for this item_id as it's now final

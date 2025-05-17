@@ -77,7 +77,7 @@ export default function BillNegotiatorClient() {
     // console.log("BN_CLIENT: Transcript for scoring:", transcript);
     try {
       const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string). Do not nest the result under any other key.\n\n${transcript}`})});
+        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string). Do not nest the result under any other key. Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a single word, one of: "Excellent", "Good", "Average", "Poor", based on how much the customer was able to get the bill reduced. \n\n${transcript}`})});
       
       console.log("BN_CLIENT: Score API response status:", r.status, "OK?:", r.ok);
 
@@ -179,49 +179,48 @@ export default function BillNegotiatorClient() {
   // This effect needs careful management of how roleRef.current changes are propagated if not tied to a state re-render.
   // For now, assuming roleRef.current is updated correctly before this effect is (re)triggered indirectly.
   const [currentRoleForEffect, setCurrentRoleForEffect] = useState<RealtimeAgentRole>(roleRef.current);
+  const [isRoleChangeStaged, setIsRoleChangeStaged] = useState<boolean>(false);
   
   useEffect(() => {
-    console.log(
-      "BN_CLIENT: Role change useEffect triggered. ",
-      "roleRef.current:", roleRef.current,
-      "currentRoleForEffect (state):", currentRoleForEffect, 
-      "sessionStatus:", currentSessionStatus
-    );
-
+    // Part 1: Detect and Stage a Role Change if roleRef.current has been updated externally
     if (roleRef.current !== currentRoleForEffect) {
       console.log(
-        "BN_CLIENT: Role change useEffect: roleRef.current (" + roleRef.current +
-        ") is different from currentRoleForEffect (" + currentRoleForEffect +
-        "). Updating currentRoleForEffect."
+        "BN_CLIENT: Role change detected by useEffect. Desired role:", roleRef.current, 
+        "Current effect role:", currentRoleForEffect, ". Staging change."
       );
-      setCurrentRoleForEffect(roleRef.current); 
+      setCurrentRoleForEffect(roleRef.current); // Update our state mirror of the desired role
+      setIsRoleChangeStaged(true);             // Mark that a change is staged and waiting for agent to finish speaking
     }
     
-    if (
-      currentSessionStatus === "CONNECTED" &&
-      roleRef.current !== currentRoleForEffect && 
-      currentRoleForEffect !== undefined
-    ) {
+    // Part 2: Execute the Staged Role Change if conditions are met
+    if (isRoleChangeStaged && !isRealtimeAgentSpeaking && currentSessionStatus === "CONNECTED") {
       console.log(
-        "BN_CLIENT: Role change useEffect: Reconnecting! ",
-        "Transitioning from role (currentRoleForEffect):", currentRoleForEffect,
-        "to role (roleRef.current):", roleRef.current
+        "BN_CLIENT: Role change staged, agent NOT speaking, and connected. EXECUTING reconnect to role:",
+        currentRoleForEffect // or roleRef.current, should be the same now
       );
+      setIsRoleChangeStaged(false); // Reset the staged flag
       realtimeDisconnect();
-      console.log("BN_CLIENT: Role change useEffect: Calling realtimeConnect in 100ms with current roleRef:", roleRef.current);
+      console.log("BN_CLIENT: Role change useEffect: Calling realtimeConnect in 100ms with role:", currentRoleForEffect);
       setTimeout(() => realtimeConnect(), 100); 
-    } else {
-      let logReason = "BN_CLIENT: Role change useEffect: No reconnect. Reasons: ";
-      if (currentSessionStatus !== "CONNECTED") logReason += "Not connected. ";
-      if (roleRef.current === currentRoleForEffect) logReason += "roleRef.current === currentRoleForEffect. ";
-      if (currentRoleForEffect === undefined) logReason += "currentRoleForEffect is undefined. ";
-      console.log(logReason, {
-          isConnected: currentSessionStatus === "CONNECTED",
-          rolesDiffer: roleRef.current !== currentRoleForEffect,
-          isRoleEffectDefined: currentRoleForEffect !== undefined
-      });
+    } else if (isRoleChangeStaged && isRealtimeAgentSpeaking && currentSessionStatus === "CONNECTED") {
+      console.log("BN_CLIENT: Role change staged, but agent IS SPEAKING. Waiting...");
+    } else if (isRoleChangeStaged && currentSessionStatus !== "CONNECTED") {
+      console.log("BN_CLIENT: Role change staged, but session is NOT CONNECTED. Clearing staged change.");
+      setIsRoleChangeStaged(false); // Reset if we get disconnected while a change is staged
+    } else if (!isRoleChangeStaged) {
+      // This block is for when no role change is staged. Log existing conditions if needed.
+      // console.log("BN_CLIENT: No role change staged. Current role for effect:", currentRoleForEffect, "Session:", currentSessionStatus);
     }
-  }, [roleRef.current, currentSessionStatus, realtimeConnect, realtimeDisconnect, currentRoleForEffect, setCurrentRoleForEffect]);
+  }, [
+    roleRef.current, // To detect changes made by agentLogic
+    currentSessionStatus, 
+    realtimeConnect, 
+    realtimeDisconnect, 
+    currentRoleForEffect, // To compare with roleRef.current
+    isRealtimeAgentSpeaking, // Crucial for deferring execution
+    isRoleChangeStaged,      // To manage the staged state
+    // setCurrentRoleForEffect and setIsRoleChangeStaged are setters, not needed in deps
+  ]);
 
 
   /*-------------------------------------------------------------------------*/
