@@ -165,9 +165,6 @@ export default function BillNegotiatorClient() {
           {activeDrawerTab==="transcript"}
           {activeDrawerTab==="mission"}
           {activeDrawerTab==="tips"}
-          {/* {activeDrawerTab==="transcript" && <h3 className="font-semibold mt-4 mb-2">Transcript</h3>}
-          {activeDrawerTab==="mission" && <h3 className="font-semibold mt-4 mb-2">Mission</h3>}
-          {activeDrawerTab==="tips" && <h3 className="font-semibold mt-4 mb-2">Tips</h3>} */}
         </div>
       </div>
       <div className="flex-1 pt-4">
