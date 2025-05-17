@@ -366,15 +366,15 @@ export default function BillNegotiatorClient() {
 
       {/* controls */}
       <div className="mt-4 flex items-center gap-4">
-        <Button variant="outline" onClick={()=>setActiveDrawerTab("transcript")}> <List className="h-4 w-4 mr-2"/> Transcript </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("transcript")}> Transcript </Button>
         <Button variant="outline" onClick={()=>setActiveDrawerTab("mission")}> Mission </Button>
         <Button variant="outline" onClick={()=>setActiveDrawerTab("tips")}> Tips </Button>
         <Button
-          variant="ghost"
-          // onClick={isCallEndedByAgent ? () => { setPhase("report"); score(); } : endCallByUser} 
+          // variant="ghost" // Removing ghost variant to apply custom background
+          className={`px-4 py-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background ${isCallEndedByAgent ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
           onClick={isCallEndedByAgent ? () => setPhase("report") : endCallByUser} 
         >
-          {isCallEndedByAgent ? "Show my score!" : "End Call"}
+          {isCallEndedByAgent ? "Show my report!" : "End Call"}
         </Button>
       </div>
 
