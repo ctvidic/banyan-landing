@@ -19,6 +19,7 @@ interface UseRealtimeNegotiationProps {
   onAgentSpeakingChange: (isSpeaking: boolean) => void;
   onSessionStatusChange: (status: SessionStatus) => void;
   currentAgentRole: AgentRole;
+  onUserTranscriptCompleted: (transcript: string) => void;
 }
 
 export function useRealtimeNegotiation({
@@ -26,6 +27,7 @@ export function useRealtimeNegotiation({
   onAgentSpeakingChange,
   onSessionStatusChange,
   currentAgentRole,
+  onUserTranscriptCompleted,
 }: UseRealtimeNegotiationProps) {
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
@@ -83,6 +85,7 @@ export function useRealtimeNegotiation({
     }
 
     setSessionStatus("CONNECTING");
+    console.log("REALTIME_HOOK: connect invoked. currentAgentRole prop:", currentAgentRole);
     const ephemeralKey = ephemeralKeyRef.current || (await fetchEphemeralKey()); // Use stored key or fetch if not present
 
     if (!ephemeralKey) {
@@ -153,15 +156,16 @@ export function useRealtimeNegotiation({
       dcRef.current = dc;
 
       dc.onopen = () => {
-        console.log("Data channel OPENED.");
+        console.log("REALTIME_HOOK: Data channel OPENED.");
         setSessionStatus("CONNECTED");
 
         // Send initial session.update to configure the agent (Phase 2, Step 7)
         const agentInstructions = currentAgentRole === "agent_frontline" 
-          ? "You are Sarah, an Indian call-centre rep (friendly but tired, fake enthusiasm). Your job is to resolve a billing issue: the customer's internet bill jumped from $69 to $89 after a 12-month promo expired. Ask their name, get their issue, then explain the promo. The ONLY ways forward are: get them to admit that it was a promo price, acknowledge loyalty and offer slightly (but not fully) reduced price, or escalate to supervisor IF THEY INSIST. Keep things courteous, concise and guide toward resolution."
-          : "You are Marco, a Filipino supervisor—authoritative yet polite. You join after escalation. Help the customer reach one of: full discount, partial discount, added features, or downgrading plan to a cheaper one (lower speed). Close the call once resolved.";
+          ? "You are Sarah, an Indian woman call-centre rep (friendly but tired, fake enthusiasm). Your job is to resolve a billing issue: the customer's internet bill jumped from $69 to $89 after a 12-month promo expired. Ask their name, get their issue, then explain the promo. The ONLY ways forward are: get them to admit that it was a promo price, acknowledge loyalty and offer slightly (but not fully) reduced price, or escalate to supervisor IF THEY INSIST. Keep things courteous, concise and guide toward resolution."
+          : "You are Marco, a Filipino man supervisor—authoritative yet polite. You join after escalation. Help the customer reach one of: full discount, partial discount, added features, or downgrading plan to a cheaper one (lower speed). Close the call once resolved.";
         
         const agentVoice = currentAgentRole === "agent_frontline" ? "coral" : "sage"; // As per original BillNegotiatorClient
+        console.log("REALTIME_HOOK: Configuring agent for role:", currentAgentRole, "Voice:", agentVoice, "Instructions:", agentInstructions);
 
         const sessionUpdateEvent = {
           type: "session.update",
@@ -258,7 +262,7 @@ export function useRealtimeNegotiation({
         dcRef.current = null;
       }
     }
-  }, [sessionStatus, fetchEphemeralKey]);
+  }, [sessionStatus, fetchEphemeralKey, currentAgentRole, onUserTranscriptCompleted]);
 
   const disconnect = useCallback(() => {
     console.log("Disconnect function called.");
@@ -376,6 +380,10 @@ export function useRealtimeNegotiation({
               msg.id === item_id ? { ...msg, text: finalText } : msg
             )
           );
+          if (onUserTranscriptCompleted) {
+            console.log("REALTIME_HOOK: User transcript completed, calling onUserTranscriptCompleted with:", finalText);
+            onUserTranscriptCompleted(finalText);
+          }
         }
         break;
       }
@@ -441,7 +449,7 @@ export function useRealtimeNegotiation({
         // console.log("Unhandled server event type:", serverEvent.type);
         break;
     }
-  }, [setInternalMessages, setIsAgentSpeaking]); // Add other dependencies as needed, e.g., sendClientEvent if used inside
+  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted]); // Add other dependencies as needed, e.g., sendClientEvent if used inside
 
   return {
     connect,

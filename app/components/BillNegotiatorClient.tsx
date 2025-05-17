@@ -79,6 +79,7 @@ export default function BillNegotiatorClient() {
     onAgentSpeakingChange: handleAgentSpeakingChange,
     onSessionStatusChange: handleSessionStatusChange,
     currentAgentRole: roleRef.current,
+    onUserTranscriptCompleted: agentLogic,
   });
 
 
@@ -104,19 +105,47 @@ export default function BillNegotiatorClient() {
   const [currentRoleForEffect, setCurrentRoleForEffect] = useState<RealtimeAgentRole>(roleRef.current); // Helper state to trigger effect for roleRef changes
   
   useEffect(() => {
+    console.log(
+      "BN_CLIENT: Role change useEffect triggered. ",
+      "roleRef.current:", roleRef.current,
+      "currentRoleForEffect (state):", currentRoleForEffect, 
+      "sessionStatus:", currentSessionStatus
+    );
+
     if (roleRef.current !== currentRoleForEffect) {
-      // Update helper state only if there's an actual change to avoid loops if roleRef is set multiple times to same value.
-      setCurrentRoleForEffect(roleRef.current);
+      console.log(
+        "BN_CLIENT: Role change useEffect: roleRef.current (" + roleRef.current +
+        ") is different from currentRoleForEffect (" + currentRoleForEffect +
+        "). Updating currentRoleForEffect."
+      );
+      setCurrentRoleForEffect(roleRef.current); 
     }
     
-    if (currentSessionStatus === "CONNECTED" && roleRef.current !== currentRoleForEffect && currentRoleForEffect !== undefined /* ensure initial undefined state doesn't trigger */ ) {
-      console.log("Agent role changed to:", roleRef.current, "Reconnecting for new role.");
+    if (
+      currentSessionStatus === "CONNECTED" &&
+      roleRef.current !== currentRoleForEffect && 
+      currentRoleForEffect !== undefined
+    ) {
+      console.log(
+        "BN_CLIENT: Role change useEffect: Reconnecting! ",
+        "Transitioning from role (currentRoleForEffect):", currentRoleForEffect,
+        "to role (roleRef.current):", roleRef.current
+      );
       realtimeDisconnect();
+      console.log("BN_CLIENT: Role change useEffect: Calling realtimeConnect in 100ms with current roleRef:", roleRef.current);
       setTimeout(() => realtimeConnect(), 100); 
+    } else {
+      let logReason = "BN_CLIENT: Role change useEffect: No reconnect. Reasons: ";
+      if (currentSessionStatus !== "CONNECTED") logReason += "Not connected. ";
+      if (roleRef.current === currentRoleForEffect) logReason += "roleRef.current === currentRoleForEffect. ";
+      if (currentRoleForEffect === undefined) logReason += "currentRoleForEffect is undefined. ";
+      console.log(logReason, {
+          isConnected: currentSessionStatus === "CONNECTED",
+          rolesDiffer: roleRef.current !== currentRoleForEffect,
+          isRoleEffectDefined: currentRoleForEffect !== undefined
+      });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roleRef.current, currentSessionStatus, realtimeConnect, realtimeDisconnect]); // currentRoleForEffect removed from deps to avoid potential loops directly based on it.
-  // The intent is to react to roleRef.current changing, which the currentRoleForEffect state helps facilitate by causing a re-render.
+  }, [roleRef.current, currentSessionStatus, realtimeConnect, realtimeDisconnect, currentRoleForEffect]); // Added currentRoleForEffect to deps
 
 
   /*-------------------------------------------------------------------------*/
@@ -363,17 +392,16 @@ export default function BillNegotiatorClient() {
     // and update roleRef.current, which then triggers the useEffect to reconnect.
     // Direct chat logic via fetch is removed.
 
-    console.log("agentLogic called with user text (for potential escalation):", userText);
+    console.log("BN_CLIENT: agentLogic called. User text:", userText, ". Current roleRef before check:", roleRef.current);
     if (/supervisor|manager/i.test(userText)){
       if (roleRef.current !== "agent_supervisor") { // Prevent re-triggering if already supervisor
-        console.log("Escalation to supervisor detected.");
+        console.log("BN_CLIENT: Escalation to supervisor detected. Updating roleRef.current from", roleRef.current, "to agent_supervisor.");
         roleRef.current="agent_supervisor";
-        // The useEffect watching roleRef.current will handle the reconnect.
-        // Need to ensure this change to roleRef.current is picked up by the effect.
-        // This might require a state update that causes a re-render.
-        // For now, we rely on the existing (potentially flawed) useEffect for roleRef.current
-        // Or, if this function is called as a result of a user message completion from the hook,
-        // that might trigger a re-render anyway.
+        // A re-render should be triggered by subsequent setMsgs or other state updates after this function.
+        // This re-render will ensure useRealtimeNegotiation gets the new roleRef.current and the useEffect runs.
+        console.log("BN_CLIENT: roleRef.current is now agent_supervisor. Expecting re-render and effect execution.");
+      } else {
+        console.log("BN_CLIENT: Escalation detected, but roleRef.current is already agent_supervisor.");
       }
     }
 
