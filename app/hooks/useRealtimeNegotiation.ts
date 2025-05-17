@@ -185,7 +185,7 @@ export function useRealtimeNegotiation({
               create_response: true, // Important: tells server to respond after VAD detects end of user speech
               interrupt_response: true // Allows agent to be interrupted
             },
-            start_first_turn: true,
+            // start_first_turn: true,
             // For MVP, no client-side tools are defined here. 
             // Tools would be: tools: currentAgent?.tools || [] from the example.
           },
