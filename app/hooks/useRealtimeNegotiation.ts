@@ -192,6 +192,20 @@ export function useRealtimeNegotiation({
         };
         sendClientEvent(sessionUpdateEvent, "initial_session_config");
         
+        // Send a simulated "hi" from the user and then prompt for a response
+        // to make the agent speak first.
+        const simulatedUserId = `simulated-user-${Date.now()}`; // Basic unique ID
+        sendClientEvent({
+          type: "conversation.item.create",
+          item: {
+            id: simulatedUserId,
+            type: "message",
+            role: "user",
+            content: [{ type: "input_text", text: "Hello!" }],
+          },
+        }, "simulated_user_hi");
+        sendClientEvent({ type: "response.create" }, "trigger_initial_agent_response");
+
         // Optionally, send a event to trigger the agent's first line (e.g. greeting)
         // The example repo sends a sendSimulatedUserMessage("hi");
         // For our case, the agent should start based on instructions. If a greeting is needed,
