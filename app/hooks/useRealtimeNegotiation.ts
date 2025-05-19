@@ -379,6 +379,11 @@ export function useRealtimeNegotiation({
         if (item?.id && item.role && item.content?.[0]?.text) {
           setInternalMessages(prevMessages => {
             if (!prevMessages.find(msg => msg.id === item.id)) {
+              // If it's our simulated message to kickstart the agent, don't add it to the transcript.
+              if (item.id.startsWith("simulated-user-")) {
+                  console.log("REALTIME_HOOK: Ignoring simulated user message for transcript:", item.id);
+                  return prevMessages; 
+              }
               return [...prevMessages, { id: item.id, role: item.role, text: item.content[0].text }];
             }
             return prevMessages;
