@@ -42,6 +42,14 @@ export function useRealtimeNegotiation({
   const assistantMessageDeltasRef = useRef<{ [itemId: string]: string }>({}); // To accumulate deltas
   const agentHasSaidGoodbyeRef = useRef<boolean>(false); // Added this ref
 
+  // Guardrail Refs
+  const callDurationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const messageCountRef = useRef<number>(0);
+
+  // Constants for guardrails
+  const MAX_CALL_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+  const MAX_MESSAGES = 100; // Max 100 messages (user + agent)
+
   const agentNameMap: Record<AgentRole, "Sarah" | "Marco"> = {
     agent_frontline: "Sarah",
     agent_supervisor: "Marco",
@@ -166,6 +174,24 @@ export function useRealtimeNegotiation({
       dc.onopen = () => {
         console.log("REALTIME_HOOK: Data channel OPENED.");
         setSessionStatus("CONNECTED");
+
+        // Reset message count for the new session
+        messageCountRef.current = 0;
+
+        // Start call duration timer
+        if (callDurationTimerRef.current) {
+          clearTimeout(callDurationTimerRef.current);
+        }
+        callDurationTimerRef.current = setTimeout(() => {
+          console.warn("REALTIME_HOOK: Maximum call duration reached. Disconnecting.");
+          // Add a message to the transcript indicating why the call ended
+          const durationEndId = `system-duration-end-${Date.now()}`;
+          setInternalMessages(prevMessages => [
+            ...prevMessages,
+            { id: durationEndId, role: "user", text: "[System: Call ended due to maximum duration.]" }
+          ]);
+          disconnect(); 
+        }, MAX_CALL_DURATION_MS);
 
         // Send initial session.update to configure the agent (Phase 2, Step 7)
         const agentInstructions = currentAgentRole === "agent_frontline" 
@@ -311,6 +337,14 @@ export function useRealtimeNegotiation({
     setSessionStatus("DISCONNECTED");
     setIsAgentSpeaking(false);
     // setInternalMessages([]); // Optionally clear messages on disconnect
+
+    // Clear guardrail timers/refs
+    if (callDurationTimerRef.current) {
+      clearTimeout(callDurationTimerRef.current);
+      callDurationTimerRef.current = null;
+    }
+    messageCountRef.current = 0; // Reset message count on disconnect
+
     console.log("Disconnected.");
   }, []);
   
@@ -389,6 +423,7 @@ export function useRealtimeNegotiation({
                   console.log("REALTIME_HOOK: Ignoring simulated user message for transcript:", item.id);
                   return prevMessages;
               }
+              messageCountRef.current += 1; // Increment for actual messages
               // Determine display role: 'user' or specific agent name
               const displayRole = item.role === "user" ? "user" : agentNameMap[currentAgentRole];
               return [...prevMessages, { id: item.id, role: displayRole, text: item.content[0].text }];
@@ -399,10 +434,24 @@ export function useRealtimeNegotiation({
             // User audio input started, show [Transcribing...]
              setInternalMessages(prevMessages => {
                 if (!prevMessages.find(msg => msg.id === item.id)) {
+                    messageCountRef.current += 1; // Increment for user audio input start
                     return [...prevMessages, { id: item.id, role: "user", text: "[Transcribing...]" }];
                 }
                 return prevMessages;
             });
+        }
+
+        // Check message count guardrail AFTER adding the message
+        if (messageCountRef.current >= MAX_MESSAGES) {
+          console.warn("REALTIME_HOOK: Maximum message count reached. Disconnecting.");
+          // Add a message to the transcript indicating why the call ended
+           const messageLimitEndId = `system-msg-limit-end-${Date.now()}`;
+           setInternalMessages(prevMessages => [
+             ...prevMessages,
+             { id: messageLimitEndId, role: "user", text: "[System: Call ended due to maximum message limit.]" }
+           ]);
+          disconnect();
+          return; // Stop further processing for this event
         }
         break;
       }
@@ -421,12 +470,30 @@ export function useRealtimeNegotiation({
             } else {
               // Agent started speaking, create a new message item
               const agentName = agentNameMap[currentAgentRole];
+              // This case should ideally not happen for input_audio_transcription.completed if an item was created for [Transcribing...]
+              // However, if it does, we count it as a new message.
+              messageCountRef.current += 1;
               return [...prevMessages, { id: item_id, role: agentName, text: finalText }];
             }
           });
           if (onUserTranscriptCompleted) {
             console.log("REALTIME_HOOK: User transcript completed, calling onUserTranscriptCompleted with:", finalText);
             onUserTranscriptCompleted(finalText);
+          }
+
+          // Check message count guardrail if a new message was added in the else block above
+          if (messageCountRef.current >= MAX_MESSAGES && !serverEvent.item_id) { // Simplified: check always, but it's more likely relevant if new was added
+            const existingMsgIndex = internalMessages.findIndex(msg => msg.id === item_id); // Re-check if it was truly new
+            if (existingMsgIndex === internalMessages.length -1) { // Check if it was the last one added
+                console.warn("REALTIME_HOOK: Maximum message count reached (after transcription completion). Disconnecting.");
+                const messageLimitTranscriptionEndId = `system-msg-limit-transcription-end-${Date.now()}`;
+                setInternalMessages(prevMessages => [
+                  ...prevMessages,
+                  { id: messageLimitTranscriptionEndId, role: "user", text: "[System: Call ended due to maximum message limit.]" }
+                ]);
+                disconnect();
+                return; 
+            }
           }
         }
         break;
@@ -435,10 +502,8 @@ export function useRealtimeNegotiation({
       case "response.audio_transcript.delta": {
         const { item_id, delta } = serverEvent;
         if (item_id && delta) {
-          if (!assistantMessageDeltasRef.current[item_id]) {
-            assistantMessageDeltasRef.current[item_id] = "";
-          }
-          assistantMessageDeltasRef.current[item_id] += delta;
+          let isNewMessage = false;
+          assistantMessageDeltasRef.current[item_id] = (assistantMessageDeltasRef.current[item_id] || "") + delta;
           const fullText = assistantMessageDeltasRef.current[item_id];
 
           setInternalMessages(prevMessages => {
@@ -449,10 +514,26 @@ export function useRealtimeNegotiation({
               return updatedMessages;
             } else {
               // Agent started speaking, create a new message item
+              isNewMessage = true; 
               const agentName = agentNameMap[currentAgentRole];
               return [...prevMessages, { id: item_id, role: agentName, text: fullText }];
             }
           });
+
+          if (isNewMessage) {
+            messageCountRef.current += 1;
+             // Check message count guardrail AFTER adding/updating the message
+            if (messageCountRef.current >= MAX_MESSAGES) {
+              console.warn("REALTIME_HOOK: Maximum message count reached (during delta). Disconnecting.");
+              const messageLimitDeltaEndId = `system-msg-limit-delta-end-${Date.now()}`;
+              setInternalMessages(prevMessages => [
+                ...prevMessages,
+                { id: messageLimitDeltaEndId, role: "user", text: "[System: Call ended due to maximum message limit.]" }
+              ]);
+              disconnect();
+              return; // Stop further processing for this event
+            }
+          }
         }
         break;
       }
@@ -511,5 +592,6 @@ export function useRealtimeNegotiation({
     messages: internalMessages, // Expose internal messages
     isAgentSpeaking,
     // TODO: Expose other necessary functions like sending user audio/text
+    // Add a way to get the current message count or duration if needed by UI
   };
 } 

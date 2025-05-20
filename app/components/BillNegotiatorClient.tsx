@@ -83,7 +83,7 @@ export default function BillNegotiatorClient() {
     // console.log("BN_CLIENT: Transcript for scoring:", transcript);
     try {
       const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string). Do not nest the result under any other key. Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a star rating out of 5, based on based on how much the customer was able to get the bill reduced (ex: ⭐⭐⭐⭐☆ for 4 stars, ⭐⭐⭐☆☆ for 3 stars, etc.). \n\n${transcript}`})});
+        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string). Do not nest the result under any other key. Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a star rating out of 5, based on SOLELY on how much the customer was able to get the bill reduced (ex: ⭐⭐⭐⭐⭐ for 5 stars for under $69, ⭐⭐⭐⭐☆ for 4 stars for $69-$79, ⭐⭐⭐☆☆ for 3 stars for $79-$89, etc.). \n\n${transcript}`})});
       
       console.log("BN_CLIENT: Score API response status:", r.status, "OK?:", r.ok);
 
