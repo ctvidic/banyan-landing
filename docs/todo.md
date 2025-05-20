@@ -11,10 +11,13 @@
 
 
 ## Functionality issues
-- [ ] need guardrails
+- [ ] need guardrails, 10 min or 100 messages
 - [ ] need more scenarios, used car being sold by teen
-- [ ] sometimes not intepreted as english
+- [ ] one moment please problem
+- [x] sometimes not intepreted as english
 - [x] do not respond in non-english
+- [ ] mute button 
+
 
 ## UI issues
 - [ ] scroll automatically on transcript

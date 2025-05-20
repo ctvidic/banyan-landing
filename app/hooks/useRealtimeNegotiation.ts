@@ -45,10 +45,16 @@ export function useRealtimeNegotiation({
   // Guardrail Refs
   const callDurationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messageCountRef = useRef<number>(0);
+  const warningAudioElementRef = useRef<HTMLAudioElement | null>(null);
+  const finalDisconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const messageLimitWarningPlayedRef = useRef<boolean>(false);
 
   // Constants for guardrails
   const MAX_CALL_DURATION_MS = 10 * 60 * 1000; // 10 minutes
   const MAX_MESSAGES = 100; // Max 100 messages (user + agent)
+  const WARNING_AUDIO_SRC = "/audio/warning.mp3"; // Placeholder - ensure this file exists in public/audio
+  const CALL_DURATION_WARNING_PERIOD_MS = 30 * 1000; // 30 seconds warning
+  const MESSAGE_WARNING_THRESHOLD_FACTOR = 0.9; // Warn at 90% of max messages
 
   const agentNameMap: Record<AgentRole, "Sarah" | "Marco"> = {
     agent_frontline: "Sarah",
@@ -67,6 +73,28 @@ export function useRealtimeNegotiation({
   useEffect(() => {
     onSessionStatusChange(sessionStatus);
   }, [sessionStatus, onSessionStatusChange]);
+
+  // Effect to create warning audio element
+  useEffect(() => {
+    if (!warningAudioElementRef.current) {
+      warningAudioElementRef.current = document.createElement("audio");
+      warningAudioElementRef.current.preload = "auto"; // Preload for faster playback
+      // No need to add to document body unless controls are needed for debugging
+    }
+    // No specific cleanup needed for the audio element itself unless it was added to DOM
+  }, []);
+
+  const playWarningAudio = useCallback(() => {
+    if (warningAudioElementRef.current) {
+      warningAudioElementRef.current.src = WARNING_AUDIO_SRC;
+      warningAudioElementRef.current.play().catch(error => {
+        console.warn("REALTIME_HOOK: Warning audio playback failed:", error);
+        // Fallback or notification if audio play fails? For now, just log.
+      });
+    } else {
+      console.warn("REALTIME_HOOK: Warning audio element not available.");
+    }
+  }, []);
 
   const fetchEphemeralKey = useCallback(async (): Promise<string | null> => {
     console.log("Fetching ephemeral key...");
@@ -175,28 +203,51 @@ export function useRealtimeNegotiation({
         console.log("REALTIME_HOOK: Data channel OPENED.");
         setSessionStatus("CONNECTED");
 
-        // Reset message count for the new session
+        // Reset message count and warning flags for the new session
         messageCountRef.current = 0;
+        messageLimitWarningPlayedRef.current = false;
 
-        // Start call duration timer
-        if (callDurationTimerRef.current) {
-          clearTimeout(callDurationTimerRef.current);
+        // Clear any existing timers
+        if (callDurationTimerRef.current) clearTimeout(callDurationTimerRef.current);
+        if (finalDisconnectTimerRef.current) clearTimeout(finalDisconnectTimerRef.current);
+        
+        // Start call duration PRE-warning timer
+        const preWarningDuration = MAX_CALL_DURATION_MS - CALL_DURATION_WARNING_PERIOD_MS;
+        if (preWarningDuration > 0) {
+          callDurationTimerRef.current = setTimeout(() => {
+            console.warn("REALTIME_HOOK: Call duration pre-warning period reached.");
+            playWarningAudio();
+            const warningMsgId = `system-duration-warning-${Date.now()}`;
+            setInternalMessages(prevMessages => {
+              return [...prevMessages, { id: warningMsgId, role: "user" as const, text: `[System: Call approaching maximum duration. The call will end in ${CALL_DURATION_WARNING_PERIOD_MS / 1000} seconds.]` }];
+            });
+
+            // Set the final disconnect timer
+            finalDisconnectTimerRef.current = setTimeout(() => {
+              console.warn("REALTIME_HOOK: Maximum call duration reached after warning. Disconnecting.");
+              const durationEndId = `system-duration-end-${Date.now()}`;
+              setInternalMessages(prevMessages => {
+                return [...prevMessages, { id: durationEndId, role: "user" as const, text: "[System: Call ended due to maximum duration.]" }];
+              });
+              disconnect();
+            }, CALL_DURATION_WARNING_PERIOD_MS);
+          }, preWarningDuration);
+        } else {
+          // If warning period is longer than max duration, effectively just set timer for max duration
+           finalDisconnectTimerRef.current = setTimeout(() => {
+            console.warn("REALTIME_HOOK: Maximum call duration reached (no pre-warning due to config). Disconnecting.");
+            const durationEndId = `system-duration-end-${Date.now()}`;
+            setInternalMessages(prevMessages => {
+              return [...prevMessages, { id: durationEndId, role: "user" as const, text: "[System: Call ended due to maximum duration.]" }];
+            });
+            disconnect();
+          }, MAX_CALL_DURATION_MS);
         }
-        callDurationTimerRef.current = setTimeout(() => {
-          console.warn("REALTIME_HOOK: Maximum call duration reached. Disconnecting.");
-          // Add a message to the transcript indicating why the call ended
-          const durationEndId = `system-duration-end-${Date.now()}`;
-          setInternalMessages(prevMessages => [
-            ...prevMessages,
-            { id: durationEndId, role: "user", text: "[System: Call ended due to maximum duration.]" }
-          ]);
-          disconnect(); 
-        }, MAX_CALL_DURATION_MS);
 
         // Send initial session.update to configure the agent (Phase 2, Step 7)
         const agentInstructions = currentAgentRole === "agent_frontline" 
           ? "You are Sarah, an Indian woman call-centre rep with an Indian woman accent, friendly. You speak in ENGLISH ONLY. Your primary goal is to assist the user with their billing issue. START by greeting the user and asking for their name to begin the conversation. You DO NOT need additional account information, a name is enough. Then, understand their issue (internet bill jumped from $69 to $89 after a 12-month promo expired) and explain the promo. Guide them towards one of these resolutions: admitting it was a promo price, accepting a slightly (but not fully) reduced price due to loyalty, or escalating to a supervisor if the user explicitly asks for one. HOWEVER, if the user explicitly requests to speak to a supervisor, and the system is preparing to transfer them, your VERY NEXT and FINAL response before the transfer MUST BE an acknowledgment. Examples: 'Okay, I'll transfer you to my supervisor now. One moment, please.' OR 'Certainly, I'm connecting you to my supervisor. Please hold.' After giving this specific acknowledgment, you will say nothing further as the transfer will then occur. Do not attempt to resolve the issue further yourself if a supervisor request has been made and a transfer is imminent. Keep things courteous, concise and guide toward resolution. DO NOT take long pauses. When the conversation is definitively over and you have provided all necessary information or resolution, end your final message with 'Goodbye!' DO NOT end with 'Goodbye!' if you are connecting to a supervisor."
-          : "You are Marco, a Filipino male supervisor, authoritative with a Filipino man accent. You speak in ENGLISH ONLY. You are taking over an escalated call. Your goal is to help the user reach a resolution. START by acknowledging the escalation and understanding the current situation from the user. You DO NOT need additional account information, a name is enough. Then, work to find one of these outcomes: full discount, partial discount, added features, or downgrading their plan. DO NOT take long pauses. DO NOT present options unless the user asks about them. You MUST give the bill amount as a final dollar amount and NOT as some % off or dollar amount off. Close the call once resolved. When the conversation is definitively over and you have provided all necessary information or resolution, end you MUST end your final message with 'Goodbye!'"
+          : "You are Marco, a Filipino male supervisor, authoritative with a Filipino man accent. You speak in ENGLISH ONLY. You are taking over an escalated call. Your goal is to help the user reach a resolution. START by acknowledging the escalation and understanding the current situation from the user. You DO NOT need additional account information, a name is enough. Then, work to find one of these outcomes: discount to $50 if customer claims they have suffered as a result of the increase, full discount to $69, partial discount to $75, added features, or downgrading their plan to bring the price to $69. DO NOT take long pauses. DO NOT present options unless the user asks about them. You MUST give the bill amount as a final dollar amount and NOT as some % off or dollar amount off. Close the call once resolved. When the conversation is definitively over and you have provided all necessary information or resolution, end you MUST end your final message with 'Goodbye!'"
         
         const agentVoice = currentAgentRole === "agent_frontline" ? "coral" : "sage"; // As per original BillNegotiatorClient
         console.log("REALTIME_HOOK: Configuring agent for role:", currentAgentRole, "Voice:", agentVoice, "Instructions:", agentInstructions);
@@ -343,7 +394,12 @@ export function useRealtimeNegotiation({
       clearTimeout(callDurationTimerRef.current);
       callDurationTimerRef.current = null;
     }
+    if (finalDisconnectTimerRef.current) {
+        clearTimeout(finalDisconnectTimerRef.current);
+        finalDisconnectTimerRef.current = null;
+    }
     messageCountRef.current = 0; // Reset message count on disconnect
+    messageLimitWarningPlayedRef.current = false; // Reset message warning flag
 
     console.log("Disconnected.");
   }, []);
@@ -424,32 +480,57 @@ export function useRealtimeNegotiation({
                   return prevMessages;
               }
               messageCountRef.current += 1; // Increment for actual messages
-              // Determine display role: 'user' or specific agent name
+              
               const displayRole = item.role === "user" ? "user" : agentNameMap[currentAgentRole];
-              return [...prevMessages, { id: item.id, role: displayRole, text: item.content[0].text }];
+              // Ensure the new message object from server event data strictly conforms to Message type
+              const newMessage: Message = { 
+                id: String(item.id), // Convert item.id (any) to string
+                role: displayRole,     // displayRole is already correctly typed
+                text: String(item.content[0].text) // Convert item.content[0].text (any) to string
+              };
+              const newMessagesSoFar: Message[] = [...prevMessages, newMessage];
+              
+              if (!messageLimitWarningPlayedRef.current && messageCountRef.current >= MAX_MESSAGES * MESSAGE_WARNING_THRESHOLD_FACTOR) {
+                console.warn("REALTIME_HOOK: Message limit warning threshold reached.");
+                playWarningAudio();
+                messageLimitWarningPlayedRef.current = true; 
+                const warningMsgId = `system-message-warning-${Date.now()}`;
+                // The warning message itself is already correctly typed with "user" as const
+                return [...newMessagesSoFar, { id: warningMsgId, role: "user" as const, text: "[System: Approaching message limit. The call may end soon.]" }];
+              }
+              return newMessagesSoFar;
             }
             return prevMessages;
           });
+          // Flag is now set inside setInternalMessages updater
         } else if (item?.id && item.role === "user" && item.content?.[0]?.type === "input_audio"){
-            // User audio input started, show [Transcribing...]
-             setInternalMessages(prevMessages => {
+            setInternalMessages(prevMessages => {
                 if (!prevMessages.find(msg => msg.id === item.id)) {
-                    messageCountRef.current += 1; // Increment for user audio input start
-                    return [...prevMessages, { id: item.id, role: "user", text: "[Transcribing...]" }];
+                    messageCountRef.current += 1; 
+                    const newMessagesSoFar = [...prevMessages, { id: item.id, role: "user" as const, text: "[Transcribing...]" }];
+                    if (!messageLimitWarningPlayedRef.current && messageCountRef.current >= MAX_MESSAGES * MESSAGE_WARNING_THRESHOLD_FACTOR) {
+                        console.warn("REALTIME_HOOK: Message limit warning threshold reached (user audio start).");
+                        playWarningAudio();
+                        messageLimitWarningPlayedRef.current = true;
+                        const warningMsgId = `system-message-warning-${Date.now()}`;
+                        const warningMessage: Message = { id: warningMsgId, role: "user" as const, text: "[System: Approaching message limit. The call may end soon.]" };
+                        return [...newMessagesSoFar, warningMessage];
+                    }
+                    return newMessagesSoFar;
                 }
                 return prevMessages;
             });
+            // Flag is now set inside setInternalMessages updater
         }
 
-        // Check message count guardrail AFTER adding the message
+        // Check message count guardrail AFTER adding the message and potential warning
         if (messageCountRef.current >= MAX_MESSAGES) {
           console.warn("REALTIME_HOOK: Maximum message count reached. Disconnecting.");
           // Add a message to the transcript indicating why the call ended
            const messageLimitEndId = `system-msg-limit-end-${Date.now()}`;
-           setInternalMessages(prevMessages => [
-             ...prevMessages,
-             { id: messageLimitEndId, role: "user", text: "[System: Call ended due to maximum message limit.]" }
-           ]);
+           setInternalMessages(prevMessages => {
+             return [...prevMessages, { id: messageLimitEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" }];
+           });
           disconnect();
           return; // Stop further processing for this event
         }
@@ -464,15 +545,16 @@ export function useRealtimeNegotiation({
             const existingMsgIndex = prevMessages.findIndex(msg => msg.id === item_id);
             if (existingMsgIndex !== -1) {
               const updatedMessages = [...prevMessages];
-              // Role is already set, just update text
               updatedMessages[existingMsgIndex] = { ...updatedMessages[existingMsgIndex], text: finalText };
               return updatedMessages;
             } else {
-              // Agent started speaking, create a new message item
+              // This case (new message on transcription completion) is less common if placeholders are used,
+              // but handle it for robustness. messageCountRef should ideally be incremented by originating event.
+              // For simplicity, we won't add a new warning trigger here, assuming previous events handled it.
               const agentName = agentNameMap[currentAgentRole];
-              // This case should ideally not happen for input_audio_transcription.completed if an item was created for [Transcribing...]
-              // However, if it does, we count it as a new message.
-              messageCountRef.current += 1;
+              // If this truly is a new message, it implies an issue with earlier tracking.
+              // console.warn("REALTIME_HOOK: New message created on transcription completion for item_id:", item_id);
+              // messageCountRef.current += 1; // Avoid double counting if possible
               return [...prevMessages, { id: item_id, role: agentName, text: finalText }];
             }
           });
@@ -481,19 +563,15 @@ export function useRealtimeNegotiation({
             onUserTranscriptCompleted(finalText);
           }
 
-          // Check message count guardrail if a new message was added in the else block above
-          if (messageCountRef.current >= MAX_MESSAGES && !serverEvent.item_id) { // Simplified: check always, but it's more likely relevant if new was added
-            const existingMsgIndex = internalMessages.findIndex(msg => msg.id === item_id); // Re-check if it was truly new
-            if (existingMsgIndex === internalMessages.length -1) { // Check if it was the last one added
-                console.warn("REALTIME_HOOK: Maximum message count reached (after transcription completion). Disconnecting.");
-                const messageLimitTranscriptionEndId = `system-msg-limit-transcription-end-${Date.now()}`;
-                setInternalMessages(prevMessages => [
-                  ...prevMessages,
-                  { id: messageLimitTranscriptionEndId, role: "user", text: "[System: Call ended due to maximum message limit.]" }
-                ]);
-                disconnect();
-                return; 
-            }
+          // Hard stop if max messages reached (post-update)
+          if (messageCountRef.current >= MAX_MESSAGES) {
+            console.warn("REALTIME_HOOK: Maximum message count reached (after transcription completion). Disconnecting.");
+            const messageLimitTranscriptionEndId = `system-msg-limit-transcription-end-${Date.now()}`;
+            setInternalMessages(prevMessages => {
+              return [...prevMessages, { id: messageLimitTranscriptionEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" }]; 
+            });
+            disconnect();
+            return; 
           }
         }
         break;
@@ -516,20 +594,34 @@ export function useRealtimeNegotiation({
               // Agent started speaking, create a new message item
               isNewMessage = true; 
               const agentName = agentNameMap[currentAgentRole];
+              // We will check for warning after this potential new message is added and count incremented
               return [...prevMessages, { id: item_id, role: agentName, text: fullText }];
             }
           });
 
           if (isNewMessage) {
             messageCountRef.current += 1;
-             // Check message count guardrail AFTER adding/updating the message
+            // Check for message limit warning (after potential increment)
+            if (!messageLimitWarningPlayedRef.current && messageCountRef.current >= MAX_MESSAGES * MESSAGE_WARNING_THRESHOLD_FACTOR) {
+                console.warn("REALTIME_HOOK: Message limit warning threshold reached (agent delta).");
+                playWarningAudio();
+                messageLimitWarningPlayedRef.current = true; 
+                const warningMsgId = `system-message-warning-${Date.now()}`;
+                // Add warning message via a new state update. 
+                // This needs to be done carefully if the current message is also being updated.
+                setInternalMessages(prevMessages => {
+                    // Add the warning as a new, separate message.
+                    return [...prevMessages, { id: warningMsgId, role: "user" as const, text: "[System: Approaching message limit. The call may end soon.]" }];
+                });
+            }
+
+            // Check message count guardrail AFTER adding/updating the message
             if (messageCountRef.current >= MAX_MESSAGES) {
               console.warn("REALTIME_HOOK: Maximum message count reached (during delta). Disconnecting.");
               const messageLimitDeltaEndId = `system-msg-limit-delta-end-${Date.now()}`;
-              setInternalMessages(prevMessages => [
-                ...prevMessages,
-                { id: messageLimitDeltaEndId, role: "user", text: "[System: Call ended due to maximum message limit.]" }
-              ]);
+              setInternalMessages(prevMessages => {
+                return [...prevMessages, { id: messageLimitDeltaEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" }];
+              });
               disconnect();
               return; // Stop further processing for this event
             }
@@ -551,12 +643,13 @@ export function useRealtimeNegotiation({
                             const existingMsgIndex = prevMessages.findIndex(msg => msg.id === outputItem.id);
                             if (existingMsgIndex !== -1) {
                                 const updatedMessages = [...prevMessages];
-                                // Role is already set, just update text
                                 updatedMessages[existingMsgIndex] = { ...updatedMessages[existingMsgIndex], text: finalAssistantText };
                                 return updatedMessages;
                             } else {
-                                // Should have been created by delta, but as a fallback:
+                                // This case (new message on response.done) is less common if deltas are primary.
+                                // messageCountRef.current += 1; // Avoid double counting if possible
                                 const agentName = agentNameMap[currentAgentRole];
+                                // For simplicity, we won't add a new warning trigger here.
                                 return [...prevMessages, { id: outputItem.id, role: agentName, text: finalAssistantText }];
                             }
                         });
@@ -574,7 +667,16 @@ export function useRealtimeNegotiation({
                 }
             });
         }
-        // Any other finalization logic for response.done for MVP?
+        // Hard stop if max messages reached (post-update, after response.done processing)
+        if (messageCountRef.current >= MAX_MESSAGES) {
+          console.warn("REALTIME_HOOK: Maximum message count reached (after response.done). Disconnecting.");
+          const messageLimitResponseDoneEndId = `system-msg-limit-response-done-end-${Date.now()}`;
+          setInternalMessages(prevMessages => {
+            return [...prevMessages, { id: messageLimitResponseDoneEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" }];
+          });
+          disconnect();
+          return; 
+        }
         console.log("Server response.done event received.");
         break;
       }
@@ -593,5 +695,6 @@ export function useRealtimeNegotiation({
     isAgentSpeaking,
     // TODO: Expose other necessary functions like sending user audio/text
     // Add a way to get the current message count or duration if needed by UI
+    // TODO: Consider how to handle UI updates for warnings (e.g. visual timer)
   };
 } 
