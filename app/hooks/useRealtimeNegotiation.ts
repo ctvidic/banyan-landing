@@ -10,7 +10,7 @@ export type SessionStatus =
   | "ERROR";
 
 // Re-using Message type from BillNegotiatorClient.tsx - ensure it's available or redefine/import
-export type Message = { id: string; role: "agent" | "user"; text: string };
+export type Message = { id: string; role: "user" | "Sarah" | "Marco"; text: string };
 
 export type AgentRole = "agent_frontline" | "agent_supervisor";
 
@@ -41,6 +41,11 @@ export function useRealtimeNegotiation({
   const ephemeralKeyRef = useRef<string | null>(null);
   const assistantMessageDeltasRef = useRef<{ [itemId: string]: string }>({}); // To accumulate deltas
   const agentHasSaidGoodbyeRef = useRef<boolean>(false); // Added this ref
+
+  const agentNameMap: Record<AgentRole, "Sarah" | "Marco"> = {
+    agent_frontline: "Sarah",
+    agent_supervisor: "Marco",
+  };
 
   // Effect to propagate internal state changes to the parent component
   useEffect(() => {
@@ -164,8 +169,8 @@ export function useRealtimeNegotiation({
 
         // Send initial session.update to configure the agent (Phase 2, Step 7)
         const agentInstructions = currentAgentRole === "agent_frontline" 
-          ? "You are Sarah, an Indian woman call-centre rep with an Indian woman accent, friendly. Your primary goal is to assist the user with their billing issue. START by greeting the user and asking for their name to begin the conversation. You DO NOT need additional account information, a name is enough. Then, understand their issue (internet bill jumped from $69 to $89 after a 12-month promo expired) and explain the promo. Guide them towards one of these resolutions: admitting it was a promo price, accepting a slightly (but not fully) reduced price due to loyalty, or escalating to a supervisor  IF THEY INSIST. Keep things courteous, concise and guide toward resolution. DO NOT take long pauses. When the conversation is definitively over and you have provided all necessary information or resolution, end your final message with 'Goodbye!' DO NOT end with 'Goodbye!' if you are connecting to a supervisor."
-          : "You are Marco, a Filipino male supervisor, authoritative with a Filipino male accent. You are taking over an escalated call. Your goal is to help the user reach a resolution. START by acknowledging the escalation and understanding the current situation from the user. You DO NOT need additional account information, a name is enough. Then, work to find one of these outcomes: full discount, partial discount, added features, or downgrading their plan. DO NOT take long pauses. Close the call once resolved. When the conversation is definitively over and you have provided all necessary information or resolution, end you MUST end your final message with 'Goodbye!'."
+          ? "You are Sarah, an Indian woman call-centre rep with an Indian woman accent, friendly. Your primary goal is to assist the user with their billing issue. START by greeting the user and asking for their name to begin the conversation. You DO NOT need additional account information, a name is enough. Then, understand their issue (internet bill jumped from $69 to $89 after a 12-month promo expired) and explain the promo. Guide them towards one of these resolutions: admitting it was a promo price, accepting a slightly (but not fully) reduced price due to loyalty, or escalating to a supervisor if the user explicitly asks for one. HOWEVER, if the user explicitly requests to speak to a supervisor, and the system is preparing to transfer them, your VERY NEXT and FINAL response before the transfer MUST BE an acknowledgment. Examples: 'Okay, I'll transfer you to my supervisor now. One moment, please.' OR 'Certainly, I'm connecting you to my supervisor. Please hold.' After giving this specific acknowledgment, you will say nothing further as the transfer will then occur. Do not attempt to resolve the issue further yourself if a supervisor request has been made and a transfer is imminent. Keep things courteous, concise and guide toward resolution. DO NOT take long pauses. When the conversation is definitively over and you have provided all necessary information or resolution, end your final message with 'Goodbye!' DO NOT end with 'Goodbye!' if you are connecting to a supervisor."
+          : "You are Marco, a Filipino male supervisor, authoritative with a Filipino man accent. You are taking over an escalated call. Your goal is to help the user reach a resolution. START by acknowledging the escalation and understanding the current situation from the user. You DO NOT need additional account information, a name is enough. Then, work to find one of these outcomes: full discount, partial discount, added features, or downgrading their plan. DO NOT take long pauses. Close the call once resolved. When the conversation is definitively over and you have provided all necessary information or resolution, end you MUST end your final message with 'Goodbye!'"
         
         const agentVoice = currentAgentRole === "agent_frontline" ? "coral" : "sage"; // As per original BillNegotiatorClient
         console.log("REALTIME_HOOK: Configuring agent for role:", currentAgentRole, "Voice:", agentVoice, "Instructions:", agentInstructions);
@@ -382,9 +387,11 @@ export function useRealtimeNegotiation({
               // If it's our simulated message to kickstart the agent, don't add it to the transcript.
               if (item.id.startsWith("simulated-user-")) {
                   console.log("REALTIME_HOOK: Ignoring simulated user message for transcript:", item.id);
-                  return prevMessages; 
+                  return prevMessages;
               }
-              return [...prevMessages, { id: item.id, role: item.role, text: item.content[0].text }];
+              // Determine display role: 'user' or specific agent name
+              const displayRole = item.role === "user" ? "user" : agentNameMap[currentAgentRole];
+              return [...prevMessages, { id: item.id, role: displayRole, text: item.content[0].text }];
             }
             return prevMessages;
           });
@@ -392,7 +399,7 @@ export function useRealtimeNegotiation({
             // User audio input started, show [Transcribing...]
              setInternalMessages(prevMessages => {
                 if (!prevMessages.find(msg => msg.id === item.id)) {
-                    return [...prevMessages, { id: item.id, role: item.role, text: "[Transcribing...]" }];
+                    return [...prevMessages, { id: item.id, role: "user", text: "[Transcribing...]" }];
                 }
                 return prevMessages;
             });
@@ -404,11 +411,19 @@ export function useRealtimeNegotiation({
         const { item_id, transcript } = serverEvent;
         const finalText = transcript && transcript.trim() !== "" ? transcript.trim() : "[inaudible]";
         if (item_id) {
-          setInternalMessages(prevMessages =>
-            prevMessages.map(msg =>
-              msg.id === item_id ? { ...msg, text: finalText } : msg
-            )
-          );
+          setInternalMessages(prevMessages => {
+            const existingMsgIndex = prevMessages.findIndex(msg => msg.id === item_id);
+            if (existingMsgIndex !== -1) {
+              const updatedMessages = [...prevMessages];
+              // Role is already set, just update text
+              updatedMessages[existingMsgIndex] = { ...updatedMessages[existingMsgIndex], text: finalText };
+              return updatedMessages;
+            } else {
+              // Agent started speaking, create a new message item
+              const agentName = agentNameMap[currentAgentRole];
+              return [...prevMessages, { id: item_id, role: agentName, text: finalText }];
+            }
+          });
           if (onUserTranscriptCompleted) {
             console.log("REALTIME_HOOK: User transcript completed, calling onUserTranscriptCompleted with:", finalText);
             onUserTranscriptCompleted(finalText);
@@ -434,7 +449,8 @@ export function useRealtimeNegotiation({
               return updatedMessages;
             } else {
               // Agent started speaking, create a new message item
-              return [...prevMessages, { id: item_id, role: "agent", text: fullText }];
+              const agentName = agentNameMap[currentAgentRole];
+              return [...prevMessages, { id: item_id, role: agentName, text: fullText }];
             }
           });
         }
@@ -454,18 +470,18 @@ export function useRealtimeNegotiation({
                             const existingMsgIndex = prevMessages.findIndex(msg => msg.id === outputItem.id);
                             if (existingMsgIndex !== -1) {
                                 const updatedMessages = [...prevMessages];
+                                // Role is already set, just update text
                                 updatedMessages[existingMsgIndex] = { ...updatedMessages[existingMsgIndex], text: finalAssistantText };
                                 return updatedMessages;
                             } else {
                                 // Should have been created by delta, but as a fallback:
-                                return [...prevMessages, { id: outputItem.id, role: "agent", text: finalAssistantText }];
+                                const agentName = agentNameMap[currentAgentRole];
+                                return [...prevMessages, { id: outputItem.id, role: agentName, text: finalAssistantText }];
                             }
                         });
 
                         // Check if agent ended the call
                         if (finalAssistantText.trim().endsWith("Goodbye!")) {
-                          // console.log("REALTIME_HOOK: Agent said Goodbye!, calling onAgentEndedCall.");
-                          // onAgentEndedCall(); // Moved to output_audio_buffer.stopped
                           console.log("REALTIME_HOOK: Agent text includes Goodbye! Setting flag.");
                           agentHasSaidGoodbyeRef.current = true;
                         }
@@ -486,7 +502,7 @@ export function useRealtimeNegotiation({
         // console.log("Unhandled server event type:", serverEvent.type);
         break;
     }
-  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall]);
+  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall, currentAgentRole]);
 
   return {
     connect,
