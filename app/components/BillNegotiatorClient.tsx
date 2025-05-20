@@ -60,6 +60,10 @@ export default function BillNegotiatorClient() {
   const [isCallEndedByAgent, setIsCallEndedByAgent] = useState<boolean>(false);
   const [isEscalationAcknowledgementPending, setIsEscalationAcknowledgementPending] = useState<boolean>(false);
 
+  // State flags for improved call end and scoring logic
+  const [callEndedAndNeedsScoring, setCallEndedAndNeedsScoring] = useState<boolean>(false);
+  const [userRequestedDisconnect, setUserRequestedDisconnect] = useState<boolean>(false);
+
   // Callbacks for the hook
   const handleMessagesUpdate = useCallback((newMessages: Message[]) => {
     setMsgs(newMessages);
@@ -79,7 +83,7 @@ export default function BillNegotiatorClient() {
     // console.log("BN_CLIENT: Transcript for scoring:", transcript);
     try {
       const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string). Do not nest the result under any other key. Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a single word, one of: "Excellent", "Good", "Average", "Poor", based on how much the customer was able to get the bill reduced. \n\n${transcript}`})});
+        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string). Do not nest the result under any other key. Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a star rating out of 5, based on based on how much the customer was able to get the bill reduced (ex: ⭐⭐⭐⭐☆ for 4 stars, ⭐⭐⭐☆☆ for 3 stars, etc.). \n\n${transcript}`})});
       
       console.log("BN_CLIENT: Score API response status:", r.status, "OK?:", r.ok);
 
@@ -129,13 +133,14 @@ export default function BillNegotiatorClient() {
   const handleAgentInitiatedCallEnd = useCallback(() => {
     window.alert("The agent has ended the call.");
     setIsCallEndedByAgent(true);
-    // setPhase("report"); // Removed: User will click "Show my score!" to navigate
-    const currentTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n");
-    console.log("BN_CLIENT: Agent ended call. Transcript for scoring:", currentTranscript);
-    score(currentTranscript);
+    // User will click "Show my score!" to navigate
+    // const currentTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n"); // Score via useEffect
+    // console.log("BN_CLIENT: Agent ended call. Transcript for scoring:", currentTranscript);
+    // score(currentTranscript); // Score via useEffect
+    setCallEndedAndNeedsScoring(true);
     // Disconnection will be handled by an effect watching isCallEndedByAgent
-  // }, [setIsCallEndedByAgent, setPhase, score]);
-  }, [setIsCallEndedByAgent, score, messages]); // Added messages, removed setPhase
+  // }, [setIsCallEndedByAgent, score, messages]);
+  }, [setIsCallEndedByAgent]); // score and messages removed, setCallEndedAndNeedsScoring is stable
 
   // Instantiate the hook
   const {
@@ -152,24 +157,33 @@ export default function BillNegotiatorClient() {
 
   // Effect to disconnect if agent ended the call and session is not already disconnected
   useEffect(() => {
+    let timerId: NodeJS.Timeout | undefined;
     if (isCallEndedByAgent && currentSessionStatus !== "DISCONNECTED") {
-      console.log("BN_CLIENT: Agent ended call, disconnecting via useEffect.");
-      realtimeDisconnect();
+      console.log("BN_CLIENT: Agent ended call, scheduling disconnection in 500ms via useEffect.");
+      timerId = setTimeout(() => {
+        console.log("BN_CLIENT: Agent ended call, DISCONNECTING NOW (after delay).");
+        realtimeDisconnect();
+      }, 500); // 500ms delay
     }
+    return () => {
+      if (timerId) clearTimeout(timerId);
+    };
   }, [isCallEndedByAgent, currentSessionStatus, realtimeDisconnect]);
 
   // User-initiated end call
   const endCallByUser = useCallback(() => {
     console.log("BN_CLIENT: endCallByUser invoked.");
-    if (currentSessionStatus !== "DISCONNECTED") {
-      realtimeDisconnect();
-    }
+    // if (currentSessionStatus !== "DISCONNECTED") { // Disconnect via useEffect
+    //   realtimeDisconnect();
+    // }
     setPhase("report");
-    const currentTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n");
-    console.log("BN_CLIENT: User ended call. Transcript for scoring:", currentTranscript);
-    score(currentTranscript);
-  // }, [realtimeDisconnect, setPhase, score, currentSessionStatus]);
-  }, [realtimeDisconnect, setPhase, score, currentSessionStatus, messages]); // Added messages
+    // const currentTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n"); // Score via useEffect
+    // console.log("BN_CLIENT: User ended call. Transcript for scoring:", currentTranscript);
+    // score(currentTranscript); // Score via useEffect
+    setCallEndedAndNeedsScoring(true);
+    setUserRequestedDisconnect(true); // Signal for useEffect to disconnect
+  // }, [realtimeDisconnect, setPhase, score, currentSessionStatus, messages]);
+  }, [setPhase]); // Removed realtimeDisconnect, score, currentSessionStatus, messages. Stable setters omitted.
 
   /* --- Start connection when phase switches to "call" --- */
   useEffect(() => {
@@ -269,6 +283,34 @@ export default function BillNegotiatorClient() {
     // setCurrentRoleForEffect and setIsRoleChangeStaged are setters, not needed in deps
   ]);
 
+  // Effect to handle scoring after call ends
+  useEffect(() => {
+    if (callEndedAndNeedsScoring) {
+      const finalTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n");
+      console.log("BN_CLIENT: Scoring via useEffect. Transcript for scoring:", finalTranscript);
+      score(finalTranscript);
+      setCallEndedAndNeedsScoring(false); // Reset the flag
+    }
+  }, [callEndedAndNeedsScoring, messages, score]);
+
+  // Effect for user-initiated disconnect
+  useEffect(() => {
+    let timerId: NodeJS.Timeout | undefined;
+    if (userRequestedDisconnect) {
+      if (currentSessionStatus !== "DISCONNECTED") {
+        console.log("BN_CLIENT: User request: scheduling disconnection in 500ms.");
+        timerId = setTimeout(() => {
+          console.log("BN_CLIENT: User request: DISCONNECTING NOW (after delay).");
+          realtimeDisconnect();
+        }, 500);
+      }
+      // Reset the flag once the disconnect process is initiated (or if already disconnected)
+      setUserRequestedDisconnect(false);
+    }
+    return () => {
+      if (timerId) clearTimeout(timerId);
+    };
+  }, [userRequestedDisconnect, currentSessionStatus, realtimeDisconnect, setUserRequestedDisconnect]);
 
   /*-------------------------------------------------------------------------*/
   /* UI SECTIONS                                                             */
@@ -459,7 +501,7 @@ export default function BillNegotiatorClient() {
         if (
           first &&
           typeof first === "object" &&
-          ("strengths" in first || "improvements" in first || "outcome" in first)
+          ("strengths" in first || "improvements" in first || "outcome" in first || "rating" in first)
         ) {
           return first;
         }
@@ -468,7 +510,7 @@ export default function BillNegotiatorClient() {
       if (
         report &&
         typeof report === "object" &&
-        ("strengths" in report || "improvements" in report || "outcome" in report)
+        ("strengths" in report || "improvements" in report || "outcome" in report || "rating" in report)
       ) {
         return report;
       }
@@ -503,9 +545,15 @@ export default function BillNegotiatorClient() {
               </div>
             )}
             {parsed.outcome && (
+                <div>
+                  <h2 className="font-semibold mb-1">Outcome</h2>
+                  <p>{parsed.outcome}</p>
+                </div>
+            )}
+            {parsed.rating && (
               <div>
-                <h2 className="font-semibold mb-1">Outcome</h2>
-                <p>{parsed.outcome}</p>
+                <h2 className="font-semibold mb-1">Rating</h2>
+                <p>{parsed.rating}</p>
               </div>
             )}
           </div>

@@ -12,6 +12,8 @@
 
 ## Functionality issues
 - [ ] need more scenarios
+- [ ] sometimes not intepreted as english
+- [ ] do not respond in non-english
 
 ## UI issues
 - [ ] scroll automatically on transcript
