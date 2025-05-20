@@ -11,6 +11,9 @@
 
 
 ## Functionality issues
+- [ ] endless stream after call end 6:17pm
+- [ ] inform by audio that the call is disconnected
+- [ ] actually disconnect the call
 - [ ] need guardrails, 10 min or 100 messages
 - [ ] need more scenarios, used car being sold by teen
 - [ ] one moment please problem

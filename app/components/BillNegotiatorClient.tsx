@@ -15,6 +15,7 @@ import {
   SessionStatus as RealtimeSessionStatus,
   AgentRole as RealtimeAgentRole 
 } from "../hooks/useRealtimeNegotiation"
+import { useToast } from "@/components/ui/use-toast"
 
 /*-------------------------------------------------------------------------*/
 /*  Message + Scenario types                                               */
@@ -53,6 +54,7 @@ export default function BillNegotiatorClient() {
   const [activeDrawerTab, setActiveDrawerTab] = useState<null|"transcript"|"mission"|"tips">(null)
   const [report,    setReport]    = useState<any>(null)
   const roleRef = useRef<RealtimeAgentRole>("agent_frontline")
+  const { toast } = useToast()
 
   // New state for Realtime API
   const [currentSessionStatus, setCurrentSessionStatus] = useState<RealtimeSessionStatus>("DISCONNECTED");
@@ -131,7 +133,11 @@ export default function BillNegotiatorClient() {
   
   // This function is called by the hook when the agent signals call end.
   const handleAgentInitiatedCallEnd = useCallback(() => {
-    window.alert("The agent has ended the call.");
+    toast({
+      title: "Call Ended",
+      description: "The agent has ended the call.",
+      variant: "default",
+    });
     setIsCallEndedByAgent(true);
     // User will click "Show my score!" to navigate
     // const currentTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n"); // Score via useEffect
@@ -187,19 +193,33 @@ export default function BillNegotiatorClient() {
 
   /* --- Start connection when phase switches to "call" --- */
   useEffect(() => {
-    if (phase === "call" && currentSessionStatus === "DISCONNECTED") {
-      console.log("Phase is call, attempting to connect to Realtime API...");
+    if (
+      phase === "call" &&
+      currentSessionStatus === "DISCONNECTED" &&
+      !isCallEndedByAgent && // Do not reconnect if agent has ended the call
+      !userRequestedDisconnect // Do not reconnect if user has initiated disconnect (phase should also change)
+    ) {
+      console.log("BN_CLIENT: Phase is call, session disconnected, and call not terminated by agent/user. Attempting to connect to Realtime API...");
       realtimeConnect();
     }
+
     // Cleanup on phase change or unmount if connected
     return () => {
+      // Only disconnect if the phase is no longer 'call' AND we were connected/connecting.
+      // This prevents trying to disconnect an already disconnected session if phase changes while currentSessionStatus is DISCONNECTED.
       if (phase !== "call" && (currentSessionStatus === "CONNECTED" || currentSessionStatus === "CONNECTING")) {
-        console.log("Phase changed from call or component unmounting, disconnecting Realtime API...");
+        console.log("BN_CLIENT: Phase changed from call or component unmounting, and session was active. Disconnecting Realtime API...");
         realtimeDisconnect();
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, realtimeConnect, realtimeDisconnect]); 
+  }, [
+    phase, 
+    currentSessionStatus, 
+    realtimeConnect, 
+    realtimeDisconnect, 
+    isCallEndedByAgent, 
+    userRequestedDisconnect
+  ]); 
   
   // Effect to handle agent role change (e.g. escalation to supervisor)
   // This effect needs careful management of how roleRef.current changes are propagated if not tied to a state re-render.

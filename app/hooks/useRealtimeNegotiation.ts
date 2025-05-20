@@ -45,14 +45,15 @@ export function useRealtimeNegotiation({
   // Guardrail Refs
   const callDurationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messageCountRef = useRef<number>(0);
-  const warningAudioElementRef = useRef<HTMLAudioElement | null>(null);
+  const soundEffectAudioElementRef = useRef<HTMLAudioElement | null>(null); // Renamed from warningAudioElementRef
   const finalDisconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messageLimitWarningPlayedRef = useRef<boolean>(false);
 
-  // Constants for guardrails
+  // Constants for guardrails and sound effects
   const MAX_CALL_DURATION_MS = 10 * 60 * 1000; // 10 minutes
   const MAX_MESSAGES = 100; // Max 100 messages (user + agent)
-  const WARNING_AUDIO_SRC = "/audio/warning.mp3"; // Placeholder - ensure this file exists in public/audio
+  const WARNING_AUDIO_SRC = "/audio/warning.mp3"; 
+  const DISCONNECT_AUDIO_SRC = "/audio/disconnect.mp3"; // For agent-initiated disconnect
   const CALL_DURATION_WARNING_PERIOD_MS = 30 * 1000; // 30 seconds warning
   const MESSAGE_WARNING_THRESHOLD_FACTOR = 0.9; // Warn at 90% of max messages
 
@@ -76,23 +77,31 @@ export function useRealtimeNegotiation({
 
   // Effect to create warning audio element
   useEffect(() => {
-    if (!warningAudioElementRef.current) {
-      warningAudioElementRef.current = document.createElement("audio");
-      warningAudioElementRef.current.preload = "auto"; // Preload for faster playback
-      // No need to add to document body unless controls are needed for debugging
+    if (!soundEffectAudioElementRef.current) {
+      soundEffectAudioElementRef.current = document.createElement("audio");
+      soundEffectAudioElementRef.current.preload = "auto"; 
     }
-    // No specific cleanup needed for the audio element itself unless it was added to DOM
   }, []);
 
   const playWarningAudio = useCallback(() => {
-    if (warningAudioElementRef.current) {
-      warningAudioElementRef.current.src = WARNING_AUDIO_SRC;
-      warningAudioElementRef.current.play().catch(error => {
+    if (soundEffectAudioElementRef.current) {
+      soundEffectAudioElementRef.current.src = WARNING_AUDIO_SRC;
+      soundEffectAudioElementRef.current.play().catch(error => {
         console.warn("REALTIME_HOOK: Warning audio playback failed:", error);
-        // Fallback or notification if audio play fails? For now, just log.
       });
     } else {
-      console.warn("REALTIME_HOOK: Warning audio element not available.");
+      console.warn("REALTIME_HOOK: Sound effect audio element not available for warning.");
+    }
+  }, []);
+
+  const playDisconnectAudio = useCallback(() => {
+    if (soundEffectAudioElementRef.current) {
+      soundEffectAudioElementRef.current.src = DISCONNECT_AUDIO_SRC;
+      soundEffectAudioElementRef.current.play().catch(error => {
+        console.warn("REALTIME_HOOK: Disconnect audio playback failed:", error);
+      });
+    } else {
+      console.warn("REALTIME_HOOK: Sound effect audio element not available for disconnect sound.");
     }
   }, []);
 
@@ -227,8 +236,10 @@ export function useRealtimeNegotiation({
               console.warn("REALTIME_HOOK: Maximum call duration reached after warning. Disconnecting.");
               const durationEndId = `system-duration-end-${Date.now()}`;
               setInternalMessages(prevMessages => {
-                return [...prevMessages, { id: durationEndId, role: "user" as const, text: "[System: Call ended due to maximum duration.]" }];
+                const endMessage: Message = { id: durationEndId, role: "user" as const, text: "[System: Call ended due to maximum duration.]" };
+                return [...prevMessages, endMessage];
               });
+              onAgentEndedCall(); // Notify client that call has effectively ended
               disconnect();
             }, CALL_DURATION_WARNING_PERIOD_MS);
           }, preWarningDuration);
@@ -238,8 +249,10 @@ export function useRealtimeNegotiation({
             console.warn("REALTIME_HOOK: Maximum call duration reached (no pre-warning due to config). Disconnecting.");
             const durationEndId = `system-duration-end-${Date.now()}`;
             setInternalMessages(prevMessages => {
-              return [...prevMessages, { id: durationEndId, role: "user" as const, text: "[System: Call ended due to maximum duration.]" }];
+              const endMessage: Message = { id: durationEndId, role: "user" as const, text: "[System: Call ended due to maximum duration.]" };
+              return [...prevMessages, endMessage];
             });
+            onAgentEndedCall(); // Notify client that call has effectively ended
             disconnect();
           }, MAX_CALL_DURATION_MS);
         }
@@ -462,8 +475,12 @@ export function useRealtimeNegotiation({
       case "output_audio_buffer.stopped":
         setIsAgentSpeaking(false);
         // Check if this audio stop corresponds to the agent saying goodbye
+        // TODO: this is a hack to ensure the disconnect sound is played when the agent says goodbye
+        // and the client is waiting for the agent to finish speaking.
+        // This should be fixed by the agent sending a specific event when it's done speaking.
         if (agentHasSaidGoodbyeRef.current) {
-          console.log("REALTIME_HOOK: Agent finished speaking 'Goodbye!', calling onAgentEndedCall.");
+          console.log("REALTIME_HOOK: Agent finished speaking 'Goodbye!', playing disconnect sound and calling onAgentEndedCall.");
+          playDisconnectAudio(); // Play disconnect sound
           onAgentEndedCall();
           agentHasSaidGoodbyeRef.current = false; // Reset the flag
         }
@@ -529,8 +546,10 @@ export function useRealtimeNegotiation({
           // Add a message to the transcript indicating why the call ended
            const messageLimitEndId = `system-msg-limit-end-${Date.now()}`;
            setInternalMessages(prevMessages => {
-             return [...prevMessages, { id: messageLimitEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" }];
+             const endMessage: Message = { id: messageLimitEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" };
+             return [...prevMessages, endMessage];
            });
+          onAgentEndedCall(); // Notify client that call has effectively ended
           disconnect();
           return; // Stop further processing for this event
         }
@@ -568,8 +587,10 @@ export function useRealtimeNegotiation({
             console.warn("REALTIME_HOOK: Maximum message count reached (after transcription completion). Disconnecting.");
             const messageLimitTranscriptionEndId = `system-msg-limit-transcription-end-${Date.now()}`;
             setInternalMessages(prevMessages => {
-              return [...prevMessages, { id: messageLimitTranscriptionEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" }]; 
+              const endMessage: Message = { id: messageLimitTranscriptionEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" };
+              return [...prevMessages, endMessage];
             });
+            onAgentEndedCall(); // Notify client that call has effectively ended
             disconnect();
             return; 
           }
@@ -620,8 +641,10 @@ export function useRealtimeNegotiation({
               console.warn("REALTIME_HOOK: Maximum message count reached (during delta). Disconnecting.");
               const messageLimitDeltaEndId = `system-msg-limit-delta-end-${Date.now()}`;
               setInternalMessages(prevMessages => {
-                return [...prevMessages, { id: messageLimitDeltaEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" }];
+                const endMessage: Message = { id: messageLimitDeltaEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" };
+                return [...prevMessages, endMessage];
               });
+              onAgentEndedCall(); // Notify client that call has effectively ended
               disconnect();
               return; // Stop further processing for this event
             }
@@ -672,8 +695,10 @@ export function useRealtimeNegotiation({
           console.warn("REALTIME_HOOK: Maximum message count reached (after response.done). Disconnecting.");
           const messageLimitResponseDoneEndId = `system-msg-limit-response-done-end-${Date.now()}`;
           setInternalMessages(prevMessages => {
-            return [...prevMessages, { id: messageLimitResponseDoneEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" }];
+            const endMessage: Message = { id: messageLimitResponseDoneEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" };
+            return [...prevMessages, endMessage];
           });
+          onAgentEndedCall(); // Notify client that call has effectively ended
           disconnect();
           return; 
         }

@@ -3,6 +3,7 @@ import "./globals.css"
 import type { Metadata } from "next"
 import { Inter, Outfit } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,10 +33,11 @@ export default function RootLayout({
          <link rel="icon" href="/favicon.png" sizes="any" />
       </head> */}
       {/* Next.js will automatically handle the head based on metadata and app/icon.tsx */}
-      <body className={`${inter.variable} ${outfit.variable}`}>
+      <body className={`${inter.variable} ${outfit.variable} bg-background text-foreground antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>
+        <Toaster />
       </body>
     </html>
   )
