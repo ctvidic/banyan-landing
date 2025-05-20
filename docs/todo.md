@@ -3,7 +3,7 @@
 - [ ] remove remainder of text when interrupted, only show what has been said
 
 ### Switchover issues
-- [ ] Need proper introduction to supervisor — they should speak first as well
+- [x] Need proper introduction to supervisor — they should speak first as well
 - [ ] Phone UI for caller is changed before caller changed in actuality
 
 ## Clean code issues
@@ -11,9 +11,10 @@
 
 
 ## Functionality issues
-- [ ] need more scenarios
+- [ ] need guardrails
+- [ ] need more scenarios, used car being sold by teen
 - [ ] sometimes not intepreted as english
-- [ ] do not respond in non-english
+- [x] do not respond in non-english
 
 ## UI issues
 - [ ] scroll automatically on transcript

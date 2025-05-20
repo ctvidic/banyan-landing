@@ -181,7 +181,7 @@ export function useRealtimeNegotiation({
             modalities: ["text", "audio"],
             instructions: agentInstructions,
             voice: agentVoice,
-            input_audio_transcription: { model: "whisper-1" }, // Using whisper-1 as a common choice
+            input_audio_transcription: { model: "whisper-1", language: "en" }, // Using whisper-1 as a common choice
             turn_detection: { // Default VAD settings from openai-realtime-agents example
               type: "server_vad",
               threshold: 0.5,
