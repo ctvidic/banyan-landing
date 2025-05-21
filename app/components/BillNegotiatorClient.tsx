@@ -16,6 +16,15 @@ import {
   AgentRole as RealtimeAgentRole 
 } from "../hooks/useRealtimeNegotiation"
 import { useToast } from "@/hooks/use-toast"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog"
 
 /*-------------------------------------------------------------------------*/
 /*  Message + Scenario types                                               */
@@ -65,6 +74,9 @@ export default function BillNegotiatorClient() {
   // State flags for improved call end and scoring logic
   const [callEndedAndNeedsScoring, setCallEndedAndNeedsScoring] = useState<boolean>(false);
   const [userRequestedDisconnect, setUserRequestedDisconnect] = useState<boolean>(false);
+
+  // State for the call ended modal
+  const [isCallEndedModalOpen, setIsCallEndedModalOpen] = useState<boolean>(false);
 
   // Callbacks for the hook
   const handleMessagesUpdate = useCallback((newMessages: Message[]) => {
@@ -133,11 +145,12 @@ export default function BillNegotiatorClient() {
   
   // This function is called by the hook when the agent signals call end.
   const handleAgentInitiatedCallEnd = useCallback(() => {
-    toast({
-      title: "Call Ended",
-      description: "The agent has ended the call.",
-      // variant: "default",
-    });
+    // toast({  // Remove toast call
+    //   title: "Call Ended",
+    //   description: "The agent has ended the call.",
+    //   // variant: "default",
+    // });
+    setIsCallEndedModalOpen(true); // Open the modal instead
     setIsCallEndedByAgent(true);
     // User will click "Show my score!" to navigate
     // const currentTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n"); // Score via useEffect
@@ -146,7 +159,7 @@ export default function BillNegotiatorClient() {
     setCallEndedAndNeedsScoring(true);
     // Disconnection will be handled by an effect watching isCallEndedByAgent
   // }, [setIsCallEndedByAgent, score, messages]);
-  }, [setIsCallEndedByAgent]); // score and messages removed, setCallEndedAndNeedsScoring is stable
+  }, [setIsCallEndedByAgent, setIsCallEndedModalOpen, setCallEndedAndNeedsScoring]); // Added setIsCallEndedModalOpen and setCallEndedAndNeedsScoring to dependencies
 
   // Instantiate the hook
   const {
@@ -612,6 +625,35 @@ export default function BillNegotiatorClient() {
           {phase==="report"   && renderReport()}
         </div>
       </section>
+
+      {/* Call Ended Modal */}
+      <Dialog open={isCallEndedModalOpen} onOpenChange={setIsCallEndedModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Call Ended</DialogTitle>
+            <DialogDescription>
+              The agent has ended the call. You can now view your negotiation report.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            {/* DialogClose can be used for a cancel-style button if needed */}
+            {/* <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Close
+              </Button>
+            </DialogClose> */}
+            <Button 
+              type="button" 
+              onClick={() => {
+                setIsCallEndedModalOpen(false);
+                setPhase("report");
+              }}
+            >
+              Show My Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* footer */}
       <footer className="py-6 border-t border-gray-100">
