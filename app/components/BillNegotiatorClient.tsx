@@ -15,7 +15,7 @@ import {
   SessionStatus as RealtimeSessionStatus,
   AgentRole as RealtimeAgentRole 
 } from "../hooks/useRealtimeNegotiation"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 /*-------------------------------------------------------------------------*/
 /*  Message + Scenario types                                               */
@@ -136,7 +136,7 @@ export default function BillNegotiatorClient() {
     toast({
       title: "Call Ended",
       description: "The agent has ended the call.",
-      variant: "default",
+      // variant: "default",
     });
     setIsCallEndedByAgent(true);
     // User will click "Show my score!" to navigate
