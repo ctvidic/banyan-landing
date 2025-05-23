@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import type { AgentConfig, Tool } from "../banyanAgentConfigs/types";
 
 // Types (can be expanded later)
 export type SessionStatus =
@@ -10,30 +11,31 @@ export type SessionStatus =
   | "ERROR";
 
 // Re-using Message type from BillNegotiatorClient.tsx - ensure it's available or redefine/import
-export type Message = { id: string; role: "user" | "Sarah" | "Marco"; text: string };
-
-export type AgentRole = "agent_frontline" | "agent_supervisor";
+export type Message = { id: string; role: string; text: string };
 
 interface UseRealtimeNegotiationProps {
   onMessagesUpdate: (messages: Message[]) => void;
   onAgentSpeakingChange: (isSpeaking: boolean) => void;
   onSessionStatusChange: (status: SessionStatus) => void;
-  currentAgentRole: AgentRole;
+  currentAgentConfig: AgentConfig;
   onUserTranscriptCompleted: (transcript: string) => void;
   onAgentEndedCall: () => void;
+  onAgentTransferRequested?: (targetAgentName: string, transferArgs: { reason?: string; conversation_summary?: string }) => void;
 }
 
 export function useRealtimeNegotiation({
   onMessagesUpdate,
   onAgentSpeakingChange,
   onSessionStatusChange,
-  currentAgentRole,
+  currentAgentConfig,
   onUserTranscriptCompleted,
   onAgentEndedCall,
+  onAgentTransferRequested,
 }: UseRealtimeNegotiationProps) {
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState<boolean>(false);
+  const [isTransferInProgress, setIsTransferInProgress] = useState<boolean>(false);
   
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
@@ -57,10 +59,10 @@ export function useRealtimeNegotiation({
   const CALL_DURATION_WARNING_PERIOD_MS = 30 * 1000; // 30 seconds warning
   const MESSAGE_WARNING_THRESHOLD_FACTOR = 0.9; // Warn at 90% of max messages
 
-  const agentNameMap: Record<AgentRole, "Sarah" | "Marco"> = {
-    agent_frontline: "Sarah",
-    agent_supervisor: "Marco",
-  };
+  // const agentNameMap: Record<AgentRole, "Sarah" | "Marco"> = {
+  //   agent_frontline: "Sarah",
+  //   agent_supervisor: "Marco",
+  // };
 
   // Effect to propagate internal state changes to the parent component
   useEffect(() => {
@@ -138,7 +140,7 @@ export function useRealtimeNegotiation({
     }
 
     setSessionStatus("CONNECTING");
-    console.log("REALTIME_HOOK: connect invoked. currentAgentRole prop:", currentAgentRole);
+    console.log("REALTIME_HOOK: connect invoked. currentAgentConfig name:", currentAgentConfig.name);
     const ephemeralKey = ephemeralKeyRef.current || (await fetchEphemeralKey()); // Use stored key or fetch if not present
 
     if (!ephemeralKey) {
@@ -258,12 +260,11 @@ export function useRealtimeNegotiation({
         }
 
         // Send initial session.update to configure the agent (Phase 2, Step 7)
-        const agentInstructions = currentAgentRole === "agent_frontline" 
-          ? "You are Sarah, an Indian woman call-centre rep with an Indian woman accent, friendly. You speak in ENGLISH ONLY. Your primary goal is to assist the user with their billing issue. START by greeting the user and asking for their name to begin the conversation. You DO NOT need additional account information, a name is enough. Then, understand their issue (internet bill jumped from $69 to $89 after a 12-month promo expired) and explain the promo. Guide them towards one of these resolutions: admitting it was a promo price, accepting a slightly (but not fully) reduced price due to loyalty, or escalating to a supervisor if the user explicitly asks for one. HOWEVER, if the user explicitly requests to speak to a supervisor, and the system is preparing to transfer them, your VERY NEXT and FINAL response before the transfer MUST BE an acknowledgment. Examples: 'Okay, I'll transfer you to my supervisor now. One moment, please.' OR 'Certainly, I'm connecting you to my supervisor. Please hold.' After giving this specific acknowledgment, you will say nothing further as the transfer will then occur. Do not attempt to resolve the issue further yourself if a supervisor request has been made and a transfer is imminent. Keep things courteous, concise and guide toward resolution. DO NOT take long pauses. When the conversation is definitively over and you have provided all necessary information or resolution, end your final message with 'Goodbye!' DO NOT end with 'Goodbye!' if you are connecting to a supervisor."
-          : "You are Marco, a Filipino male supervisor, authoritative with a Filipino man accent. You speak in ENGLISH ONLY. You are taking over an escalated call. Your goal is to help the user reach a resolution. START by acknowledging the escalation and understanding the current situation from the user. You DO NOT need additional account information, a name is enough. Then, work to find one of these outcomes: discount to $50 if customer claims they have suffered as a result of the increase, full discount to $69, partial discount to $75, added features, or downgrading their plan to bring the price to $69. DO NOT take long pauses. DO NOT present options unless the user asks about them. You MUST give the bill amount as a final dollar amount and NOT as some % off or dollar amount off. Close the call once resolved. When the conversation is definitively over and you have provided all necessary information or resolution, end you MUST end your final message with 'Goodbye!'"
+        const agentInstructions = currentAgentConfig.instructions;
         
-        const agentVoice = currentAgentRole === "agent_frontline" ? "coral" : "ash"; // OpenAI voices: "coral" typically female-sounding, "ash" chosen for male supervisor (Marco).
-        console.log("REALTIME_HOOK: Configuring agent for role:", currentAgentRole, "Voice:", agentVoice, "Instructions:", agentInstructions);
+        // TODO: Consider adding a 'voice' field to AgentConfig for a cleaner way to set this.
+        const agentVoice = currentAgentConfig.name.toLowerCase().includes("frontline") || currentAgentConfig.name.toLowerCase().includes("sarah") ? "coral" : "ash"; 
+        console.log("REALTIME_HOOK: Configuring agent with name:", currentAgentConfig.name, "Voice:", agentVoice, "Instructions length:", agentInstructions.length);
 
         const sessionUpdateEvent = {
           type: "session.update",
@@ -271,6 +272,7 @@ export function useRealtimeNegotiation({
             modalities: ["text", "audio"],
             instructions: agentInstructions,
             voice: agentVoice,
+            tools: currentAgentConfig.tools, // Added tools from AgentConfig
             input_audio_transcription: { model: "whisper-1", language: "en" }, // Using whisper-1 as a common choice
             turn_detection: { // Default VAD settings from openai-realtime-agents example
               type: "server_vad",
@@ -375,7 +377,7 @@ export function useRealtimeNegotiation({
         dcRef.current = null;
       }
     }
-  }, [sessionStatus, fetchEphemeralKey, currentAgentRole, onUserTranscriptCompleted, onAgentEndedCall]);
+  }, [sessionStatus, fetchEphemeralKey, currentAgentConfig, onUserTranscriptCompleted, onAgentEndedCall]);
 
   const disconnect = useCallback(() => {
     console.log("Disconnect function called.");
@@ -413,6 +415,7 @@ export function useRealtimeNegotiation({
     }
     messageCountRef.current = 0; // Reset message count on disconnect
     messageLimitWarningPlayedRef.current = false; // Reset message warning flag
+    setIsTransferInProgress(false); // Reset transfer in progress flag
 
     console.log("Disconnected.");
   }, []);
@@ -498,7 +501,10 @@ export function useRealtimeNegotiation({
               }
               messageCountRef.current += 1; // Increment for actual messages
               
-              const displayRole = item.role === "user" ? "user" : agentNameMap[currentAgentRole];
+              // Extract a display name. For assistant, it could be from publicDescription or name.
+              const agentDisplayName = currentAgentConfig.publicDescription.split(",")[0] || currentAgentConfig.name;
+              const displayRole = item.role === "user" ? "user" : agentDisplayName;
+
               // Ensure the new message object from server event data strictly conforms to Message type
               const newMessage: Message = { 
                 id: String(item.id), // Convert item.id (any) to string
@@ -570,7 +576,7 @@ export function useRealtimeNegotiation({
               // This case (new message on transcription completion) is less common if placeholders are used,
               // but handle it for robustness. messageCountRef should ideally be incremented by originating event.
               // For simplicity, we won't add a new warning trigger here, assuming previous events handled it.
-              const agentName = agentNameMap[currentAgentRole];
+              const agentName = currentAgentConfig.name;
               // If this truly is a new message, it implies an issue with earlier tracking.
               // console.warn("REALTIME_HOOK: New message created on transcription completion for item_id:", item_id);
               // messageCountRef.current += 1; // Avoid double counting if possible
@@ -614,9 +620,9 @@ export function useRealtimeNegotiation({
             } else {
               // Agent started speaking, create a new message item
               isNewMessage = true; 
-              const agentName = agentNameMap[currentAgentRole];
+              const agentDisplayName = currentAgentConfig.publicDescription.split(",")[0] || currentAgentConfig.name;
               // We will check for warning after this potential new message is added and count incremented
-              return [...prevMessages, { id: item_id, role: agentName, text: fullText }];
+              return [...prevMessages, { id: item_id, role: agentDisplayName, text: fullText }];
             }
           });
 
@@ -663,6 +669,7 @@ export function useRealtimeNegotiation({
                     const finalAssistantText = outputItem.content?.[0]?.transcript || assistantMessageDeltasRef.current[outputItem.id] || "";
                      if (finalAssistantText) {
                         setInternalMessages(prevMessages => {
+                            if (isTransferInProgress) return prevMessages; // Don't update messages if transfer started
                             const existingMsgIndex = prevMessages.findIndex(msg => msg.id === outputItem.id);
                             if (existingMsgIndex !== -1) {
                                 const updatedMessages = [...prevMessages];
@@ -671,9 +678,9 @@ export function useRealtimeNegotiation({
                             } else {
                                 // This case (new message on response.done) is less common if deltas are primary.
                                 // messageCountRef.current += 1; // Avoid double counting if possible
-                                const agentName = agentNameMap[currentAgentRole];
+                                const agentDisplayName = currentAgentConfig.publicDescription.split(",")[0] || currentAgentConfig.name;
                                 // For simplicity, we won't add a new warning trigger here.
-                                return [...prevMessages, { id: outputItem.id, role: agentName, text: finalAssistantText }];
+                                return [...prevMessages, { id: outputItem.id, role: agentDisplayName, text: finalAssistantText }];
                             }
                         });
 
@@ -695,14 +702,119 @@ export function useRealtimeNegotiation({
           console.warn("REALTIME_HOOK: Maximum message count reached (after response.done). Disconnecting.");
           const messageLimitResponseDoneEndId = `system-msg-limit-response-done-end-${Date.now()}`;
           setInternalMessages(prevMessages => {
+            if (isTransferInProgress) return prevMessages; // Don't update messages if transfer started
             const endMessage: Message = { id: messageLimitResponseDoneEndId, role: "user" as const, text: "[System: Call ended due to maximum message limit.]" };
             return [...prevMessages, endMessage];
           });
-          onAgentEndedCall(); // Notify client that call has effectively ended
-          disconnect();
+          if (!isTransferInProgress) { // Only call if not already disconnecting for transfer
+            onAgentEndedCall(); // Notify client that call has effectively ended
+            disconnect();
+          }
           return; 
         }
-        console.log("Server response.done event received.");
+        if (!isTransferInProgress) { // Avoid logging if transfer is happening
+            console.log("Server response.done event received.");
+        }
+        break;
+      }
+
+      // Based on openai-realtime-agents, tool_calls are often part of response.updated
+      case "response.updated": {
+        const { response } = serverEvent;
+        if (response?.output?.length > 0) {
+          for (const outputItem of response.output) {
+            if (outputItem.type === "tool_calls" && outputItem.tool_calls?.length > 0) {
+              console.log("REALTIME_HOOK: Received tool_calls:", JSON.stringify(outputItem.tool_calls));
+              if (isTransferInProgress || sessionStatus === "DISCONNECTED") {
+                console.warn("REALTIME_HOOK: Ignoring tool_calls because a transfer is already in progress or session is disconnected.");
+                break; // Exit loop if transfer already started or disconnected
+              }
+
+              for (const toolCall of outputItem.tool_calls) {
+                // Example tool name from injectTransferTools: `transfer_to_${downstreamAgent.name}`
+                // Or the generic `transferToSupervisor` as per refactor plan earlier stages.
+                if (toolCall.name?.startsWith("transfer_to_") || toolCall.name === "transferToSupervisor") {
+                  setIsTransferInProgress(true); // Set flag to prevent race conditions
+                  const toolCallId = toolCall.id;
+                  let targetAgentName = "";
+                  if (toolCall.name.startsWith("transfer_to_")) {
+                    targetAgentName = toolCall.name.substring("transfer_to_".length);
+                  }
+                  // If it's the generic 'transferToSupervisor', the client will decide which supervisor config to use.
+                  // For now, if `targetAgentName` is empty, `onAgentTransferRequested` might need to infer it.
+                  // However, our injectTransferTools should always generate specific names like `transfer_to_agent_supervisor`.
+
+                  console.log(`REALTIME_HOOK: Handling tool call: ${toolCall.name}, ID: ${toolCallId}, Target: ${targetAgentName}`);
+                  let parsedArgs = { reason: "N/A", conversation_summary: "N/A" };
+                  try {
+                    if (toolCall.args) {
+                      parsedArgs = JSON.parse(toolCall.args);
+                    }
+                  } catch (e) {
+                    console.error("REALTIME_HOOK: Failed to parse tool call arguments:", e);
+                  }
+                  console.log("REALTIME_HOOK: Parsed arguments:", parsedArgs);
+
+                  // Acknowledge the tool call to the server
+                  // The example sends response.update with tool_responses
+                  const toolResponseEvent = {
+                    type: "response.update", // OpenAI example uses this
+                    response: {
+                        tool_responses: [{
+                            tool_call_id: toolCallId,
+                            // Result is a stringified JSON object as per OpenAI examples
+                            result: JSON.stringify({ status: "Transfer initiated.", detail: `Transferring to ${targetAgentName || 'supervisor'}` })
+                        }]
+                    }
+                  };
+                  sendClientEvent(toolResponseEvent, "tool_call_response");
+                  
+                  // Log user-facing message (optional, can be handled by client component)
+                  const transferMsgId = `system-transfer-${Date.now()}`;
+                  const transferText = `[System: Transferring to ${targetAgentName || 'supervisor'}${parsedArgs.reason !== "N/A" ? ` (Reason: ${parsedArgs.reason})` : ''}...]`;
+                  setInternalMessages(prev => [...prev, {id: transferMsgId, role: 'user', text: transferText}]);
+
+                  // Disconnect current agent
+                  console.log("REALTIME_HOOK: Disconnecting current agent for transfer.");
+                  disconnect(); // This will also reset isTransferInProgress
+
+                  // Notify the client (BillNegotiatorClient) to handle the agent switch and reconnect
+                  if (onAgentTransferRequested) {
+                    console.log("REALTIME_HOOK: Calling onAgentTransferRequested for target:", targetAgentName);
+                    onAgentTransferRequested(targetAgentName, parsedArgs);
+                  } else {
+                    console.warn("REALTIME_HOOK: onAgentTransferRequested callback is not provided.");
+                  }
+                  // Important: Break after handling the first transfer tool call to avoid processing others in the same batch
+                  // if multiple were somehow sent (though typically it's one logical transfer).
+                  break;
+                }
+              }
+            }
+            // Potentially handle other outputItem types here if needed, e.g., regular messages within response.updated
+            if (outputItem.type === "message" && outputItem.message) {
+                // This is a simplified way to handle a full message object if it arrives in response.updated
+                // This logic is similar to conversation.item.created but for a complete message snapshot.
+                const { id, role, content } = outputItem.message;
+                if (id && role && content?.[0]?.text) {
+                    setInternalMessages(prevMessages => {
+                        if (!prevMessages.find(msg => msg.id === id)) {
+                            if (id.startsWith("simulated-user-")) {
+                                return prevMessages;
+                            }
+                            messageCountRef.current += 1;
+                            const agentDisplayName = currentAgentConfig.publicDescription.split(",")[0] || currentAgentConfig.name;
+                            const displayRole = role === "user" ? "user" : agentDisplayName;
+                            const newMessage: Message = { id: String(id), role: displayRole, text: String(content[0].text) };
+                            // Warning logic can be duplicated/refactored if message creation is common here
+                            return [...prevMessages, newMessage];
+                        }
+                        return prevMessages;
+                    });
+                }
+            }
+          }
+        }
         break;
       }
 
@@ -710,7 +822,7 @@ export function useRealtimeNegotiation({
         // console.log("Unhandled server event type:", serverEvent.type);
         break;
     }
-  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall, currentAgentRole]);
+  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall, currentAgentConfig, disconnect, onAgentTransferRequested, sendClientEvent, isTransferInProgress]);
 
   return {
     connect,

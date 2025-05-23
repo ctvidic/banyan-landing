@@ -13,7 +13,7 @@ import {
 import { 
   useRealtimeNegotiation, 
   SessionStatus as RealtimeSessionStatus,
-  AgentRole as RealtimeAgentRole 
+  // AgentRole as RealtimeAgentRole // Removed unused import
 } from "../hooks/useRealtimeNegotiation"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -25,13 +25,15 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog"
+import type { AgentConfig } from "../banyanAgentConfigs/types"; // Import AgentConfig type
+import { frontlineAgentConfig, supervisorAgentConfig } from "../banyanAgentConfigs"; // Import agent configs
 
 /*-------------------------------------------------------------------------*/
 /*  Message + Scenario types                                               */
 /*-------------------------------------------------------------------------*/
 // type MsgRole = "agent" | "user"
-type MsgRole = "user" | "Sarah" | "Marco";
-type Message = { id: string; role: MsgRole; text: string }
+type MsgRole = string;
+type Message = { id: string; role: string; text: string }
 
 // SCENARIO, stepId, detectIntent are being removed for MVP with Realtime API
 // const SCENARIO: ScenarioStep[] = [
@@ -62,14 +64,17 @@ export default function BillNegotiatorClient() {
   // const [stepId,    setStepId]    = useState("greeting") // Removed for MVP
   const [activeDrawerTab, setActiveDrawerTab] = useState<null|"transcript"|"mission"|"tips">(null)
   const [report,    setReport]    = useState<any>(null)
-  const roleRef = useRef<RealtimeAgentRole>("agent_frontline")
+  // const roleRef = useRef<RealtimeAgentRole>("agent_frontline") // To be replaced by agent config state
   const { toast } = useToast()
 
   // New state for Realtime API
   const [currentSessionStatus, setCurrentSessionStatus] = useState<RealtimeSessionStatus>("DISCONNECTED");
   const [isRealtimeAgentSpeaking, setIsRealtimeAgentSpeaking] = useState<boolean>(false);
   const [isCallEndedByAgent, setIsCallEndedByAgent] = useState<boolean>(false);
-  const [isEscalationAcknowledgementPending, setIsEscalationAcknowledgementPending] = useState<boolean>(false);
+  // const [isEscalationAcknowledgementPending, setIsEscalationAcknowledgementPending] = useState<boolean>(false); // Will be handled by agent tool calls
+
+  // State for current agent config
+  const [currentAgentConfig, setCurrentAgentConfig] = useState<AgentConfig>(frontlineAgentConfig);
 
   // State flags for improved call end and scoring logic
   const [callEndedAndNeedsScoring, setCallEndedAndNeedsScoring] = useState<boolean>(false);
@@ -120,28 +125,28 @@ export default function BillNegotiatorClient() {
 
   // agentLogic: Passed to the hook. Seems stable as it uses roleRef and its direct argument.
   // If it were to use other component state/props, it should be memoized with useCallback.
-  async function agentLogic(userText:string){
-    console.log("BN_CLIENT: agentLogic called. User text:", userText, ". Current roleRef:", roleRef.current, "isRoleChangeStaged:", isRoleChangeStaged, "currentRoleForEffect:", currentRoleForEffect, "isEscalationPending:", isEscalationAcknowledgementPending);
-    if (/supervisor|manager/i.test(userText)) {
-      if (roleRef.current === "agent_frontline") {
-        // Only stage if not already staged for supervisor and not already pending acknowledgement for this escalation
-        if ((!isRoleChangeStaged || currentRoleForEffect !== "agent_supervisor")) {
-          console.log("BN_CLIENT: Escalation to supervisor detected. Staging role change from agent_frontline to agent_supervisor.");
-          setCurrentRoleForEffect("agent_supervisor"); // Set the TARGET role for the upcoming switch
-          setIsRoleChangeStaged(true);                 // Signal that a switch is pending
-          setIsEscalationAcknowledgementPending(true); // Signal that we are waiting for the current agent to acknowledge this specific escalation
-          // DO NOT change roleRef.current here. Let the frontline agent respond first.
-        } else {
-          console.log("BN_CLIENT: Escalation to supervisor detected, but change to supervisor is already staged or pending acknowledgement.");
-        }
-      } else if (roleRef.current === "agent_supervisor") {
-        console.log("BN_CLIENT: Escalation detected, but roleRef.current is already agent_supervisor.");
-      } else {
-        // This case might occur if roles other than frontline/supervisor are introduced
-        console.log("BN_CLIENT: Escalation detected, but current role is unexpected:", roleRef.current);
-      }
-    }
-  }
+  // async function agentLogic(userText:string){ // Commenting out for now, will be refactored in Phase 3
+  //   console.log("BN_CLIENT: agentLogic called. User text:", userText, ". Current roleRef:", roleRef.current, "isRoleChangeStaged:", isRoleChangeStaged, "currentRoleForEffect:", currentRoleForEffect, "isEscalationPending:", isEscalationAcknowledgementPending);
+  //   if (/supervisor|manager/i.test(userText)) {
+  //     if (roleRef.current === "agent_frontline") {
+  //       // Only stage if not already staged for supervisor and not already pending acknowledgement for this escalation
+  //       if ((!isRoleChangeStaged || currentRoleForEffect !== "agent_supervisor")) {
+  //         console.log("BN_CLIENT: Escalation to supervisor detected. Staging role change from agent_frontline to agent_supervisor.");
+  //         setCurrentRoleForEffect("agent_supervisor"); // Set the TARGET role for the upcoming switch
+  //         setIsRoleChangeStaged(true);                 // Signal that a switch is pending
+  //         setIsEscalationAcknowledgementPending(true); // Signal that we are waiting for the current agent to acknowledge this specific escalation
+  //         // DO NOT change roleRef.current here. Let the frontline agent respond first.
+  //       } else {
+  //         console.log("BN_CLIENT: Escalation to supervisor detected, but change to supervisor is already staged or pending acknowledgement.");
+  //       }
+  //     } else if (roleRef.current === "agent_supervisor") {
+  //       console.log("BN_CLIENT: Escalation detected, but roleRef.current is already agent_supervisor.");
+  //     } else {
+  //       // This case might occur if roles other than frontline/supervisor are introduced
+  //       console.log("BN_CLIENT: Escalation detected, but current role is unexpected:", roleRef.current);
+  //     }
+  //   }
+  // }
   
   // This function is called by the hook when the agent signals call end.
   const handleAgentInitiatedCallEnd = useCallback(() => {
@@ -161,6 +166,35 @@ export default function BillNegotiatorClient() {
   // }, [setIsCallEndedByAgent, score, messages]);
   }, [setIsCallEndedByAgent, setIsCallEndedModalOpen, setCallEndedAndNeedsScoring]); // Added setIsCallEndedModalOpen and setCallEndedAndNeedsScoring to dependencies
 
+  const handleAgentTransferRequested = useCallback((targetAgentName: string, transferArgs: { reason?: string; conversation_summary?: string }) => {
+    console.log(`BN_CLIENT: Agent transfer requested to ${targetAgentName}. Reason: ${transferArgs.reason}, Summary: ${transferArgs.conversation_summary}`);
+    // For now, assume targetAgentName directly corresponds to one of the imported configs
+    // or contains enough info to deduce it. Our injectTransferTools generates names like 'transfer_to_agent_supervisor'
+    // So targetAgentName would be 'agent_supervisor'.
+    if (targetAgentName.includes("supervisor") || targetAgentName === supervisorAgentConfig.name) {
+      setCurrentAgentConfig(supervisorAgentConfig);
+      toast({
+        title: "Transferring Call",
+        description: `Transferring to supervisor: ${supervisorAgentConfig.publicDescription.split(',')[0]}. Reason: ${transferArgs.reason || 'Not specified'}.`,
+      });
+    } else {
+      console.error(`BN_CLIENT: Unknown target agent for transfer: ${targetAgentName}`);
+      toast({
+        title: "Transfer Error",
+        description: `Could not find agent: ${targetAgentName}. Current agent remains: ${currentAgentConfig.name}`,
+        variant: "destructive",
+      });
+      // If the target agent is unknown, we do not change the currentAgentConfig.
+      // The hook would have disconnected, and the existing useEffect will attempt to reconnect with the current (unchanged) agent.
+      // This might not be ideal, but prevents crashing. A more robust solution might involve specific error handling
+      // or attempting to reconnect to a default/fallback agent if the current one is problematic post-transfer-attempt.
+    }
+    // The useRealtimeNegotiation hook calls disconnect() internally after invoking this callback.
+    // The useEffect in BillNegotiatorClient responsible for connections will then see currentSessionStatus as "DISCONNECTED"
+    // and currentAgentConfig (potentially updated by this callback). It will then call realtimeConnect(),
+    // which makes the hook use the new agent config for the new session.
+  }, [setCurrentAgentConfig, toast, currentAgentConfig.name]); // Added currentAgentConfig.name to deps for the else branch log
+
   // Instantiate the hook
   const {
     connect: realtimeConnect,
@@ -169,9 +203,11 @@ export default function BillNegotiatorClient() {
     onMessagesUpdate: handleMessagesUpdate,
     onAgentSpeakingChange: handleAgentSpeakingChange,
     onSessionStatusChange: handleSessionStatusChange,
-    currentAgentRole: roleRef.current,
-    onUserTranscriptCompleted: agentLogic,
+    currentAgentConfig: currentAgentConfig, // Pass currentAgentConfig to the hook
+    // onUserTranscriptCompleted: agentLogic, // Commented out, agentLogic is removed for now
+    onUserTranscriptCompleted: (transcript: string) => { console.log("User transcript completed:", transcript); /* Placeholder */ },
     onAgentEndedCall: handleAgentInitiatedCallEnd, // Pass the stable callback
+    onAgentTransferRequested: handleAgentTransferRequested, // Add the new callback
   });
 
   // Effect to disconnect if agent ended the call and session is not already disconnected
@@ -237,84 +273,84 @@ export default function BillNegotiatorClient() {
   // Effect to handle agent role change (e.g. escalation to supervisor)
   // This effect needs careful management of how roleRef.current changes are propagated if not tied to a state re-render.
   // For now, assuming roleRef.current is updated correctly before this effect is (re)triggered indirectly.
-  const [currentRoleForEffect, setCurrentRoleForEffect] = useState<RealtimeAgentRole>(roleRef.current);
-  const [isRoleChangeStaged, setIsRoleChangeStaged] = useState<boolean>(false);
+  // const [currentRoleForEffect, setCurrentRoleForEffect] = useState<RealtimeAgentRole>(roleRef.current); // Removed
+  // const [isRoleChangeStaged, setIsRoleChangeStaged] = useState<boolean>(false); // Will be handled by agent tool calls
 
   // Effect to clear the pending acknowledgement flag once the agent starts speaking
-  useEffect(() => {
-    if (isEscalationAcknowledgementPending && isRealtimeAgentSpeaking) {
-      console.log("BN_CLIENT: Agent has started speaking, clearing isEscalationAcknowledgementPending.");
-      setIsEscalationAcknowledgementPending(false);
-    }
-  }, [isEscalationAcknowledgementPending, isRealtimeAgentSpeaking]);
+  // useEffect(() => { // Commenting out, related to old escalation logic
+  //   if (isEscalationAcknowledgementPending && isRealtimeAgentSpeaking) {
+  //     console.log("BN_CLIENT: Agent has started speaking, clearing isEscalationAcknowledgementPending.");
+  //     setIsEscalationAcknowledgementPending(false);
+  //   }
+  // }, [isEscalationAcknowledgementPending, isRealtimeAgentSpeaking]);
 
-  useEffect(() => {
+  // useEffect(() => { // Commenting out the entire role change effect for now, will be refactored in Phase 3
     // Part 2: Execute the Staged Role Change if conditions are met
-    if (
-      isRoleChangeStaged &&
-      !isRealtimeAgentSpeaking &&
-      !isEscalationAcknowledgementPending && // Ensure acknowledgement has been processed
-      currentSessionStatus === "CONNECTED"
-    ) {
-      // Current agent (roleRef.current) has finished speaking. Switch to currentRoleForEffect is imminent.
-      // Client-side injected text message REMOVED. Sarah is expected to say this via server-side prompt.
-      // if (roleRef.current === "agent_frontline" && currentRoleForEffect === "agent_supervisor") {
-      //   const ackMsg: Message = {
-      //     id: "ack-" + Date.now(),
-      //     role: "Sarah", // This will be displayed as "Sarah:" in the transcript
-      //     text: "Okay, I'll transfer you to my supervisor now. One moment, please."
-      //   };
-      //   setMsgs(prevMsgs => [...prevMsgs, ackMsg]);
-      //   console.log("BN_CLIENT: Injected transfer acknowledgement message from Sarah into transcript.");
-      // }
-      // TODO: Add similar logic if other transfer types are implemented, e.g., supervisor back to frontline.
+    // if (
+    //   isRoleChangeStaged &&
+    //   !isRealtimeAgentSpeaking &&
+    //   !isEscalationAcknowledgementPending && // Ensure acknowledgement has been processed
+    //   currentSessionStatus === "CONNECTED"
+    // ) {
+    //   // Current agent (roleRef.current) has finished speaking. Switch to currentRoleForEffect is imminent.
+    //   // Client-side injected text message REMOVED. Sarah is expected to say this via server-side prompt.
+    //   // if (roleRef.current === "agent_frontline" && currentRoleForEffect === "agent_supervisor") {
+    //   //   const ackMsg: Message = {
+    //   //     id: "ack-" + Date.now(),
+    //   //     role: "Sarah", // This will be displayed as "Sarah:" in the transcript
+    //   //     text: "Okay, I'll transfer you to my supervisor now. One moment, please."
+    //   //   };
+    //   //   setMsgs(prevMsgs => [...prevMsgs, ackMsg]);
+    //   //   console.log("BN_CLIENT: Injected transfer acknowledgement message from Sarah into transcript.");
+    //   // }
+    //   // TODO: Add similar logic if other transfer types are implemented, e.g., supervisor back to frontline.
 
-      console.log(
-        "BN_CLIENT: Role change staged, agent NOT speaking, ack processed, and connected. EXECUTING reconnect to role:",
-        currentRoleForEffect // This is the target role, e.g., "agent_supervisor"
-      );
+    //   console.log(
+    //     "BN_CLIENT: Role change staged, agent NOT speaking, ack processed, and connected. EXECUTING reconnect to role:",
+    //     currentRoleForEffect // This is the target role, e.g., "agent_supervisor"
+    //   );
 
-      if (roleRef.current !== currentRoleForEffect) {
-        console.log("BN_CLIENT: Disconnecting for role change. Old role:", roleRef.current, "New role:", currentRoleForEffect);
-        realtimeDisconnect(); // Disconnect current session
+    //   if (roleRef.current !== currentRoleForEffect) {
+    //     console.log("BN_CLIENT: Disconnecting for role change. Old role:", roleRef.current, "New role:", currentRoleForEffect);
+    //     realtimeDisconnect(); // Disconnect current session
 
-        console.log("BN_CLIENT: Updating roleRef.current from", roleRef.current, "to", currentRoleForEffect, "before reconnect.");
-        roleRef.current = currentRoleForEffect; // Update roleRef to the new target role
+    //     console.log("BN_CLIENT: Updating roleRef.current from", roleRef.current, "to", currentRoleForEffect, "before reconnect.");
+    //     roleRef.current = currentRoleForEffect; // Update roleRef to the new target role
 
-        console.log("BN_CLIENT: Role change useEffect: Calling realtimeConnect in 100ms with new role:", roleRef.current);
-        setTimeout(() => realtimeConnect(), 100); // realtimeConnect will use the updated roleRef.current
-      } else {
-        console.log("BN_CLIENT: Role change staged, but roleRef.current already matches targetRole. No reconnect needed. Target role:", currentRoleForEffect);
-      }
-      setIsRoleChangeStaged(false); // Reset the staged flag
-    } else if (isRoleChangeStaged && isRealtimeAgentSpeaking && currentSessionStatus === "CONNECTED") {
-      // If acknowledgement is pending, this log is now less relevant as the new useEffect handles the pending state logic first.
-      // However, this overall condition (staged, speaking, connected) is still valid for general waiting.
-      if (isEscalationAcknowledgementPending) {
-        console.log("BN_CLIENT: Role change staged, agent IS SPEAKING. Waiting for acknowledgement to complete (isEscalationAcknowledgementPending will be cleared).");
-      } else {
-        console.log("BN_CLIENT: Role change staged, agent IS SPEAKING (acknowledged). Waiting for agent to finish current speech before switching.");
-      }
-    } else if (isRoleChangeStaged && currentSessionStatus !== "CONNECTED") {
-      console.log("BN_CLIENT: Role change staged, but session is NOT CONNECTED (" + currentSessionStatus + "). Clearing staged change and pending ack.");
-      setIsRoleChangeStaged(false); // Reset if we get disconnected while a change is staged
-      setIsEscalationAcknowledgementPending(false); // Also clear pending acknowledgement
-    } else if (isRoleChangeStaged && isEscalationAcknowledgementPending && !isRealtimeAgentSpeaking) {
-      console.log("BN_CLIENT: Role change staged, acknowledgement pending, but agent is NOT speaking. Waiting for agent to start acknowledgement.");
-    } else if (!isRoleChangeStaged) {
-      // This block is for when no role change is staged. Log existing conditions if needed.
-      // console.log("BN_CLIENT: No role change staged. Current role for effect:", currentRoleForEffect, "Session:", currentSessionStatus);
-    }
-  }, [
-    currentSessionStatus,
-    realtimeConnect,
-    realtimeDisconnect,
-    currentRoleForEffect,    // Holds the target role for the staged change
-    isRealtimeAgentSpeaking,
-    isRoleChangeStaged,
-    isEscalationAcknowledgementPending,
+    //     console.log("BN_CLIENT: Role change useEffect: Calling realtimeConnect in 100ms with new role:", roleRef.current);
+    //     setTimeout(() => realtimeConnect(), 100); // realtimeConnect will use the updated roleRef.current
+    //   } else {
+    //     console.log("BN_CLIENT: Role change staged, but roleRef.current already matches targetRole. No reconnect needed. Target role:", currentRoleForEffect);
+    //   }
+    //   setIsRoleChangeStaged(false); // Reset the staged flag
+    // } else if (isRoleChangeStaged && isRealtimeAgentSpeaking && currentSessionStatus === "CONNECTED") {
+    //   // If acknowledgement is pending, this log is now less relevant as the new useEffect handles the pending state logic first.
+    //   // However, this overall condition (staged, speaking, connected) is still valid for general waiting.
+    //   if (isEscalationAcknowledgementPending) {
+    //     console.log("BN_CLIENT: Role change staged, agent IS SPEAKING. Waiting for acknowledgement to complete (isEscalationAcknowledgementPending will be cleared).");
+    //   } else {
+    //     console.log("BN_CLIENT: Role change staged, agent IS SPEAKING (acknowledged). Waiting for agent to finish current speech before switching.");
+    //   }
+    // } else if (isRoleChangeStaged && currentSessionStatus !== "CONNECTED") {
+    //   console.log("BN_CLIENT: Role change staged, but session is NOT CONNECTED (" + currentSessionStatus + "). Clearing staged change and pending ack.");
+    //   setIsRoleChangeStaged(false); // Reset if we get disconnected while a change is staged
+    //   setIsEscalationAcknowledgementPending(false); // Also clear pending acknowledgement
+    // } else if (isRoleChangeStaged && isEscalationAcknowledgementPending && !isRealtimeAgentSpeaking) {
+    //   console.log("BN_CLIENT: Role change staged, acknowledgement pending, but agent is NOT speaking. Waiting for agent to start acknowledgement.");
+    // } else if (!isRoleChangeStaged) {
+    //   // This block is for when no role change is staged. Log existing conditions if needed.
+    //   // console.log("BN_CLIENT: No role change staged. Current role for effect:", currentRoleForEffect, "Session:", currentSessionStatus);
+    // }
+  // }, [
+    // currentSessionStatus,
+    // realtimeConnect,
+    // realtimeDisconnect,
+    // currentRoleForEffect,    // Holds the target role for the staged change
+    // isRealtimeAgentSpeaking,
+    // isRoleChangeStaged,
+    // isEscalationAcknowledgementPending,
     // setCurrentRoleForEffect and setIsRoleChangeStaged are setters, not needed in deps
-  ]);
+  // ]);
 
   // Effect to handle scoring after call ends
   useEffect(() => {
@@ -470,10 +506,12 @@ export default function BillNegotiatorClient() {
       {/* iPhone-ish frame */}
       <div className="relative w-72 h-96 bg-black rounded-[2.5rem] shadow-inner flex flex-col items-center pt-16">
         <p className="text-white/60 text-xs">
-          {roleRef.current==="agent_supervisor" ? "Supervisor" : "Customer Service"}
+          {/* {roleRef.current==="agent_supervisor" ? "Supervisor" : "Customer Service"} // Use currentAgentConfig */}
+          {currentAgentConfig.name.toLowerCase().includes("supervisor") ? "Supervisor" : "Customer Service"}
         </p>
         <h2 className="text-white mt-1">
-          {roleRef.current==="agent_supervisor" ? "Marco (Supervisor)" : "Sarah (Customer Service Rep)"}
+          {/* {roleRef.current==="agent_supervisor" ? "Marco (Supervisor)" : "Sarah (Customer Service Rep)"} // Use currentAgentConfig */}
+          {currentAgentConfig.publicDescription.split(",")[0] || currentAgentConfig.name}
         </h2>
 
         {/* mic button - For MVP, this might be a status indicator or disabled if using server VAD primarily */}
