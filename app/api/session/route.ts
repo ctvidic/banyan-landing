@@ -2,16 +2,32 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error("Vercel /api/session: OPENAI_API_KEY environment variable is NOT SET.");
       throw new Error("OPENAI_API_KEY environment variable is not set.");
     }
+
+    // Debug logs for Vercel
+    console.log(`Vercel /api/session: API Key raw length: ${apiKey.length}`);
+    const trimmedApiKey = apiKey.trim();
+    console.log(`Vercel /api/session: API Key trimmed length: ${trimmedApiKey.length}`);
+    console.log(`Vercel /api/session: API Key starts with: '${trimmedApiKey.substring(0, 10)}'`); // Show first few chars e.g. sk-proj-Xk
+    console.log(`Vercel /api/session: API Key ends with: '${trimmedApiKey.substring(trimmedApiKey.length - 6)}'`); // Show last few chars e.g. zbTw7c
+    if (apiKey !== trimmedApiKey) {
+      console.warn("Vercel /api/session: API Key had leading/trailing whitespace!");
+    }
+    if (trimmedApiKey.includes('"') || trimmedApiKey.includes("'")) {
+      console.warn("Vercel /api/session: API Key might contain quotes after trimming!");
+    }
+    // End Debug logs
 
     const response = await fetch(
       "https://api.openai.com/v1/realtime/sessions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${trimmedApiKey}`, // Use the trimmed key
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
