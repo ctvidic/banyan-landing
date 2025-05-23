@@ -287,6 +287,7 @@ export function useRealtimeNegotiation({
             // Tools would be: tools: currentAgent?.tools || [] from the example.
           },
         };
+        console.log("REALTIME_HOOK_DEBUG: Sending initial session.update event:", JSON.stringify(sessionUpdateEvent, null, 2));
         sendClientEvent(sessionUpdateEvent, "initial_session_config");
         
         // Send a simulated "hi" from the user and then prompt for a response
@@ -457,11 +458,11 @@ export function useRealtimeNegotiation({
     try {
       serverEvent = JSON.parse(eventString);
     } catch (error) {
-      console.error("Failed to parse server event JSON:", error, "Event string:", eventString);
+      console.error("REALTIME_HOOK_DEBUG: Failed to parse server event JSON:", error, "Event string:", eventString);
       return;
     }
 
-    // console.log("Received server event:", serverEvent.type, serverEvent);
+    console.log("REALTIME_HOOK_DEBUG: Raw server event received. Type:", serverEvent?.type, "Data:", JSON.stringify(serverEvent, null, 2));
 
     switch (serverEvent.type) {
       case "session.created":
@@ -720,74 +721,81 @@ export function useRealtimeNegotiation({
 
       // Based on openai-realtime-agents, tool_calls are often part of response.updated
       case "response.updated": {
+        console.log("REALTIME_HOOK_DEBUG: Received 'response.updated' event:", JSON.stringify(serverEvent, null, 2));
         const { response } = serverEvent;
         if (response?.output?.length > 0) {
           for (const outputItem of response.output) {
             if (outputItem.type === "tool_calls" && outputItem.tool_calls?.length > 0) {
-              console.log("REALTIME_HOOK: Received tool_calls:", JSON.stringify(outputItem.tool_calls));
+              console.log("REALTIME_HOOK_DEBUG: Detected 'tool_calls' in 'response.updated'. Count:", outputItem.tool_calls.length, "Tool calls:", JSON.stringify(outputItem.tool_calls, null, 2));
               if (isTransferInProgress || sessionStatus === "DISCONNECTED") {
-                console.warn("REALTIME_HOOK: Ignoring tool_calls because a transfer is already in progress or session is disconnected.");
-                break; // Exit loop if transfer already started or disconnected
+                console.warn("REALTIME_HOOK_DEBUG: Ignoring tool_calls because isTransferInProgress =", isTransferInProgress, "or sessionStatus =", sessionStatus);
+                break; 
               }
 
               for (const toolCall of outputItem.tool_calls) {
-                // Example tool name from injectTransferTools: `transfer_to_${downstreamAgent.name}`
-                // Or the generic `transferToSupervisor` as per refactor plan earlier stages.
+                console.log("REALTIME_HOOK_DEBUG: Processing toolCall:", JSON.stringify(toolCall, null, 2));
                 if (toolCall.name?.startsWith("transfer_to_") || toolCall.name === "transferToSupervisor") {
-                  setIsTransferInProgress(true); // Set flag to prevent race conditions
+                  console.log("REALTIME_HOOK_DEBUG: Matched transfer tool:", toolCall.name, "ID:", toolCall.id, "Current isTransferInProgress:", isTransferInProgress);
+                  if (isTransferInProgress) {
+                    console.warn("REALTIME_HOOK_DEBUG: Skipping transfer tool processing as isTransferInProgress is already true.");
+                    continue; // Skip if a transfer is already flagged
+                  }
+                  setIsTransferInProgress(true); 
+                  console.log("REALTIME_HOOK_DEBUG: Set isTransferInProgress to true.");
+
                   const toolCallId = toolCall.id;
                   let targetAgentName = "";
                   if (toolCall.name.startsWith("transfer_to_")) {
                     targetAgentName = toolCall.name.substring("transfer_to_".length);
                   }
-                  // If it's the generic 'transferToSupervisor', the client will decide which supervisor config to use.
-                  // For now, if `targetAgentName` is empty, `onAgentTransferRequested` might need to infer it.
-                  // However, our injectTransferTools should always generate specific names like `transfer_to_agent_supervisor`.
-
-                  console.log(`REALTIME_HOOK: Handling tool call: ${toolCall.name}, ID: ${toolCallId}, Target: ${targetAgentName}`);
+                  console.log(`REALTIME_HOOK_DEBUG: Handling tool call: ${toolCall.name}, ID: ${toolCallId}, Target Agent Name: ${targetAgentName}`);
+                  
                   let parsedArgs = { reason: "N/A", conversation_summary: "N/A" };
                   try {
                     if (toolCall.args) {
+                      console.log("REALTIME_HOOK_DEBUG: Attempting to parse toolCall.args:", toolCall.args);
                       parsedArgs = JSON.parse(toolCall.args);
+                      console.log("REALTIME_HOOK_DEBUG: Successfully parsed tool call arguments:", parsedArgs);
+                    } else {
+                      console.log("REALTIME_HOOK_DEBUG: toolCall.args is undefined or empty.");
                     }
                   } catch (e) {
-                    console.error("REALTIME_HOOK: Failed to parse tool call arguments:", e);
+                    console.error("REALTIME_HOOK_DEBUG: Failed to parse tool call arguments:", e, "Raw args:", toolCall.args);
                   }
-                  console.log("REALTIME_HOOK: Parsed arguments:", parsedArgs);
 
-                  // Acknowledge the tool call to the server
-                  // The example sends response.update with tool_responses
+                  const toolResponseResult = { status: "Transfer initiated.", detail: `Transferring to ${targetAgentName || 'supervisor'}` };
                   const toolResponseEvent = {
-                    type: "response.update", // OpenAI example uses this
+                    type: "response.update", 
                     response: {
                         tool_responses: [{
                             tool_call_id: toolCallId,
-                            // Result is a stringified JSON object as per OpenAI examples
-                            result: JSON.stringify({ status: "Transfer initiated.", detail: `Transferring to ${targetAgentName || 'supervisor'}` })
+                            result: JSON.stringify(toolResponseResult)
                         }]
                     }
                   };
+                  console.log("REALTIME_HOOK_DEBUG: Prepared tool_response event:", JSON.stringify(toolResponseEvent, null, 2));
                   sendClientEvent(toolResponseEvent, "tool_call_response");
                   
-                  // Log user-facing message (optional, can be handled by client component)
                   const transferMsgId = `system-transfer-${Date.now()}`;
                   const transferText = `[System: Transferring to ${targetAgentName || 'supervisor'}${parsedArgs.reason !== "N/A" ? ` (Reason: ${parsedArgs.reason})` : ''}...]`;
+                  console.log("REALTIME_HOOK_DEBUG: Adding transfer message to internal messages:", transferText);
                   setInternalMessages(prev => [...prev, {id: transferMsgId, role: 'user', text: transferText}]);
 
-                  // Disconnect current agent
-                  console.log("REALTIME_HOOK: Disconnecting current agent for transfer.");
-                  disconnect(); // This will also reset isTransferInProgress
+                  console.log("REALTIME_HOOK_DEBUG: Calling disconnect() for transfer. Current sessionStatus:", sessionStatus);
+                  disconnect(); 
+                  console.log("REALTIME_HOOK_DEBUG: disconnect() called. New sessionStatus should be DISCONNECTED. isTransferInProgress (after disconnect):", isTransferInProgress); // Note: disconnect resets isTransferInProgress
 
-                  // Notify the client (BillNegotiatorClient) to handle the agent switch and reconnect
                   if (onAgentTransferRequested) {
-                    console.log("REALTIME_HOOK: Calling onAgentTransferRequested for target:", targetAgentName);
+                    console.log("REALTIME_HOOK_DEBUG: Calling onAgentTransferRequested for target:", targetAgentName, "with args:", parsedArgs);
                     onAgentTransferRequested(targetAgentName, parsedArgs);
+                    console.log("REALTIME_HOOK_DEBUG: onAgentTransferRequested finished.");
                   } else {
-                    console.warn("REALTIME_HOOK: onAgentTransferRequested callback is not provided.");
+                    console.warn("REALTIME_HOOK_DEBUG: onAgentTransferRequested callback is not provided. Transfer cannot complete on client-side.");
                   }
-                  // Important: Break after handling the first transfer tool call to avoid processing others in the same batch
-                  // if multiple were somehow sent (though typically it's one logical transfer).
-                  break;
+                  console.log("REALTIME_HOOK_DEBUG: Breaking from tool_calls loop after handling transfer.");
+                  break; 
+                } else {
+                  console.log("REALTIME_HOOK_DEBUG: Tool call name did not match transfer pattern:", toolCall.name);
                 }
               }
             }
@@ -822,7 +830,7 @@ export function useRealtimeNegotiation({
         // console.log("Unhandled server event type:", serverEvent.type);
         break;
     }
-  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall, currentAgentConfig, disconnect, onAgentTransferRequested, sendClientEvent, isTransferInProgress]);
+  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall, currentAgentConfig, disconnect, onAgentTransferRequested, sendClientEvent, isTransferInProgress, sessionStatus]); // Added sessionStatus to dependency array
 
   return {
     connect,
