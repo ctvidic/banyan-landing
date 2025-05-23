@@ -462,7 +462,19 @@ export function useRealtimeNegotiation({
       return;
     }
 
-    console.log("REALTIME_HOOK_DEBUG: Raw server event received. Type:", serverEvent?.type, "Data:", JSON.stringify(serverEvent, null, 2));
+    // Only log specific events that are relevant for debugging transfers and important state changes
+    const eventsToLog = [
+      "session.created",
+      "response.updated", 
+      "response.done",
+      "response.function_call_arguments.done",
+      // "conversation.item.created",
+      "conversation.item.input_audio_transcription.completed"
+    ];
+    
+    if (eventsToLog.includes(serverEvent.type)) {
+      console.log(`REALTIME_HOOK_DEBUG: ${serverEvent.type} event received`, serverEvent);
+    }
 
     switch (serverEvent.type) {
       case "session.created":
@@ -661,10 +673,10 @@ export function useRealtimeNegotiation({
       }
       
       case "response.done": {
-        // If there was any accumulated delta, ensure it's finalized.
-        // The example repo also processes function calls here, but we omit for MVP.
         const responseOutput = serverEvent.response?.output;
         if (responseOutput && Array.isArray(responseOutput)) {
+            console.log("REALTIME_HOOK_DEBUG: Processing 'response.done' event. Output items:", JSON.stringify(responseOutput, null, 2));
+            let transferHandled = false;
             responseOutput.forEach((outputItem: any) => {
                 if (outputItem.type === "message" && outputItem.role === "assistant" && outputItem.id) {
                     const finalAssistantText = outputItem.content?.[0]?.transcript || assistantMessageDeltasRef.current[outputItem.id] || "";
@@ -694,6 +706,85 @@ export function useRealtimeNegotiation({
                     // Clear accumulated delta for this item_id as it's now final
                     if (assistantMessageDeltasRef.current[outputItem.id]) {
                         delete assistantMessageDeltasRef.current[outputItem.id];
+                    }
+                } else if (outputItem.type === "function_call" && outputItem.status === "completed") {
+                    // Handle function calls that appear in response.done
+                    console.log("REALTIME_HOOK_DEBUG: Detected 'function_call' in 'response.done'. Name:", outputItem.name, "Arguments:", outputItem.arguments);
+                    
+                    if (isTransferInProgress) {
+                        console.warn("REALTIME_HOOK_DEBUG: Ignoring function_call because isTransferInProgress =", isTransferInProgress);
+                        return; // Skip this item
+                    }
+                    
+                    if (outputItem.name?.startsWith("transfer_to_") || outputItem.name === "transferToSupervisor") {
+                        console.log("REALTIME_HOOK_DEBUG: Matched transfer tool:", outputItem.name, "ID:", outputItem.call_id, "Current isTransferInProgress:", isTransferInProgress);
+                        console.log("REALTIME_HOOK_DEBUG: Current sessionStatus:", sessionStatus);
+                        if (isTransferInProgress) {
+                            console.warn("REALTIME_HOOK_DEBUG: Skipping transfer tool processing as isTransferInProgress is already true.");
+                            return; // Skip this item
+                        }
+                        setIsTransferInProgress(true);
+                        console.log("REALTIME_HOOK_DEBUG: Set isTransferInProgress to true.");
+                        
+                        const toolCallId = outputItem.call_id;
+                        let targetAgentName = "";
+                        if (outputItem.name.startsWith("transfer_to_")) {
+                            targetAgentName = outputItem.name.substring("transfer_to_".length);
+                        }
+                        console.log(`REALTIME_HOOK_DEBUG: Handling function call: ${outputItem.name}, ID: ${toolCallId}, Target Agent Name: ${targetAgentName}`);
+                        
+                        let parsedArgs: { reason?: string; conversation_summary?: string; destination_agent_name?: string } = { reason: "N/A", conversation_summary: "N/A" };
+                        try {
+                            if (outputItem.arguments) {
+                                console.log("REALTIME_HOOK_DEBUG: Attempting to parse function call arguments:", outputItem.arguments);
+                                parsedArgs = JSON.parse(outputItem.arguments);
+                                console.log("REALTIME_HOOK_DEBUG: Successfully parsed function call arguments:", parsedArgs);
+                            } else {
+                                console.log("REALTIME_HOOK_DEBUG: function call arguments are undefined or empty.");
+                            }
+                        } catch (e) {
+                            console.error("REALTIME_HOOK_DEBUG: Failed to parse function call arguments:", e, "Raw args:", outputItem.arguments);
+                        }
+                        
+                        // Extract target agent name from parsed args if not already set
+                        if (!targetAgentName && parsedArgs.destination_agent_name) {
+                            targetAgentName = parsedArgs.destination_agent_name;
+                        }
+                        console.log(`REALTIME_HOOK_DEBUG: Final target agent name: ${targetAgentName}`);
+                        
+                        const toolResponseResult = { status: "Transfer initiated.", detail: `Transferring to ${targetAgentName || 'supervisor'}` };
+                        const toolResponseEvent = {
+                            type: "response.update",
+                            response: {
+                                tool_responses: [{
+                                    tool_call_id: toolCallId,
+                                    result: JSON.stringify(toolResponseResult)
+                                }]
+                            }
+                        };
+                        console.log("REALTIME_HOOK_DEBUG: Prepared tool_response event:", JSON.stringify(toolResponseEvent, null, 2));
+                        sendClientEvent(toolResponseEvent, "tool_call_response");
+                        
+                        const transferMsgId = `system-transfer-${Date.now()}`;
+                        const transferText = `[System: Transferring to ${targetAgentName || 'supervisor'}${parsedArgs.reason !== "N/A" ? ` (Reason: ${parsedArgs.reason})` : ''}...]`;
+                        console.log("REALTIME_HOOK_DEBUG: Adding transfer message to internal messages:", transferText);
+                        setInternalMessages(prev => [...prev, {id: transferMsgId, role: 'user', text: transferText}]);
+                        
+                        console.log("REALTIME_HOOK_DEBUG: Calling disconnect() for transfer. Current sessionStatus:", sessionStatus);
+                        disconnect();
+                        console.log("REALTIME_HOOK_DEBUG: disconnect() called. New sessionStatus should be DISCONNECTED. isTransferInProgress (after disconnect):", isTransferInProgress);
+                        
+                        if (onAgentTransferRequested) {
+                            console.log("REALTIME_HOOK_DEBUG: Calling onAgentTransferRequested for target:", targetAgentName, "with args:", parsedArgs);
+                            onAgentTransferRequested(targetAgentName, parsedArgs);
+                            console.log("REALTIME_HOOK_DEBUG: onAgentTransferRequested finished.");
+                        } else {
+                            console.warn("REALTIME_HOOK_DEBUG: onAgentTransferRequested callback is not provided. Transfer cannot complete on client-side.");
+                        }
+                        console.log("REALTIME_HOOK_DEBUG: Marking transfer as handled to skip remaining output items.");
+                        transferHandled = true;
+                    } else {
+                        console.log("REALTIME_HOOK_DEBUG: Function call name did not match transfer pattern:", outputItem.name);
                     }
                 }
             });
@@ -727,8 +818,8 @@ export function useRealtimeNegotiation({
           for (const outputItem of response.output) {
             if (outputItem.type === "tool_calls" && outputItem.tool_calls?.length > 0) {
               console.log("REALTIME_HOOK_DEBUG: Detected 'tool_calls' in 'response.updated'. Count:", outputItem.tool_calls.length, "Tool calls:", JSON.stringify(outputItem.tool_calls, null, 2));
-              if (isTransferInProgress || sessionStatus === "DISCONNECTED") {
-                console.warn("REALTIME_HOOK_DEBUG: Ignoring tool_calls because isTransferInProgress =", isTransferInProgress, "or sessionStatus =", sessionStatus);
+              if (isTransferInProgress) {
+                console.warn("REALTIME_HOOK_DEBUG: Ignoring tool_calls because isTransferInProgress =", isTransferInProgress);
                 break; 
               }
 
@@ -736,6 +827,7 @@ export function useRealtimeNegotiation({
                 console.log("REALTIME_HOOK_DEBUG: Processing toolCall:", JSON.stringify(toolCall, null, 2));
                 if (toolCall.name?.startsWith("transfer_to_") || toolCall.name === "transferToSupervisor") {
                   console.log("REALTIME_HOOK_DEBUG: Matched transfer tool:", toolCall.name, "ID:", toolCall.id, "Current isTransferInProgress:", isTransferInProgress);
+                  console.log("REALTIME_HOOK_DEBUG: Current sessionStatus:", sessionStatus);
                   if (isTransferInProgress) {
                     console.warn("REALTIME_HOOK_DEBUG: Skipping transfer tool processing as isTransferInProgress is already true.");
                     continue; // Skip if a transfer is already flagged
@@ -750,7 +842,7 @@ export function useRealtimeNegotiation({
                   }
                   console.log(`REALTIME_HOOK_DEBUG: Handling tool call: ${toolCall.name}, ID: ${toolCallId}, Target Agent Name: ${targetAgentName}`);
                   
-                  let parsedArgs = { reason: "N/A", conversation_summary: "N/A" };
+                  let parsedArgs: { reason?: string; conversation_summary?: string; destination_agent_name?: string } = { reason: "N/A", conversation_summary: "N/A" };
                   try {
                     if (toolCall.args) {
                       console.log("REALTIME_HOOK_DEBUG: Attempting to parse toolCall.args:", toolCall.args);
@@ -762,6 +854,12 @@ export function useRealtimeNegotiation({
                   } catch (e) {
                     console.error("REALTIME_HOOK_DEBUG: Failed to parse tool call arguments:", e, "Raw args:", toolCall.args);
                   }
+
+                  // Extract target agent name from parsed args if not already set
+                  if (!targetAgentName && parsedArgs.destination_agent_name) {
+                      targetAgentName = parsedArgs.destination_agent_name;
+                  }
+                  console.log(`REALTIME_HOOK_DEBUG: Final target agent name: ${targetAgentName}`);
 
                   const toolResponseResult = { status: "Transfer initiated.", detail: `Transferring to ${targetAgentName || 'supervisor'}` };
                   const toolResponseEvent = {
