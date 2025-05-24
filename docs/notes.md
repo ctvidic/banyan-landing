@@ -2,6 +2,7 @@
 ## Escalation
 * Checks if supervisor is requested, allows for one more message from frontline agent then 
 transfers REGARDLESS (this is the downside of no tool-calling)
+* DIFFERENCE between openai repo and our example is that our example disconnnects the agent but opennai example just changes the configuration
 
 
 ### agent logic and definition
