@@ -1,11 +1,42 @@
 import { AgentConfig, Tool } from './types';
 
 /**
- * Dynamically injects a 'transferToSupervisor' tool into agent configurations
- * that have downstream agents defined.
+ * Dynamically injects transfer and end call tools into agent configurations.
+ * - Adds 'transferToSupervisor' tool if agent has downstream agents
+ * - Adds 'end_call' tool to all agents
  */
 export function injectTransferTools(agentConfigs: AgentConfig[]): AgentConfig[] {
   agentConfigs.forEach((agentConfig) => {
+    // Ensure tools array exists
+    if (!agentConfig.tools) {
+      agentConfig.tools = [];
+    }
+
+    // Add end_call tool to all agents
+    const endCallTool: Tool = {
+      type: 'function',
+      name: 'end_call',
+      description: `Ends the current call with the customer. 
+Use this tool when:
+- The customer's issue has been fully resolved
+- The customer explicitly wants to end the call
+- The conversation has reached a natural conclusion
+- The customer becomes abusive or the call cannot continue productively
+
+Always provide a polite closing statement before using this tool.`,
+      parameters: {
+        type: 'object',
+        properties: {
+          reason: {
+            type: 'string',
+            description: 'A brief reason for ending the call (e.g., "Issue resolved", "Customer request", "Call concluded")',
+          },
+        },
+        required: ['reason'],
+      },
+    };
+    agentConfig.tools.push(endCallTool);
+
     // Ensure downstreamAgents is an array, even if it's undefined or null initially.
     // The type { name: string; publicDescription: string } is what we expect after this.
     const downstreamAgents = (agentConfig.downstreamAgents || []).map(da => ({
@@ -51,9 +82,6 @@ ${availableAgentsList}`,
         },
       };
 
-      if (!agentConfig.tools) {
-        agentConfig.tools = [];
-      }
       agentConfig.tools.push(transferSupervisorTool);
     }
 

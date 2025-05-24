@@ -42,8 +42,9 @@ export function useRealtimeNegotiation({
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const ephemeralKeyRef = useRef<string | null>(null);
   const assistantMessageDeltasRef = useRef<{ [itemId: string]: string }>({}); // To accumulate deltas
-  const agentHasSaidGoodbyeRef = useRef<boolean>(false); // Added this ref
+  const agentInitiatedCallEndRef = useRef<boolean>(false); // Renamed from agentHasSaidGoodbyeRef
   const pendingTransferDetailsRef = useRef<{ toolCallId: string; targetAgentName: string; transferArgs: { reason?: string; conversation_summary?: string } } | null>(null);
+  const pendingEndCallDetailsRef = useRef<{ toolCallId: string; reason: string } | null>(null);
   const expectingAudioStopForTransferRef = useRef<boolean>(false);
 
   // Guardrail Refs
@@ -420,6 +421,7 @@ export function useRealtimeNegotiation({
     messageLimitWarningPlayedRef.current = false; // Reset message warning flag
     setIsTransferInProgress(false); // Reset transfer in progress flag
     pendingTransferDetailsRef.current = null; // Clear any pending transfer
+    pendingEndCallDetailsRef.current = null; // Clear any pending end call
     expectingAudioStopForTransferRef.current = false; // Reset audio stop expectation
 
     console.log("Disconnected.");
@@ -561,6 +563,77 @@ export function useRealtimeNegotiation({
     return true; // Transfer was handled (either deferred or immediate)
   }, [isAgentSpeaking, sendClientEvent, setInternalMessages, disconnect, onAgentTransferRequested, isTransferInProgress]);
 
+  const handleEndCallToolCall = useCallback((
+    toolCall: { id?: string; call_id?: string; name?: string; args?: string; arguments?: string }, // call_id for response.done, id for response.updated
+    hasAudioInSameResponse: boolean = false
+  ): boolean => { // Returns true if end call was initiated
+    const toolCallId = toolCall.call_id || toolCall.id;
+    const rawArgs = toolCall.arguments || toolCall.args;
+
+    console.log(`REALTIME_HOOK_DEBUG: Handling end_call tool: ${toolCall.name}, ID: ${toolCallId}`);
+
+    let parsedArgs: { reason?: string } = { reason: "Agent ended call" };
+    try {
+        if (rawArgs) {
+            parsedArgs = JSON.parse(rawArgs);
+        }
+    } catch (e) {
+        console.error("REALTIME_HOOK_DEBUG: Failed to parse end_call arguments:", e, "Raw args:", rawArgs);
+    }
+    
+    // If there's audio in the same response or agent is speaking, defer the entire process
+    if (hasAudioInSameResponse || isAgentSpeaking) {
+        console.log("REALTIME_HOOK_DEBUG: End call tool called with audio or agent speaking. Deferring tool response and call end.");
+        
+        // Store the pending end call details
+        pendingEndCallDetailsRef.current = {
+            toolCallId: toolCallId!,
+            reason: parsedArgs.reason || "Agent ended call"
+        };
+        
+        // Set the flag to handle the actual call end after audio stops
+        agentInitiatedCallEndRef.current = true;
+        
+        // Add a system message indicating the call will end soon
+        const endPendingMsgId = `system-call-ending-pending-${Date.now()}`;
+        const endPendingText = `[System: Agent is ending the call. Please wait for them to finish speaking...]`;
+        setInternalMessages(prev => [...prev, { id: endPendingMsgId, role: 'user', text: endPendingText }]);
+        
+        // DO NOT send tool response yet - it will be sent when audio stops
+        
+    } else {
+        console.log("REALTIME_HOOK_DEBUG: No audio and agent not speaking. Ending call immediately.");
+        
+        // Send tool response immediately since there's no audio
+        const toolResponseResult = { status: "Call ended", detail: parsedArgs.reason || "Agent ended call" };
+        const toolResponseEvent = {
+            type: "response.update",
+            response: {
+                tool_responses: [{
+                    tool_call_id: toolCallId,
+                    result: JSON.stringify(toolResponseResult)
+                }]
+            }
+        };
+        sendClientEvent(toolResponseEvent, "end_call_tool_response_immediate");
+        
+        // Add system message
+        const endMsgId = `system-call-ended-${Date.now()}`;
+        const endText = `[System: Call ended by agent${parsedArgs.reason && parsedArgs.reason !== "Agent ended call" ? ` (${parsedArgs.reason})` : ''}]`;
+        setInternalMessages(prev => [...prev, { id: endMsgId, role: 'user', text: endText }]);
+        
+        // Play disconnect sound and notify
+        playDisconnectAudio();
+        onAgentEndedCall();
+        
+        // Disconnect after a small delay
+        setTimeout(() => {
+            disconnect();
+        }, 500);
+    }
+    return true;
+  }, [isAgentSpeaking, sendClientEvent, setInternalMessages, disconnect, onAgentEndedCall, playDisconnectAudio]);
+
   const handleServerEvent = useCallback((eventString: string) => {
     let serverEvent;
     try {
@@ -638,17 +711,61 @@ export function useRealtimeNegotiation({
                 }
             }, 100); // 100ms delay to ensure tool response is processed
 
-            agentHasSaidGoodbyeRef.current = false; // Ensure goodbye sound doesn't play during transfer
+            agentInitiatedCallEndRef.current = false; // Ensure goodbye sound doesn't play during transfer
             expectingAudioStopForTransferRef.current = false; // Clear the audio stop expectation
             // pendingTransferDetailsRef.current is cleared by disconnect()
             return; // Transfer handled, skip goodbye logic
         }
 
-        if (agentHasSaidGoodbyeRef.current) {
-          console.log("REALTIME_HOOK: Agent finished speaking 'Goodbye!', playing disconnect sound and calling onAgentEndedCall.");
+        // Check for pending end call
+        if (pendingEndCallDetailsRef.current && agentInitiatedCallEndRef.current) {
+            const { toolCallId, reason } = pendingEndCallDetailsRef.current;
+            console.log("REALTIME_HOOK: Agent finished speaking, completing deferred end call.");
+            
+            // NOW send the tool response
+            const toolResponseResult = { status: "Call ended", detail: reason };
+            const toolResponseEvent = {
+                type: "response.update",
+                response: {
+                    tool_responses: [{
+                        tool_call_id: toolCallId,
+                        result: JSON.stringify(toolResponseResult)
+                    }]
+                }
+            };
+            sendClientEvent(toolResponseEvent, "deferred_end_call_tool_response");
+            
+            // Update system message
+            const endMsgId = `system-call-ended-${Date.now()}`;
+            const endText = `[System: Call ended by agent${reason && reason !== "Agent ended call" ? ` (${reason})` : ''}]`;
+            setInternalMessages(prev => {
+                // Remove the "Agent is ending the call..." message
+                const filteredMessages = prev.filter(msg => !msg.text.startsWith("[System: Agent is ending the call"));
+                return [...filteredMessages, { id: endMsgId, role: 'user', text: endText }];
+            });
+            
+            // Play disconnect sound and notify
+            playDisconnectAudio();
+            onAgentEndedCall();
+            
+            // Clear the pending details and flag
+            pendingEndCallDetailsRef.current = null;
+            agentInitiatedCallEndRef.current = false;
+            
+            // Disconnect after a small delay to ensure tool response is processed
+            setTimeout(() => {
+                disconnect();
+            }, 100);
+            
+            return; // End call handled
+        }
+
+        // Legacy path for backward compatibility (if still needed)
+        if (agentInitiatedCallEndRef.current) {
+          console.log("REALTIME_HOOK: Agent finished speaking after initiating call end (legacy path), playing disconnect sound and calling onAgentEndedCall.");
           playDisconnectAudio(); // Play disconnect sound
           onAgentEndedCall();
-          agentHasSaidGoodbyeRef.current = false; // Reset the flag
+          agentInitiatedCallEndRef.current = false; // Reset the flag
         }
         break;
 
@@ -863,11 +980,7 @@ export function useRealtimeNegotiation({
                             }
                         });
 
-                        // Check if agent ended the call
-                        if (finalAssistantText.trim().toLowerCase().endsWith("goodbye!")) {
-                          console.log("REALTIME_HOOK: Agent text includes Goodbye! Setting flag.");
-                          agentHasSaidGoodbyeRef.current = true;
-                        }
+                        // Text detection for goodbye removed - now handled via tool calls
                     }
                     // Clear accumulated delta for this item_id as it's now final
                     if (assistantMessageDeltasRef.current[outputItem.id]) {
@@ -891,8 +1004,13 @@ export function useRealtimeNegotiation({
                         // The old logic is now inside handleTransferToolCall
                         // setIsTransferInProgress(true); 
                         // ... rest of the old logic removed ...
+                    } else if (outputItem.name === "end_call") {
+                        console.log("REALTIME_HOOK_DEBUG: Matched end_call tool in response.done:", outputItem.name, "ID:", outputItem.call_id);
+                        if (handleEndCallToolCall(outputItem, hasAudioMessage)) {
+                            console.log("REALTIME_HOOK_DEBUG: End call handled by handleEndCallToolCall (from response.done).");
+                        }
                     } else {
-                        console.log("REALTIME_HOOK_DEBUG: Function call name did not match transfer pattern:", outputItem.name);
+                        console.log("REALTIME_HOOK_DEBUG: Function call name did not match transfer or end_call pattern:", outputItem.name);
                     }
                 }
                 if (transferHandled) return; // Exit forEach if transfer was handled
@@ -924,6 +1042,15 @@ export function useRealtimeNegotiation({
         console.log("REALTIME_HOOK_DEBUG: Received 'response.updated' event:", JSON.stringify(serverEvent, null, 2));
         const { response } = serverEvent;
         if (response?.output?.length > 0) {
+          // Check if this response contains audio (similar to response.done)
+          let hasAudioInResponse = false;
+          for (const outputItem of response.output) {
+            if (outputItem.type === "message" && outputItem.message?.content?.[0]?.type === "audio") {
+              hasAudioInResponse = true;
+              break;
+            }
+          }
+
           for (const outputItem of response.output) {
             if (outputItem.type === "tool_calls" && outputItem.tool_calls?.length > 0) {
               console.log("REALTIME_HOOK_DEBUG: Detected 'tool_calls' in 'response.updated'. Count:", outputItem.tool_calls.length, "Tool calls:", JSON.stringify(outputItem.tool_calls, null, 2));
@@ -936,7 +1063,7 @@ export function useRealtimeNegotiation({
                 console.log("REALTIME_HOOK_DEBUG: Processing toolCall:", JSON.stringify(toolCall, null, 2));
                 if (toolCall.name?.startsWith("transfer_to_") || toolCall.name === "transferToSupervisor") {
                   console.log("REALTIME_HOOK_DEBUG: Matched transfer tool in response.updated:", toolCall.name, "ID:", toolCall.id);
-                  if (handleTransferToolCall(toolCall, false, false)) {
+                  if (handleTransferToolCall(toolCall, false, hasAudioInResponse)) {
                      console.log("REALTIME_HOOK_DEBUG: Transfer handled by handleTransferToolCall (from response.updated). Breaking from tool_calls loop.");
                      break; // Break from the inner loop (toolCall of outputItem.tool_calls)
                   }
@@ -944,8 +1071,14 @@ export function useRealtimeNegotiation({
                   // if (isTransferInProgress) { ... continue; }
                   // setIsTransferInProgress(true); 
                   // ... rest of the old logic removed ...
+                } else if (toolCall.name === "end_call") {
+                  console.log("REALTIME_HOOK_DEBUG: Matched end_call tool in response.updated:", toolCall.name, "ID:", toolCall.id);
+                  if (handleEndCallToolCall(toolCall, hasAudioInResponse)) {
+                     console.log("REALTIME_HOOK_DEBUG: End call handled by handleEndCallToolCall (from response.updated).");
+                     break; // Break from the tool_calls loop
+                  }
                 } else {
-                  console.log("REALTIME_HOOK_DEBUG: Tool call name did not match transfer pattern:", toolCall.name);
+                  console.log("REALTIME_HOOK_DEBUG: Tool call name did not match transfer or end_call pattern:", toolCall.name);
                 }
               }
               // If a transfer was handled and we broke from the inner loop, we might want to break from the outer loop too.
@@ -986,7 +1119,7 @@ export function useRealtimeNegotiation({
         // console.log("Unhandled server event type:", serverEvent.type);
         break;
     }
-  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall, currentAgentConfig, disconnect, onAgentTransferRequested, sendClientEvent, isTransferInProgress, sessionStatus, playWarningAudio, playDisconnectAudio, handleTransferToolCall, isAgentSpeaking]); // Added sessionStatus to dependency array
+  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall, currentAgentConfig, disconnect, onAgentTransferRequested, sendClientEvent, isTransferInProgress, sessionStatus, playWarningAudio, playDisconnectAudio, handleTransferToolCall, handleEndCallToolCall, isAgentSpeaking]); // Added sessionStatus to dependency array
 
   return {
     connect,
