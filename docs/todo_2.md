@@ -5,6 +5,7 @@
 ## functionality
 - [ ] goodbye no longer working
     - need to make this more robust, better tool calling for everything. more realistic
+- [ ] cutting off agent should be better
 - [ ] tool calls fix
     -  [ ] transfer
     -  [ [ call end
