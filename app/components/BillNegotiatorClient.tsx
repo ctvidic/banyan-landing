@@ -101,6 +101,7 @@ export default function BillNegotiatorClient() {
   // State flags for improved call end and scoring logic
   const [callEndedAndNeedsScoring, setCallEndedAndNeedsScoring] = useState<boolean>(false);
   const [userRequestedDisconnect, setUserRequestedDisconnect] = useState<boolean>(false);
+  const [isTransferInProgress, setIsTransferInProgress] = useState<boolean>(false); // Add state to track transfers
 
   // TEST MODE: Automatically set up test state
   useEffect(() => {
@@ -205,32 +206,45 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
 
   const handleAgentTransferRequested = useCallback((targetAgentName: string, transferArgs: { reason?: string; conversation_summary?: string }) => {
     console.log(`BN_CLIENT: Agent transfer requested to ${targetAgentName}. Reason: ${transferArgs.reason}, Summary: ${transferArgs.conversation_summary}`);
-    // For now, assume targetAgentName directly corresponds to one of the imported configs
-    // or contains enough info to deduce it. Our injectTransferTools generates names like 'transfer_to_agent_supervisor'
-    // So targetAgentName would be 'agent_supervisor'.
-    if (targetAgentName.includes("supervisor") || targetAgentName === supervisorAgentConfig.name) {
+    
+    // Set transfer in progress flag
+    setIsTransferInProgress(true);
+    
+    // Map target agent names to configurations
+    if (targetAgentName.includes("supervisor") || targetAgentName === "agent_supervisor" || targetAgentName === supervisorAgentConfig.name) {
+      console.log("BN_CLIENT: Setting agent config to supervisor");
       setCurrentAgentConfig(supervisorAgentConfig);
+      
+      // Show toast notification
       toast({
         title: "Transferring Call",
-        description: `Transferring to supervisor: ${supervisorAgentConfig.publicDescription.split(',')[0]}. Reason: ${transferArgs.reason || 'Not specified'}.`,
+        description: `Connecting to supervisor: ${supervisorAgentConfig.publicDescription.split(',')[0]}`,
+        duration: 3000,
       });
+      
+      // Force a reconnection after a delay to ensure clean state
+      setTimeout(() => {
+        console.log("BN_CLIENT: Triggering reconnection after transfer");
+        setIsTransferInProgress(false); // Clear the flag to allow reconnection
+        // The useEffect watching currentSessionStatus and currentAgentConfig will handle reconnection
+      }, 500);
     } else {
       console.error(`BN_CLIENT: Unknown target agent for transfer: ${targetAgentName}`);
       toast({
         title: "Transfer Error",
-        description: `Could not find agent: ${targetAgentName}. Current agent remains: ${currentAgentConfig.name}`,
+        description: `Could not find agent: ${targetAgentName}`,
         variant: "destructive",
+        duration: 5000,
       });
-      // If the target agent is unknown, we do not change the currentAgentConfig.
-      // The hook would have disconnected, and the existing useEffect will attempt to reconnect with the current (unchanged) agent.
-      // This might not be ideal, but prevents crashing. A more robust solution might involve specific error handling
-      // or attempting to reconnect to a default/fallback agent if the current one is problematic post-transfer-attempt.
+      
+      // Clear transfer flag on error
+      setIsTransferInProgress(false);
+      
+      // Still update the config to trigger reconnection with current agent
+      // This prevents the connection from being stuck in a disconnected state
+      setCurrentAgentConfig(currentAgentConfig);
     }
-    // The useRealtimeNegotiation hook calls disconnect() internally after invoking this callback.
-    // The useEffect in BillNegotiatorClient responsible for connections will then see currentSessionStatus as "DISCONNECTED"
-    // and currentAgentConfig (potentially updated by this callback). It will then call realtimeConnect(),
-    // which makes the hook use the new agent config for the new session.
-  }, [setCurrentAgentConfig, toast, currentAgentConfig.name]); // Added currentAgentConfig.name to deps for the else branch log
+  }, [setCurrentAgentConfig, toast, currentAgentConfig, supervisorAgentConfig]);
 
   // Instantiate the hook
   const {
@@ -281,9 +295,11 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       phase === "call" &&
       currentSessionStatus === "DISCONNECTED" &&
       !isCallEndedByAgent && // Do not reconnect if agent has ended the call
-      !userRequestedDisconnect // Do not reconnect if user has initiated disconnect (phase should also change)
+      !userRequestedDisconnect && // Do not reconnect if user has initiated disconnect
+      !isTransferInProgress // Do not reconnect while transfer is being processed
     ) {
-      console.log("BN_CLIENT: Phase is call, session disconnected, and call not terminated by agent/user. Attempting to connect to Realtime API...");
+      console.log("BN_CLIENT: Phase is call, session disconnected, and call not terminated by agent/user/transfer. Attempting to connect to Realtime API...");
+      console.log("BN_CLIENT: Current agent config:", currentAgentConfig.name);
       realtimeConnect();
     }
 
@@ -302,7 +318,9 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
     realtimeConnect, 
     realtimeDisconnect, 
     isCallEndedByAgent, 
-    userRequestedDisconnect
+    userRequestedDisconnect,
+    isTransferInProgress,
+    currentAgentConfig // Add this to trigger reconnection when agent changes
   ]); 
   
   // Effect to handle agent role change (e.g. escalation to supervisor)

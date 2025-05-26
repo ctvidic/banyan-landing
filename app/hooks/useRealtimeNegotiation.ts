@@ -393,12 +393,16 @@ export function useRealtimeNegotiation({
       };
 
       dc.onerror = (err) => {
-        console.error("Data channel error:", err);
-        // Don't set ERROR status if we're in the middle of a transfer, already disconnecting, or intentionally disconnecting
-        if (sessionStatus !== "DISCONNECTED" && !isTransferInProgress && !isIntentionalDisconnectRef.current) {
+        // During transfers, data channel errors are expected as we're closing the connection
+        if (isTransferInProgress || isIntentionalDisconnectRef.current) {
+          console.log("Data channel error during transfer/disconnect - this is expected:", err);
+          return; // Don't process as an error
+        }
+        
+        // Only log and set error status if this is unexpected
+        console.error("Unexpected data channel error:", err);
+        if (sessionStatus !== "DISCONNECTED" && sessionStatus !== "ERROR" && !isIntentionalDisconnectRef.current) {
           setSessionStatus("ERROR");
-        } else {
-          console.log("Data channel error during transfer/disconnect - this is expected and can be ignored.");
         }
       };
 
@@ -456,7 +460,7 @@ export function useRealtimeNegotiation({
   }, [sessionStatus, fetchEphemeralKey, currentAgentConfig, onUserTranscriptCompleted, onAgentEndedCall]);
 
   const disconnect = useCallback(() => {
-    console.log("Disconnect function called.");
+    console.log("Disconnect function called. isIntentionalDisconnectRef:", isIntentionalDisconnectRef.current);
     
     // Set flag to indicate this is an intentional disconnect
     isIntentionalDisconnectRef.current = true;
@@ -464,21 +468,46 @@ export function useRealtimeNegotiation({
     // Set status to DISCONNECTED first to prevent error handlers from triggering
     setSessionStatus("DISCONNECTED");
     
-    if (pcRef.current) {
-      pcRef.current.getSenders().forEach((sender) => {
-        if (sender.track) {
-          sender.track.stop();
-        }
-      });
-      pcRef.current.close();
-      pcRef.current = null;
-    }
+    // Clean up data channel first, with proper error handling
     if (dcRef.current) {
-      // Remove error handler before closing to prevent spurious errors
-      dcRef.current.onerror = null;
-      dcRef.current.close();
+      try {
+        // Remove all event handlers to prevent spurious errors
+        dcRef.current.onopen = null;
+        dcRef.current.onclose = null;
+        dcRef.current.onerror = null;
+        dcRef.current.onmessage = null;
+        
+        // Close the data channel if it's still open
+        if (dcRef.current.readyState === "open" || dcRef.current.readyState === "connecting") {
+          dcRef.current.close();
+        }
+      } catch (error) {
+        console.log("Error during data channel cleanup (expected during transfers):", error);
+      }
       dcRef.current = null;
     }
+    
+    // Clean up peer connection
+    if (pcRef.current) {
+      try {
+        // Stop all tracks
+        pcRef.current.getSenders().forEach((sender) => {
+          if (sender.track) {
+            sender.track.stop();
+          }
+        });
+        
+        // Close the peer connection
+        if (pcRef.current.signalingState !== "closed") {
+          pcRef.current.close();
+        }
+      } catch (error) {
+        console.log("Error during peer connection cleanup:", error);
+      }
+      pcRef.current = null;
+    }
+    
+    // Clean up audio element
     if (audioElementRef.current && audioElementRef.current.srcObject) {
         const stream = audioElementRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
@@ -514,7 +543,13 @@ export function useRealtimeNegotiation({
     pendingEndCallDetailsRef.current = null; // Clear any pending end call
     expectingAudioStopForTransferRef.current = false; // Reset audio stop expectation
 
-    console.log("Disconnected.");
+    console.log("Disconnected. Clearing isIntentionalDisconnectRef after a delay.");
+    
+    // Reset the intentional disconnect flag after a short delay to ensure all cleanup is complete
+    setTimeout(() => {
+      isIntentionalDisconnectRef.current = false;
+      console.log("isIntentionalDisconnectRef reset to false");
+    }, 100);
   }, []);
   
   const resetIdleTimers = useCallback(() => {
@@ -660,32 +695,38 @@ export function useRealtimeNegotiation({
     } else {
         console.log("REALTIME_HOOK_DEBUG: No audio in response and agent is not speaking. Proceeding with immediate transfer to:", targetAgentName);
         
-        // Send tool response immediately only if not deferring
-        const toolResponseResult = { status: "Transfer initiated.", detail: `Transferring to ${targetAgentName}` };
-        const toolResponseEvent = {
-            type: "response.update",
-            response: {
-                tool_responses: [{
-                    tool_call_id: toolCallId,
-                    result: JSON.stringify(toolResponseResult)
-                }]
-            }
-        };
-        sendClientEvent(toolResponseEvent, "transfer_tool_call_response");
+        // Send tool response with a small delay to ensure it's processed
+        setTimeout(() => {
+          const toolResponseResult = { status: "Transfer initiated.", detail: `Transferring to ${targetAgentName}` };
+          const toolResponseEvent = {
+              type: "response.update",
+              response: {
+                  tool_responses: [{
+                      tool_call_id: toolCallId,
+                      result: JSON.stringify(toolResponseResult)
+                  }]
+              }
+          };
+          sendClientEvent(toolResponseEvent, "transfer_tool_call_response");
+        }, 50); // Small delay to ensure data channel is ready
         
         const transferMsgId = `system-transfer-immediate-${Date.now()}`;
         const transferText = `[System: Transferring to ${targetAgentName}${parsedArgs.reason !== "N/A" ? ` (Reason: ${parsedArgs.reason})` : ''}...]`;
         setInternalMessages(prev => [...prev, { id: transferMsgId, role: 'user', text: transferText }]);
         
-        disconnect(); // This will also set isTransferInProgress to false and clear pendingTransferDetailsRef
-        
-        if (onAgentTransferRequested) {
-            console.log("REALTIME_HOOK_DEBUG: Calling onAgentTransferRequested (immediate) for target:", targetAgentName, "with args:", parsedArgs);
-            onAgentTransferRequested(targetAgentName, { reason: parsedArgs.reason, conversation_summary: parsedArgs.conversation_summary });
-        } else {
-            console.warn("REALTIME_HOOK_DEBUG: onAgentTransferRequested callback is not provided (immediate).");
-        }
-        // setIsTransferInProgress is reset by disconnect, no need to set it to false here explicitly
+        // Disconnect with a longer delay to ensure tool response is sent
+        setTimeout(() => {
+          // Set intentional disconnect flag BEFORE disconnecting to prevent error logging
+          isIntentionalDisconnectRef.current = true;
+          disconnect(); // This will also set isTransferInProgress to false and clear pendingTransferDetailsRef
+          
+          if (onAgentTransferRequested) {
+              console.log("REALTIME_HOOK_DEBUG: Calling onAgentTransferRequested (immediate) for target:", targetAgentName, "with args:", parsedArgs);
+              onAgentTransferRequested(targetAgentName, { reason: parsedArgs.reason, conversation_summary: parsedArgs.conversation_summary });
+          } else {
+              console.warn("REALTIME_HOOK_DEBUG: onAgentTransferRequested callback is not provided (immediate).");
+          }
+        }, 200); // 200ms delay to ensure tool response is sent before disconnect
     }
     return true; // Transfer was handled (either deferred or immediate)
   }, [isAgentSpeaking, sendClientEvent, setInternalMessages, disconnect, onAgentTransferRequested, isTransferInProgress]);
@@ -835,6 +876,8 @@ export function useRealtimeNegotiation({
 
             // Small delay to ensure tool response is sent before disconnect
             setTimeout(() => {
+                // Set intentional disconnect flag BEFORE disconnecting to prevent error logging
+                isIntentionalDisconnectRef.current = true;
                 disconnect(); // This will also set isTransferInProgress to false and clear pendingTransferDetailsRef
 
                 if (onAgentTransferRequested) {
