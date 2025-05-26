@@ -60,8 +60,8 @@ type Message = { id: string; role: string; text: string }
 /*-------------------------------------------------------------------------*/
 export default function BillNegotiatorClient() {
   // flow pages
-  const [phase, setPhase] = useState<"intro"|"scenario"|"call"|"report">("intro")
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
+  const [phase, setPhase] = useState<"intro"|"scenario"|"call"|"report">("scenario")
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(true)
   const [showTermsDialog, setShowTermsDialog] = useState(false)
 
   // TEST MODE: Set to true to skip to report with mock data
@@ -524,7 +524,8 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           if (!hasAcceptedTerms) {
             setShowTermsDialog(true);
           } else {
-            setPhase("scenario");
+            setPhase("call");
+            setActiveDrawerTab("mission");
           }
         }}>
         Get Started
@@ -579,7 +580,8 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               onClick={() => {
                 setHasAcceptedTerms(true);
                 setShowTermsDialog(false);
-                setPhase("scenario");
+                setPhase("call");
+                setActiveDrawerTab("mission");
               }}
             >
               I Agree
@@ -754,26 +756,45 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
 
   const renderScenario = () => (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Unexpected Internet Bill Increase</h1>
+      <h1 className="text-3xl font-bold mb-6">Your Bill Just Increased 30%</h1>
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Your Scenario</h2>
-        <p className="text-gray-700 mb-4">
-          You notice your internet bill has increased from $69 to $89 per month without any prior
-          notification. You're calling customer service to get this resolved.
-        </p>
-        <h3 className="text-lg font-semibold mb-2">Your Goal</h3>
-        <p className="text-gray-700">
-          Try to get your bill reduced back to the original price or negotiate for additional
-          services to justify the price increase.
+        <div className="flex items-start mb-4">
+          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
+          <div>
+            <p className="text-lg font-semibold text-gray-800">
+              Internet bill: <span className="line-through text-gray-500">$69</span> → <span className="text-red-600">$89/month</span>
+            </p>
+            <p className="text-sm text-gray-600 mt-1">No notice. No explanation.</p>
+          </div>
+        </div>
+        
+        <div className="border-t border-emerald-200 pt-4">
+          <h3 className="text-lg font-semibold mb-2 text-emerald-800">Your Mission</h3>
+          <p className="text-gray-700">
+            Call customer service and negotiate your bill back down. Use any tactics: loyalty, competitors, escalation.
+          </p>
+        </div>
+      </div>
+      
+      <div className="text-center">
+        <Button 
+          size="lg" 
+          className="bg-emerald-600 hover:bg-emerald-700 rounded-full px-8 py-6 text-lg"
+          onClick={() => {
+            if (!hasAcceptedTerms) {
+              setShowTermsDialog(true);
+            } else {
+              setPhase("call");
+              setActiveDrawerTab("mission");
+            }
+          }}>
+          <PhoneOff className="mr-2 h-5 w-5" />
+          Start Negotiation Call
+        </Button>
+        <p className="text-sm text-gray-500 mt-3">
+          Practice your negotiation skills with AI • 5 min max
         </p>
       </div>
-      <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 rounded-full"
-              onClick={()=>{
-                setPhase("call");
-                setActiveDrawerTab("mission"); // Show mission tab when starting call
-              }}>
-        Start Call
-      </Button>
     </div>
   )
 
@@ -796,11 +817,16 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
     <div>
       <h3 className="font-semibold mb-2">Negotiation Tips</h3>
       <ul className="list-disc pl-5 text-gray-700 text-sm space-y-2">
-        <li>Stay calm and polite, even if frustrated.</li>
-        <li>Clearly state your issue and desired outcome.</li>
-        <li>Ask clarifying questions if you don't understand something.</li>
-        <li>Mention your loyalty or history as a customer if relevant.</li>
-        <li>Be persistent but respectful if you need to escalate.</li>
+        <li><strong>Open strong:</strong> "I've been a loyal customer for X years and I'm shocked by this 30% increase."</li>
+        <li><strong>Use competition:</strong> "Xfinity offers $55/month" or "Verizon has plans for $60" - even general pricing helps.</li>
+        <li><strong>Don't accept first offer:</strong> If they offer $5 off, say "That's not enough to keep me as a customer."</li>
+        <li><strong>Escalate strategically:</strong> "I need to speak with someone who can actually help me" or "Please transfer me to retention."</li>
+        <li><strong>Create urgency:</strong> "I'm ready to cancel today unless we can work something out."</li>
+        <li><strong>Be specific:</strong> "I want my bill back to $69" gives them a clear target.</li>
+        <li><strong>Use silence:</strong> After they make an offer, pause for 3-5 seconds before responding.</li>
+        <li><strong>Document everything:</strong> "So you're offering $74/month for 12 months, correct?"</li>
+        <li><strong>Know when to push:</strong> If supervisor offers more than frontline, they likely have more room.</li>
+        <li><strong>Stay professional:</strong> Firm but polite gets better results than anger.</li>
       </ul>
     </div>
   )
