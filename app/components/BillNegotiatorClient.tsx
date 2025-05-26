@@ -8,7 +8,8 @@ import {
   ArrowLeft,
   Mic,
   List,
-  PhoneOff
+  PhoneOff,
+  AlertTriangle
 } from "lucide-react"
 import { 
   useRealtimeNegotiation, 
@@ -27,6 +28,8 @@ import {
 } from "@/components/ui/dialog"
 import type { AgentConfig } from "../banyanAgentConfigs/types"; // Import AgentConfig type
 import { frontlineAgentConfig, supervisorAgentConfig } from "../banyanAgentConfigs"; // Import agent configs
+import { TalkingOrb } from "./TalkingOrb" // Import the TalkingOrb component
+import confetti from "canvas-confetti" // Import confetti library
 
 /*-------------------------------------------------------------------------*/
 /*  Message + Scenario types                                               */
@@ -58,12 +61,30 @@ type Message = { id: string; role: string; text: string }
 export default function BillNegotiatorClient() {
   // flow pages
   const [phase, setPhase] = useState<"intro"|"scenario"|"call"|"report">("intro")
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
+  const [showTermsDialog, setShowTermsDialog] = useState(false)
+
+  // TEST MODE: Set to true to skip to report with mock data
+  const TEST_MODE = false; // Change to true for testing
+  const MOCK_REPORT = {
+    strengths: [
+      "Remained calm and professional throughout",
+      "Clearly stated the issue with the unexpected bill increase",
+      "Successfully negotiated a reduction back to original price"
+    ],
+    improvements: [
+      "Could have asked about additional services or perks",
+      "Might have pushed for a longer-term price guarantee"
+    ],
+    outcome: "Successfully reduced bill from $89 back to $69 per month",
+    rating: "⭐⭐⭐⭐☆"
+  };
 
   // call state
   const [messages,  setMsgs]      = useState<Message[]>([])
   // const [stepId,    setStepId]    = useState("greeting") // Removed for MVP
   const [activeDrawerTab, setActiveDrawerTab] = useState<null|"transcript"|"mission"|"tips">(null)
-  const [report,    setReport]    = useState<any>(null)
+  const [report,    setReport]    = useState<any>(TEST_MODE ? MOCK_REPORT : null)
   // const roleRef = useRef<RealtimeAgentRole>("agent_frontline") // To be replaced by agent config state
   const { toast } = useToast()
 
@@ -71,6 +92,7 @@ export default function BillNegotiatorClient() {
   const [currentSessionStatus, setCurrentSessionStatus] = useState<RealtimeSessionStatus>("DISCONNECTED");
   const [isRealtimeAgentSpeaking, setIsRealtimeAgentSpeaking] = useState<boolean>(false);
   const [isCallEndedByAgent, setIsCallEndedByAgent] = useState<boolean>(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState<boolean>(false); // Track when user is speaking
   // const [isEscalationAcknowledgementPending, setIsEscalationAcknowledgementPending] = useState<boolean>(false); // Will be handled by agent tool calls
 
   // State for current agent config
@@ -80,8 +102,24 @@ export default function BillNegotiatorClient() {
   const [callEndedAndNeedsScoring, setCallEndedAndNeedsScoring] = useState<boolean>(false);
   const [userRequestedDisconnect, setUserRequestedDisconnect] = useState<boolean>(false);
 
-  // State for the call ended modal
-  const [isCallEndedModalOpen, setIsCallEndedModalOpen] = useState<boolean>(false);
+  // TEST MODE: Automatically set up test state
+  useEffect(() => {
+    if (TEST_MODE) {
+      setPhase("call");
+      setIsCallEndedByAgent(true);
+      setMsgs([
+        { id: "1", role: "Sarah", text: "Thank you for calling customer service. My name is Sarah. How can I help you today?" },
+        { id: "2", role: "user", text: "Hi Sarah, I noticed my internet bill went up from $69 to $89 without any notice." },
+        { id: "3", role: "Sarah", text: "I understand your concern. Let me look into that for you." },
+        { id: "4", role: "user", text: "I've been a loyal customer for 5 years and this increase seems unfair." },
+        { id: "5", role: "Sarah", text: "You're absolutely right. As a valued customer, I can offer you a promotional rate of $69 for the next 12 months." },
+        { id: "6", role: "user", text: "That sounds great, thank you!" },
+        { id: "7", role: "Sarah", text: "You're welcome! I've applied the discount to your account. Is there anything else I can help you with?" },
+        { id: "8", role: "user", text: "No, that's all. Thank you for your help!" },
+        { id: "9", role: "Sarah", text: "Thank you for calling. Have a great day!" }
+      ]);
+    }
+  }, [TEST_MODE]);
 
   // Callbacks for the hook
   const handleMessagesUpdate = useCallback((newMessages: Message[]) => {
@@ -96,13 +134,23 @@ export default function BillNegotiatorClient() {
     setCurrentSessionStatus(status);
   }, [setCurrentSessionStatus]);
 
+  const handleUserSpeakingChange = useCallback((isSpeaking: boolean) => {
+    setIsUserSpeaking(isSpeaking);
+  }, [setIsUserSpeaking]);
+
   const score = useCallback(async (transcript: string) => {
     console.log("BN_CLIENT: score() called. Transcript provided:", transcript);
     // const transcript = messages.map(m=>`${m.role.toUpperCase()}: ${m.text}`).join("\n"); // Transcript is now passed as an argument
     // console.log("BN_CLIENT: Transcript for scoring:", transcript);
     try {
       const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string). Do not nest the result under any other key. Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a star rating out of 5, based on SOLELY on how much the customer was able to get the bill reduced (ex: ⭐⭐⭐⭐⭐ for 5 stars for under $69, ⭐⭐⭐⭐☆ for 4 stars for $69-$79, ⭐⭐⭐☆☆ for 3 stars for $79-$89, etc.). \n\n${transcript}`})});
+        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean). Do not nest the result under any other key. 
+
+Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a star rating out of 5, based on the customer's success in getting ANY bill reduction or concession: ⭐⭐⭐⭐⭐ for 5 stars if bill reduced to $69 or below, ⭐⭐⭐⭐☆ for 4 stars if bill reduced to $70-$79, ⭐⭐⭐☆☆ for 3 stars if any discount/credit was obtained, ⭐⭐☆☆☆ for 2 stars if some concession was made, ⭐☆☆☆☆ for 1 star if no reduction achieved. Be generous with ratings for any success.
+
+confettiWorthy should be true ONLY if the customer achieved a truly excellent negotiation result - specifically if they got their monthly bill reduced to $70 or below. Do NOT set this to true for small credits, one-time discounts, or bills above $70.
+
+\n\n${transcript}`})});
       
       console.log("BN_CLIENT: Score API response status:", r.status, "OK?:", r.ok);
 
@@ -150,21 +198,10 @@ export default function BillNegotiatorClient() {
   
   // This function is called by the hook when the agent signals call end.
   const handleAgentInitiatedCallEnd = useCallback(() => {
-    // toast({  // Remove toast call
-    //   title: "Call Ended",
-    //   description: "The agent has ended the call.",
-    //   // variant: "default",
-    // });
-    setIsCallEndedModalOpen(true); // Open the modal instead
     setIsCallEndedByAgent(true);
-    // User will click "Show my score!" to navigate
-    // const currentTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n"); // Score via useEffect
-    // console.log("BN_CLIENT: Agent ended call. Transcript for scoring:", currentTranscript);
-    // score(currentTranscript); // Score via useEffect
     setCallEndedAndNeedsScoring(true);
-    // Disconnection will be handled by an effect watching isCallEndedByAgent
-  // }, [setIsCallEndedByAgent, score, messages]);
-  }, [setIsCallEndedByAgent, setIsCallEndedModalOpen, setCallEndedAndNeedsScoring]); // Added setIsCallEndedModalOpen and setCallEndedAndNeedsScoring to dependencies
+    // Don't show modal or change phase - just let the report appear below
+  }, [setIsCallEndedByAgent, setCallEndedAndNeedsScoring]);
 
   const handleAgentTransferRequested = useCallback((targetAgentName: string, transferArgs: { reason?: string; conversation_summary?: string }) => {
     console.log(`BN_CLIENT: Agent transfer requested to ${targetAgentName}. Reason: ${transferArgs.reason}, Summary: ${transferArgs.conversation_summary}`);
@@ -199,10 +236,13 @@ export default function BillNegotiatorClient() {
   const {
     connect: realtimeConnect,
     disconnect: realtimeDisconnect,
+    userAudioStream, // Get the user's audio stream for visualization
+    agentAudioStream, // Get the agent's audio stream for visualization
   } = useRealtimeNegotiation({
     onMessagesUpdate: handleMessagesUpdate,
     onAgentSpeakingChange: handleAgentSpeakingChange,
     onSessionStatusChange: handleSessionStatusChange,
+    onUserSpeakingChange: handleUserSpeakingChange,
     currentAgentConfig: currentAgentConfig, // Pass currentAgentConfig to the hook
     // onUserTranscriptCompleted: agentLogic, // Commented out, agentLogic is removed for now
     onUserTranscriptCompleted: (transcript: string) => { console.log("User transcript completed:", transcript); /* Placeholder */ },
@@ -228,17 +268,12 @@ export default function BillNegotiatorClient() {
   // User-initiated end call
   const endCallByUser = useCallback(() => {
     console.log("BN_CLIENT: endCallByUser invoked.");
-    // if (currentSessionStatus !== "DISCONNECTED") { // Disconnect via useEffect
-    //   realtimeDisconnect();
-    // }
-    setPhase("report");
-    // const currentTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n"); // Score via useEffect
-    // console.log("BN_CLIENT: User ended call. Transcript for scoring:", currentTranscript);
-    // score(currentTranscript); // Score via useEffect
+    // Keep phase as "call" to show report below, just like when agent ends
+    // setPhase("report"); // Remove this - we want to stay in call phase
+    setIsCallEndedByAgent(true); // Set this to true to show report below
     setCallEndedAndNeedsScoring(true);
     setUserRequestedDisconnect(true); // Signal for useEffect to disconnect
-  // }, [realtimeDisconnect, setPhase, score, currentSessionStatus, messages]);
-  }, [setPhase]); // Removed realtimeDisconnect, score, currentSessionStatus, messages. Stable setters omitted.
+  }, []); // Removed setPhase from dependencies
 
   /* --- Start connection when phase switches to "call" --- */
   useEffect(() => {
@@ -362,6 +397,81 @@ export default function BillNegotiatorClient() {
     }
   }, [callEndedAndNeedsScoring, messages, score]);
 
+  // Effect to trigger confetti when successful negotiation is detected
+  useEffect(() => {
+    console.log("BN_CLIENT: Confetti effect triggered. Report:", report, "Phase:", phase, "IsCallEndedByAgent:", isCallEndedByAgent);
+    
+    if (report && (phase === "report" || isCallEndedByAgent)) {
+      console.log("BN_CLIENT: Report exists and conditions met for confetti check");
+      
+      // Handle error reports
+      if (report.error) {
+        console.log("BN_CLIENT: Report contains error, skipping confetti");
+        return;
+      }
+      
+      // Parse the report if it's from the API
+      let parsed = report;
+      
+      // If report has a text property, it's from the API and needs parsing
+      if (report.text && typeof report.text === "string") {
+        console.log("BN_CLIENT: Report has text property, parsing JSON");
+        try {
+          // Remove any markdown code blocks and parse
+          const cleanedText = report.text.replace(/```json\s*|\s*```/g, "").trim();
+          parsed = JSON.parse(cleanedText);
+          console.log("BN_CLIENT: Successfully parsed report:", parsed);
+        } catch (e) {
+          console.error("BN_CLIENT: Failed to parse report.text:", e);
+          console.error("BN_CLIENT: Raw text was:", report.text);
+          return; // Exit if we can't parse
+        }
+      }
+      
+      // Now check for confettiWorthy flag
+      if (parsed && parsed.confettiWorthy === true) {
+        console.log("BN_CLIENT: AI determined this is confetti-worthy! FIRING CONFETTI!");
+        
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          try {
+            // Trigger confetti animation
+            confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 }
+            });
+            console.log("BN_CLIENT: Main confetti burst fired!");
+            
+            // Additional burst for 5-star ratings
+            const ratingStars = (parsed.rating?.match(/⭐/g) || []).length;
+            if (ratingStars === 5) {
+              setTimeout(() => {
+                confetti({
+                  particleCount: 50,
+                  angle: 60,
+                  spread: 55,
+                  origin: { x: 0 }
+                });
+                confetti({
+                  particleCount: 50,
+                  angle: 120,
+                  spread: 55,
+                  origin: { x: 1 }
+                });
+                console.log("BN_CLIENT: Bonus confetti bursts for 5-star rating!");
+              }, 250);
+            }
+          } catch (error) {
+            console.error("BN_CLIENT: Confetti error:", error);
+          }
+        }, 500); // Delay to ensure DOM is ready
+      } else {
+        console.log("BN_CLIENT: No confetti needed. confettiWorthy:", parsed?.confettiWorthy);
+      }
+    }
+  }, [report, phase, isCallEndedByAgent]);
+
   // Effect for user-initiated disconnect
   useEffect(() => {
     let timerId: NodeJS.Timeout | undefined;
@@ -391,10 +501,254 @@ export default function BillNegotiatorClient() {
         Practice your negotiation skills in this interactive simulation. You'll be given
         a scenario and will negotiate with a customer-service representative to resolve your issue.
       </p>
-      <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 rounded-full"
-              onClick={()=>setPhase("scenario")}>
+      
+      {/* Add warning box */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+        <div className="flex items-start">
+          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 mr-2 flex-shrink-0" />
+          <div className="text-sm text-amber-800">
+            <p className="font-semibold mb-1">Demo Limitations</p>
+            <ul className="list-disc ml-5 space-y-1">
+              <li>Maximum 3 practice sessions per hour</li>
+              <li>Each call limited to 5 minutes</li>
+              <li>This is an AI simulation for educational purposes only</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <Button 
+        size="lg" 
+        className="bg-emerald-600 hover:bg-emerald-700 rounded-full"
+        onClick={() => {
+          if (!hasAcceptedTerms) {
+            setShowTermsDialog(true);
+          } else {
+            setPhase("scenario");
+          }
+        }}>
         Get Started
       </Button>
+
+      {/* Terms Dialog */}
+      <Dialog open={showTermsDialog} onOpenChange={setShowTermsDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Terms of Use</DialogTitle>
+          </DialogHeader>
+          <div className="text-left space-y-3 pt-4 text-sm text-muted-foreground">
+            <p>
+              <strong>Educational Demo Only:</strong> This is a free educational tool to practice negotiation skills. 
+              The AI agents simulate customer service representatives and their responses are not real.
+            </p>
+            
+            <div>
+              <p className="mb-2">
+                <strong>Usage Limits:</strong> To ensure fair access for all users:
+              </p>
+              <ul className="list-disc ml-5 space-y-1">
+                <li>Maximum 3 sessions per hour per user</li>
+                <li>Each session limited to 5 minutes</li>
+                <li>Sessions may be terminated if idle for 60 seconds</li>
+              </ul>
+            </div>
+            
+            <p>
+              <strong>Privacy:</strong> We do not store personal information. Session data may be logged 
+              for improving the service. Do not share any real personal or financial information.
+            </p>
+            
+            <p>
+              <strong>No Guarantees:</strong> Skills learned here may not directly translate to real-world 
+              negotiations. Results will vary based on actual service providers and their policies.
+            </p>
+            
+            <p className="text-sm text-gray-600">
+              By clicking "I Agree", you acknowledge that you understand and accept these terms.
+            </p>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowTermsDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => {
+                setHasAcceptedTerms(true);
+                setShowTermsDialog(false);
+                setPhase("scenario");
+              }}
+            >
+              I Agree
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Development Testing Panel */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-8 p-4 bg-gray-100 rounded-lg">
+          <h3 className="font-semibold mb-2">🧪 Development Testing</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setPhase("call");
+                setIsCallEndedByAgent(true);
+                setReport({
+                  strengths: ["Excellent persistence", "Used multiple negotiation tactics", "Leveraged customer loyalty"],
+                  improvements: ["Could have mentioned competitor offers earlier"],
+                  outcome: "Outstanding negotiation! Bill reduced from $89 to $64 with premium channels added",
+                  rating: "⭐⭐⭐⭐⭐",
+                  confettiWorthy: true
+                });
+                setMsgs([
+                  { id: "1", role: "Sarah", text: "Thank you for calling. How can I help?" },
+                  { id: "2", role: "user", text: "My bill went up from $69 to $89 without notice. I've been a customer for 8 years." },
+                  { id: "3", role: "Sarah", text: "I can offer a $5 loyalty credit." },
+                  { id: "4", role: "user", text: "That's not enough. Competitor X offers $55. I need to speak to a supervisor." },
+                  { id: "5", role: "Marco", text: "I see your loyalty. I can offer $64/month plus premium channels." },
+                  { id: "6", role: "user", text: "That's perfect, thank you!" }
+                ]);
+              }}
+              className="bg-green-100 hover:bg-green-200"
+            >
+              5⭐ Perfect ($64)
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setPhase("call");
+                setIsCallEndedByAgent(true);
+                setReport({
+                  strengths: ["Good negotiation", "Stayed professional", "Achieved target price"],
+                  improvements: ["Could have pushed for better terms", "Missed opportunity for additional perks"],
+                  outcome: "Successfully reduced bill from $89 back to original $69",
+                  rating: "⭐⭐⭐⭐☆",
+                  confettiWorthy: true
+                });
+                setMsgs([
+                  { id: "1", role: "Sarah", text: "How can I help you today?" },
+                  { id: "2", role: "user", text: "My bill increased to $89." },
+                  { id: "3", role: "Sarah", text: "After reviewing, I can offer $69 for 12 months." },
+                  { id: "4", role: "user", text: "That works for me." }
+                ]);
+              }}
+              className="bg-blue-100 hover:bg-blue-200"
+            >
+              4⭐ Good ($69)
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setPhase("call");
+                setIsCallEndedByAgent(true);
+                setReport({
+                  strengths: ["Made an attempt", "Remained polite"],
+                  improvements: ["Need to be more assertive", "Should have asked for supervisor", "Didn't mention loyalty or competitors"],
+                  outcome: "Minimal success - only got $5 monthly discount, bill now $84",
+                  rating: "⭐⭐⭐☆☆",
+                  confettiWorthy: false
+                });
+                setMsgs([
+                  { id: "1", role: "Sarah", text: "How can I help?" },
+                  { id: "2", role: "user", text: "My bill went up." },
+                  { id: "3", role: "Sarah", text: "I can offer $5 off per month." },
+                  { id: "4", role: "user", text: "Okay, thanks." }
+                ]);
+              }}
+              className="bg-yellow-100 hover:bg-yellow-200"
+            >
+              3⭐ Okay ($84)
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setPhase("call");
+                setIsCallEndedByAgent(true);
+                setReport({
+                  strengths: ["Tried to negotiate"],
+                  improvements: ["Too passive", "Gave up too easily", "No leverage used", "Should escalate when hitting resistance"],
+                  outcome: "Poor result - only received one-time $10 credit, monthly bill remains $89",
+                  rating: "⭐⭐☆☆☆",
+                  confettiWorthy: false
+                });
+                setMsgs([
+                  { id: "1", role: "Sarah", text: "How can I help?" },
+                  { id: "2", role: "user", text: "Can you lower my bill?" },
+                  { id: "3", role: "Sarah", text: "I can only offer a one-time $10 credit." },
+                  { id: "4", role: "user", text: "I guess that's better than nothing." }
+                ]);
+              }}
+              className="bg-orange-100 hover:bg-orange-200"
+            >
+              2⭐ Poor (credit)
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setPhase("call");
+                setIsCallEndedByAgent(true);
+                setReport({
+                  strengths: ["Attempted to communicate issue"],
+                  improvements: ["No negotiation skills shown", "Accepted first answer", "Didn't advocate for yourself", "Failed to use any leverage"],
+                  outcome: "Failed negotiation - no reduction achieved, bill remains at $89",
+                  rating: "⭐☆☆☆☆",
+                  confettiWorthy: false
+                });
+                setMsgs([
+                  { id: "1", role: "Sarah", text: "How can I help?" },
+                  { id: "2", role: "user", text: "My bill went up." },
+                  { id: "3", role: "Sarah", text: "That's our new standard rate." },
+                  { id: "4", role: "user", text: "Oh, okay then." }
+                ]);
+              }}
+              className="bg-red-100 hover:bg-red-200"
+            >
+              1⭐ Failed ($89)
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setPhase("call");
+                setIsCallEndedByAgent(true);
+                setReport({
+                  strengths: ["Got to supervisor", "Mentioned competitors"],
+                  improvements: ["Could have been more specific about competitor offers", "Accepted first supervisor offer"],
+                  outcome: "Good negotiation - reduced bill to $74 per month",
+                  rating: "⭐⭐⭐☆☆",
+                  confettiWorthy: false
+                });
+                setMsgs([
+                  { id: "1", role: "Sarah", text: "How can I help?" },
+                  { id: "2", role: "user", text: "I need a better rate or I'll switch." },
+                  { id: "3", role: "user", text: "Let me speak to a supervisor." },
+                  { id: "4", role: "Marco", text: "I can offer $74 per month." },
+                  { id: "5", role: "user", text: "Alright, I'll take it." }
+                ]);
+              }}
+              className="bg-purple-100 hover:bg-purple-200"
+            >
+              3⭐ Decent ($74)
+            </Button>
+          </div>
+          <p className="text-xs text-gray-600 mt-2">Test different negotiation outcomes and confetti triggers</p>
+        </div>
+      )}
     </div>
   )
 
@@ -414,7 +768,10 @@ export default function BillNegotiatorClient() {
         </p>
       </div>
       <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 rounded-full"
-              onClick={()=>setPhase("call")}>
+              onClick={()=>{
+                setPhase("call");
+                setActiveDrawerTab("mission"); // Show mission tab when starting call
+              }}>
         Start Call
       </Button>
     </div>
@@ -451,10 +808,14 @@ export default function BillNegotiatorClient() {
   // Multi-tab Drawer
   const renderDrawer = () => (
     <aside
-      className="fixed right-0 top-0 h-full w-72 max-w-full bg-white shadow-lg pb-4 px-4 overflow-y-auto z-50 flex flex-col md:absolute md:top-16 md:h-[calc(100%-4rem)] md:w-72"
-      style={{maxWidth: '18rem'}}
+      className={`
+        fixed inset-0 bg-white shadow-lg overflow-y-auto z-50 flex flex-col
+        md:absolute md:right-0 md:top-16 md:left-auto md:bottom-auto 
+        md:h-[calc(100%-4rem)] md:w-72 md:max-w-[18rem]
+        ${activeDrawerTab ? 'block' : 'hidden'}
+      `}
     >
-      <div className="sticky top-0 z-10 bg-white pb-2 mb-4 -mx-4 px-4 min-h-[3.5rem] border-b border-gray-100 pt-5 md:pt-0">
+      <div className="sticky top-0 z-10 bg-white pb-2 mb-4 border-b border-gray-100 px-4 pt-5 md:pt-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
             <button
@@ -471,22 +832,16 @@ export default function BillNegotiatorClient() {
             >Tips</button>
           </div>
           <button
-            className="ml-auto text-gray-400 hover:text-gray-700 text-xl font-bold"
+            className="ml-auto text-gray-400 hover:text-gray-700 text-xl font-bold md:block"
             aria-label="Close drawer"
             onClick={()=>setActiveDrawerTab(null)}
           >&times;</button>
         </div>
-        {/* Section header for each tab */}
-        <div>
-          {activeDrawerTab==="transcript"}
-          {activeDrawerTab==="mission"}
-          {activeDrawerTab==="tips"}
-        </div>
       </div>
-      <div className="flex-1 pt-4">
+      <div className="flex-1 px-4 pb-4">
         {activeDrawerTab==="transcript" && (
           <div>
-            {messages.map(m=>(
+            {messages.slice().reverse().map(m=>(
               // <p key={m.id} className={`text-sm mb-2 ${m.role==="agent"?"text-gray-800":"text-blue-600"}`}>
               //   <strong>{m.role==="agent"?"Agent":"You"}:</strong> {m.text}
               <p key={m.id} className={`text-sm mb-2 ${m.role !== "user" ? "text-gray-800" : "text-blue-600"}`}>
@@ -502,7 +857,7 @@ export default function BillNegotiatorClient() {
   )
 
   const renderCall = () => (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center px-4">
       {/* iPhone-ish frame */}
       <div className="relative w-72 h-96 bg-black rounded-[2.5rem] shadow-inner flex flex-col items-center pt-16">
         <p className="text-white/60 text-xs">
@@ -514,125 +869,272 @@ export default function BillNegotiatorClient() {
           {currentAgentConfig.publicDescription.split(",")[0] || currentAgentConfig.name}
         </h2>
 
-        {/* mic button - For MVP, this might be a status indicator or disabled if using server VAD primarily */}
-        <button
-          // onClick={...} // Functionality to be determined for MVP (PTT or status)
-          disabled // Disable for now until PTT logic is decided
-          className={`absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full h-16 w-16 flex items-center
-                      justify-center ${isRealtimeAgentSpeaking ?"bg-gray-500":"bg-gray-400"}`}> 
-                      {/* Visuals depend on desired MVP state, e.g., isRealtimeAgentSpeaking or currentSessionStatus */} 
-          {currentSessionStatus === "CONNECTED" ? <Mic className="h-8 w-8 text-white"/> : <PhoneOff className="h-8 w-8 text-white"/>}
-        </button>
+        {/* Talking Orb instead of mic button */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <TalkingOrb 
+            isAgentSpeaking={isRealtimeAgentSpeaking}
+            isUserSpeaking={isUserSpeaking}
+            size={120}
+            userAudioStream={userAudioStream || undefined}
+            agentAudioStream={agentAudioStream || undefined}
+          />
+        </div>
+
+        {/* Connection status indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 text-xs">
+          {currentSessionStatus === "CONNECTING" && "Connecting..."}
+          {currentSessionStatus === "ERROR" && "Connection Error"}
+          {currentSessionStatus === "DISCONNECTED" && "Disconnected"}
+        </div>
       </div>
 
       {/* controls */}
       <div className="mt-4 flex items-center gap-4">
-        <Button variant="outline" onClick={()=>setActiveDrawerTab("transcript")}> Transcript </Button>
-        <Button variant="outline" onClick={()=>setActiveDrawerTab("mission")}> Mission </Button>
-        <Button variant="outline" onClick={()=>setActiveDrawerTab("tips")}> Tips </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("transcript")} className="hidden md:inline-flex"> Transcript </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("mission")} className="hidden md:inline-flex"> Mission </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("tips")} className="hidden md:inline-flex"> Tips </Button>
         <Button
-          // variant="ghost" // Removing ghost variant to apply custom background
-          className={`px-4 py-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background ${isCallEndedByAgent ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
-          onClick={isCallEndedByAgent ? () => setPhase("report") : endCallByUser} 
+          className={`px-4 py-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background ${isCallEndedByAgent ? 'bg-gray-400 hover:bg-gray-500 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+          onClick={endCallByUser}
+          disabled={isCallEndedByAgent}
         >
-          {isCallEndedByAgent ? "Show my report!" : "End Call"}
+          {isCallEndedByAgent ? "Call Ended" : "End Call"}
         </Button>
       </div>
 
-      {/* optional drawer */}
-      {activeDrawerTab && renderDrawer()}
+      {/* Desktop drawer - hidden on mobile */}
+      <div className="hidden md:block">
+        {activeDrawerTab && renderDrawer()}
+      </div>
+
+      {/* Mobile tabs - shown below call interface on mobile */}
+      <div className="md:hidden w-full mt-6">
+        {/* Tab buttons */}
+        <div className="flex gap-2 justify-center mb-4">
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="transcript" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
+            onClick={()=>setActiveDrawerTab(activeDrawerTab === "transcript" ? null : "transcript")}
+          >Transcript</button>
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="mission" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
+            onClick={()=>setActiveDrawerTab(activeDrawerTab === "mission" ? null : "mission")}
+          >Mission</button>
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
+            onClick={()=>setActiveDrawerTab(activeDrawerTab === "tips" ? null : "tips")}
+          >Tips</button>
+        </div>
+
+        {/* Tab content OR Report */}
+        {isCallEndedByAgent && report ? (
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h3 className="text-xl font-bold mb-4">Negotiation Report</h3>
+            {renderReportContent()}
+            <Button variant="outline" className="mt-4 w-full" onClick={()=>location.reload()}>Try Again</Button>
+          </div>
+        ) : (
+          activeDrawerTab && (
+            <div className="bg-white rounded-lg shadow-md p-4 max-h-64 overflow-y-auto">
+              {activeDrawerTab==="transcript" && (
+                <div>
+                  {messages.slice().reverse().map(m=>(
+                    <p key={m.id} className={`text-sm mb-2 ${m.role !== "user" ? "text-gray-800" : "text-blue-600"}`}>
+                      <strong>{m.role === "user" ? "You" : m.role}:</strong> {m.text}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {activeDrawerTab==="mission" && renderMission()}
+              {activeDrawerTab==="tips" && renderTips()}
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Desktop report - shown below on desktop */}
+      {isCallEndedByAgent && report && (
+        <div className="hidden md:block w-full max-w-2xl mt-8">
+          <h2 className="text-2xl font-bold mb-4">Negotiation Report</h2>
+          {renderReportContent()}
+          <Button variant="outline" className="mt-4" onClick={()=>location.reload()}>Try Again</Button>
+        </div>
+      )}
     </div>
   )
 
   const renderReport = () => {
-    // Helper to clean and parse the report
-    function parseReport(report: any) {
-      if (!report) return null;
-      let text = typeof report === "string" ? report : report.text || "";
-      // Remove code block markers and trim
-      text = text.replace(/```json|```/g, "").trim();
+    // Parse the report if needed
+    let parsed = report;
+    
+    if (report?.text && typeof report.text === "string") {
       try {
-        return JSON.parse(text);
-      } catch {
-        // If already an object or parsing fails, return as is
-        return typeof report === "object" ? report : null;
+        const cleanedText = report.text.replace(/```json\s*|\s*```/g, "").trim();
+        parsed = JSON.parse(cleanedText);
+      } catch (e) {
+        console.error("Failed to parse report:", e);
+        parsed = null;
       }
     }
-
-    // Normalization function to ensure flat structure
-    function normalizeReport(report: any) {
-      // If wrapped in a single key, unwrap it
-      if (
-        report &&
-        typeof report === "object" &&
-        !Array.isArray(report) &&
-        Object.keys(report).length === 1
-      ) {
-        const first = Object.values(report)[0];
-        if (
-          first &&
-          typeof first === "object" &&
-          ("strengths" in first || "improvements" in first || "outcome" in first || "rating" in first)
-        ) {
-          return first;
-        }
-      }
-      // If already in the right shape, return as is
-      if (
-        report &&
-        typeof report === "object" &&
-        ("strengths" in report || "improvements" in report || "outcome" in report || "rating" in report)
-      ) {
-        return report;
-      }
-      // Otherwise, return null or a default
-      return null;
-    }
-
-    const parsedRaw = parseReport(report);
-    // let parsed = parsedRaw;
-    // if (parsed && parsed.customer) parsed = parsed.customer;
-    const parsed = normalizeReport(parsedRaw);
+    
+    // Extract star count for personalized message
+    const starCount = parsed ? (parsed.rating?.match(/⭐/g) || []).length : 0;
 
     return (
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Negotiation Report</h1>
         {parsed ? (
-          <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
-            {parsed.strengths && (
-              <div>
-                <h2 className="font-semibold mb-1">Strengths</h2>
-                <ul className="list-disc pl-5">
-                  {parsed.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                </ul>
-              </div>
-            )}
-            {parsed.improvements && (
-              <div>
-                <h2 className="font-semibold mb-1">Improvements</h2>
-                <ul className="list-disc pl-5">
-                  {parsed.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                </ul>
-              </div>
-            )}
-            {parsed.outcome && (
+          <>
+            <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
+              {parsed.strengths && (
                 <div>
-                  <h2 className="font-semibold mb-1">Outcome</h2>
-                  <p>{parsed.outcome}</p>
+                  <h2 className="font-semibold mb-1">Strengths</h2>
+                  <ul className="list-disc pl-5">
+                    {parsed.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                  </ul>
                 </div>
-            )}
-            {parsed.rating && (
-              <div>
-                <h2 className="font-semibold mb-1">Rating</h2>
-                <p>{parsed.rating}</p>
-              </div>
-            )}
-          </div>
+              )}
+              {parsed.improvements && (
+                <div>
+                  <h2 className="font-semibold mb-1">Improvements</h2>
+                  <ul className="list-disc pl-5">
+                    {parsed.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+              )}
+              {parsed.outcome && (
+                  <div>
+                    <h2 className="font-semibold mb-1">Outcome</h2>
+                    <p>{parsed.outcome}</p>
+                  </div>
+              )}
+              {parsed.rating && (
+                <div>
+                  <h2 className="font-semibold mb-1">Rating</h2>
+                  <p>{parsed.rating}</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Personalized message and CTA */}
+            <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+              <p className="text-sm text-gray-700 mb-3">
+                {starCount >= 4 && "We noticed you're a skilled negotiator! 🎉"}
+                {starCount === 3 && "We noticed you have good negotiation potential! 💪"}
+                {starCount <= 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+              </p>
+              <p className="text-sm font-semibold text-gray-800 mb-3">
+                Join Banyan to master money management and negotiation skills.
+              </p>
+              <a 
+                href="https://banyan.money" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors"
+              >
+                Join the Waitlist →
+              </a>
+            </div>
+          </>
         ) : (
           <p>Loading…</p>
         )}
         <Button variant="outline" className="mt-6" onClick={()=>location.reload()}>Try Again</Button>
       </div>
+    );
+  }
+
+  const renderReportContent = () => {
+    // Parse the report if needed
+    let parsed = report;
+    
+    if (report?.text && typeof report.text === "string") {
+      try {
+        const cleanedText = report.text.replace(/```json\s*|\s*```/g, "").trim();
+        parsed = JSON.parse(cleanedText);
+      } catch (e) {
+        console.error("Failed to parse report:", e);
+        return <p>Error loading report. Please try again.</p>;
+      }
+    }
+
+    if (!parsed || parsed.error) {
+      return <p>Loading report...</p>;
+    }
+
+    // Extract star count for large display
+    const starCount = (parsed.rating?.match(/⭐/g) || []).length;
+
+    return (
+      <>
+        {/* Large star rating display */}
+        {parsed.rating && (
+          <div className="text-center mb-6">
+            <div className="text-4xl mb-2">
+              {[...Array(starCount)].map((_, i) => (
+                <span 
+                  key={i} 
+                  className="inline-block animate-star-appear"
+                  style={{ animationDelay: `${i * 0.2}s` }}
+                >
+                  ⭐
+                </span>
+              ))}
+            </div>
+            <p className="text-lg font-semibold text-gray-700 animate-fade-in" style={{ animationDelay: `${starCount * 0.2}s` }}>
+              {starCount === 5 && "Perfect Negotiation!"}
+              {starCount === 4 && "Great Job!"}
+              {starCount === 3 && "Good Effort"}
+              {starCount === 2 && "Needs Improvement"}
+              {starCount === 1 && "Try Again"}
+            </p>
+          </div>
+        )}
+        
+        <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
+          {parsed.outcome && (
+              <div>
+                <h3 className="font-semibold mb-1">Outcome</h3>
+                <p>{parsed.outcome}</p>
+              </div>
+          )}
+          {parsed.strengths && (
+            <div>
+              <h3 className="font-semibold mb-1">Strengths</h3>
+              <ul className="list-disc pl-5">
+                {parsed.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+              </ul>
+            </div>
+          )}
+          {parsed.improvements && (
+            <div>
+              <h3 className="font-semibold mb-1">Areas for Improvement</h3>
+              <ul className="list-disc pl-5">
+                {parsed.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+        
+        {/* Personalized message and CTA */}
+        <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+          <p className="text-sm text-gray-700 mb-3">
+            {starCount >= 4 && "We noticed you're a skilled negotiator! 🎉"}
+            {starCount === 3 && "We noticed you have good negotiation potential! 💪"}
+            {starCount <= 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+          </p>
+          <p className="text-sm font-semibold text-gray-800 mb-3">
+            Join Banyan to master money management and negotiation skills.
+          </p>
+          <a 
+            href="https://banyan.money" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors"
+          >
+            Join the Waitlist →
+          </a>
+        </div>
+      </>
     );
   }
 
@@ -663,35 +1165,6 @@ export default function BillNegotiatorClient() {
           {phase==="report"   && renderReport()}
         </div>
       </section>
-
-      {/* Call Ended Modal */}
-      <Dialog open={isCallEndedModalOpen} onOpenChange={setIsCallEndedModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Call Ended</DialogTitle>
-            <DialogDescription>
-              The agent has ended the call. You can now view your negotiation report.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            {/* DialogClose can be used for a cancel-style button if needed */}
-            {/* <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Close
-              </Button>
-            </DialogClose> */}
-            <Button 
-              type="button" 
-              onClick={() => {
-                setIsCallEndedModalOpen(false);
-                setPhase("report");
-              }}
-            >
-              Show My Report
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* footer */}
       <footer className="py-6 border-t border-gray-100">

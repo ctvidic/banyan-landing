@@ -21,6 +21,7 @@ interface UseRealtimeNegotiationProps {
   onUserTranscriptCompleted: (transcript: string) => void;
   onAgentEndedCall: () => void;
   onAgentTransferRequested?: (targetAgentName: string, transferArgs: { reason?: string; conversation_summary?: string }) => void;
+  onUserSpeakingChange?: (isSpeaking: boolean) => void;
 }
 
 export function useRealtimeNegotiation({
@@ -31,11 +32,15 @@ export function useRealtimeNegotiation({
   onUserTranscriptCompleted,
   onAgentEndedCall,
   onAgentTransferRequested,
+  onUserSpeakingChange,
 }: UseRealtimeNegotiationProps) {
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>("DISCONNECTED");
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState<boolean>(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState<boolean>(false);
   const [isTransferInProgress, setIsTransferInProgress] = useState<boolean>(false);
+  const [userAudioStream, setUserAudioStream] = useState<MediaStream | null>(null);
+  const [agentAudioStream, setAgentAudioStream] = useState<MediaStream | null>(null);
   
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
@@ -53,14 +58,20 @@ export function useRealtimeNegotiation({
   const soundEffectAudioElementRef = useRef<HTMLAudioElement | null>(null); // Renamed from warningAudioElementRef
   const finalDisconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messageLimitWarningPlayedRef = useRef<boolean>(false);
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const idleWarningTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityTimeRef = useRef<number>(Date.now());
+  const isIntentionalDisconnectRef = useRef<boolean>(false);
 
   // Constants for guardrails and sound effects
-  const MAX_CALL_DURATION_MS = 10 * 60 * 1000; // 10 minutes
-  const MAX_MESSAGES = 100; // Max 100 messages (user + agent)
+  const MAX_CALL_DURATION_MS = 5 * 60 * 1000; // 5 minutes (reduced from 10)
+  const MAX_MESSAGES = 50; // Max 50 messages (reduced from 100)
   const WARNING_AUDIO_SRC = "/audio/warning.mp3"; 
   const DISCONNECT_AUDIO_SRC = "/audio/disconnect.mp3"; // For agent-initiated disconnect
   const CALL_DURATION_WARNING_PERIOD_MS = 30 * 1000; // 30 seconds warning
   const MESSAGE_WARNING_THRESHOLD_FACTOR = 0.9; // Warn at 90% of max messages
+  const IDLE_TIMEOUT_MS = 60 * 1000; // 60 seconds of no activity
+  const IDLE_WARNING_MS = 45 * 1000; // Warn after 45 seconds of inactivity
 
   // const agentNameMap: Record<AgentRole, "Sarah" | "Marco"> = {
   //   agent_frontline: "Sarah",
@@ -169,8 +180,13 @@ export function useRealtimeNegotiation({
           if (pcRef.current.iceConnectionState === "failed" || 
               pcRef.current.iceConnectionState === "disconnected" || 
               pcRef.current.iceConnectionState === "closed") {
-            // Can consider a more nuanced status or retry, but for MVP ERROR is fine
-            // if (sessionStatus !== "DISCONNECTED") setSessionStatus("ERROR");
+            // Don't treat connection state changes as errors during transfers or intentional disconnects
+            if (!isTransferInProgress && !isIntentionalDisconnectRef.current && sessionStatus !== "DISCONNECTED") {
+              console.warn("ICE connection state indicates connection issues:", pcRef.current.iceConnectionState);
+              setSessionStatus("ERROR");
+            } else {
+              console.log("ICE connection state change during transfer/disconnect - this is expected:", pcRef.current.iceConnectionState);
+            }
           }
         }
       };
@@ -180,13 +196,34 @@ export function useRealtimeNegotiation({
         if (audioElementRef.current && e.streams[0]) {
           audioElementRef.current.srcObject = e.streams[0];
           audioElementRef.current.play().catch(error => console.warn("Audio autoplay failed:", error));
+          setAgentAudioStream(e.streams[0]); // Store the agent's audio stream for visualization
         } else {
           console.warn("Audio element ref not available or no streams on track event");
         }
       };
 
+      // Add error handling for track events
+      pc.addEventListener('track', (e) => {
+        e.track.addEventListener('ended', () => {
+          console.log('Track ended:', e.track.kind);
+          // Don't treat track ending as an error during transfers
+          if (!isTransferInProgress && !isIntentionalDisconnectRef.current) {
+            console.warn('Unexpected track ending detected');
+          }
+        });
+        
+        e.track.addEventListener('mute', () => {
+          console.log('Track muted:', e.track.kind);
+        });
+        
+        e.track.addEventListener('unmute', () => {
+          console.log('Track unmuted:', e.track.kind);
+        });
+      });
+
       const userMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       userMediaStream.getTracks().forEach(track => pc.addTrack(track, userMediaStream));
+      setUserAudioStream(userMediaStream); // Store the stream for visualization
 
       // Codec preference (using 'opus' as default from example)
       const codec = "opus"; 
@@ -217,6 +254,9 @@ export function useRealtimeNegotiation({
         console.log("REALTIME_HOOK: Data channel OPENED.");
         setSessionStatus("CONNECTED");
 
+        // Reset flags for new session
+        isIntentionalDisconnectRef.current = false;
+        
         // Reset message count and warning flags for the new session
         messageCountRef.current = 0;
         messageLimitWarningPlayedRef.current = false;
@@ -224,7 +264,34 @@ export function useRealtimeNegotiation({
         // Clear any existing timers
         if (callDurationTimerRef.current) clearTimeout(callDurationTimerRef.current);
         if (finalDisconnectTimerRef.current) clearTimeout(finalDisconnectTimerRef.current);
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+        if (idleWarningTimerRef.current) clearTimeout(idleWarningTimerRef.current);
         
+        // Reset activity tracking
+        lastActivityTimeRef.current = Date.now();
+        
+        // Start idle warning timer
+        idleWarningTimerRef.current = setTimeout(() => {
+          console.warn("REALTIME_HOOK: Idle warning period reached.");
+          playWarningAudio();
+          const idleWarningMsgId = `system-idle-warning-${Date.now()}`;
+          setInternalMessages(prevMessages => {
+            return [...prevMessages, { id: idleWarningMsgId, role: "user" as const, text: "[System: No activity detected. Call will end in 15 seconds if no response.]" }];
+          });
+        }, IDLE_WARNING_MS);
+        
+        // Start idle timeout timer
+        idleTimerRef.current = setTimeout(() => {
+          console.warn("REALTIME_HOOK: Idle timeout reached. Disconnecting.");
+          const idleEndId = `system-idle-end-${Date.now()}`;
+          setInternalMessages(prevMessages => {
+            const endMessage: Message = { id: idleEndId, role: "user" as const, text: "[System: Call ended due to inactivity.]" };
+            return [...prevMessages, endMessage];
+          });
+          onAgentEndedCall();
+          disconnect();
+        }, IDLE_TIMEOUT_MS);
+
         // Start call duration PRE-warning timer
         const preWarningDuration = MAX_CALL_DURATION_MS - CALL_DURATION_WARNING_PERIOD_MS;
         if (preWarningDuration > 0) {
@@ -279,9 +346,9 @@ export function useRealtimeNegotiation({
             input_audio_transcription: { model: "whisper-1", language: "en" }, // Using whisper-1 as a common choice
             turn_detection: { // Default VAD settings from openai-realtime-agents example
               type: "server_vad",
-              threshold: 0.5,
+              threshold: 0.8, // Increased from 0.7 to be even less sensitive to noise
               prefix_padding_ms: 300,
-              silence_duration_ms: 200,
+              silence_duration_ms: 800, // Increased from 500ms to require longer pause before responding
               create_response: true, // Important: tells server to respond after VAD detects end of user speech
               interrupt_response: true // Allows agent to be interrupted
             },
@@ -327,7 +394,12 @@ export function useRealtimeNegotiation({
 
       dc.onerror = (err) => {
         console.error("Data channel error:", err);
-        setSessionStatus("ERROR");
+        // Don't set ERROR status if we're in the middle of a transfer, already disconnecting, or intentionally disconnecting
+        if (sessionStatus !== "DISCONNECTED" && !isTransferInProgress && !isIntentionalDisconnectRef.current) {
+          setSessionStatus("ERROR");
+        } else {
+          console.log("Data channel error during transfer/disconnect - this is expected and can be ignored.");
+        }
       };
 
       dc.onmessage = (event) => {
@@ -385,6 +457,13 @@ export function useRealtimeNegotiation({
 
   const disconnect = useCallback(() => {
     console.log("Disconnect function called.");
+    
+    // Set flag to indicate this is an intentional disconnect
+    isIntentionalDisconnectRef.current = true;
+    
+    // Set status to DISCONNECTED first to prevent error handlers from triggering
+    setSessionStatus("DISCONNECTED");
+    
     if (pcRef.current) {
       pcRef.current.getSenders().forEach((sender) => {
         if (sender.track) {
@@ -395,6 +474,8 @@ export function useRealtimeNegotiation({
       pcRef.current = null;
     }
     if (dcRef.current) {
+      // Remove error handler before closing to prevent spurious errors
+      dcRef.current.onerror = null;
       dcRef.current.close();
       dcRef.current = null;
     }
@@ -404,8 +485,9 @@ export function useRealtimeNegotiation({
         audioElementRef.current.srcObject = null;
     }
 
-    setSessionStatus("DISCONNECTED");
     setIsAgentSpeaking(false);
+    setUserAudioStream(null); // Clear the audio stream
+    setAgentAudioStream(null); // Clear the agent audio stream
     // setInternalMessages([]); // Optionally clear messages on disconnect
 
     // Clear guardrail timers/refs
@@ -417,6 +499,14 @@ export function useRealtimeNegotiation({
         clearTimeout(finalDisconnectTimerRef.current);
         finalDisconnectTimerRef.current = null;
     }
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+    if (idleWarningTimerRef.current) {
+      clearTimeout(idleWarningTimerRef.current);
+      idleWarningTimerRef.current = null;
+    }
     messageCountRef.current = 0; // Reset message count on disconnect
     messageLimitWarningPlayedRef.current = false; // Reset message warning flag
     setIsTransferInProgress(false); // Reset transfer in progress flag
@@ -426,6 +516,43 @@ export function useRealtimeNegotiation({
 
     console.log("Disconnected.");
   }, []);
+  
+  const resetIdleTimers = useCallback(() => {
+    lastActivityTimeRef.current = Date.now();
+    
+    // Clear existing idle timers
+    if (idleWarningTimerRef.current) {
+      clearTimeout(idleWarningTimerRef.current);
+      idleWarningTimerRef.current = null;
+    }
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+    
+    // Restart idle timers only if connected
+    if (sessionStatus === "CONNECTED") {
+      idleWarningTimerRef.current = setTimeout(() => {
+        console.warn("REALTIME_HOOK: Idle warning period reached.");
+        playWarningAudio();
+        const idleWarningMsgId = `system-idle-warning-${Date.now()}`;
+        setInternalMessages(prevMessages => {
+          return [...prevMessages, { id: idleWarningMsgId, role: "user" as const, text: "[System: No activity detected. Call will end in 15 seconds if no response.]" }];
+        });
+      }, IDLE_WARNING_MS);
+      
+      idleTimerRef.current = setTimeout(() => {
+        console.warn("REALTIME_HOOK: Idle timeout reached. Disconnecting.");
+        const idleEndId = `system-idle-end-${Date.now()}`;
+        setInternalMessages(prevMessages => {
+          const endMessage: Message = { id: idleEndId, role: "user" as const, text: "[System: Call ended due to inactivity.]" };
+          return [...prevMessages, endMessage];
+        });
+        onAgentEndedCall();
+        disconnect();
+      }, IDLE_TIMEOUT_MS);
+    }
+  }, [sessionStatus, playWarningAudio, onAgentEndedCall, disconnect]);
   
   // Ensure audioElement is created once
   useEffect(() => {
@@ -594,11 +721,6 @@ export function useRealtimeNegotiation({
         // Set the flag to handle the actual call end after audio stops
         agentInitiatedCallEndRef.current = true;
         
-        // Add a system message indicating the call will end soon
-        const endPendingMsgId = `system-call-ending-pending-${Date.now()}`;
-        const endPendingText = `[System: Agent is ending the call. Please wait for them to finish speaking...]`;
-        setInternalMessages(prev => [...prev, { id: endPendingMsgId, role: 'user', text: endPendingText }]);
-        
         // DO NOT send tool response yet - it will be sent when audio stops
         
     } else {
@@ -616,11 +738,6 @@ export function useRealtimeNegotiation({
             }
         };
         sendClientEvent(toolResponseEvent, "end_call_tool_response_immediate");
-        
-        // Add system message
-        const endMsgId = `system-call-ended-${Date.now()}`;
-        const endText = `[System: Call ended by agent${parsedArgs.reason && parsedArgs.reason !== "Agent ended call" ? ` (${parsedArgs.reason})` : ''}]`;
-        setInternalMessages(prev => [...prev, { id: endMsgId, role: 'user', text: endText }]);
         
         // Play disconnect sound and notify
         playDisconnectAudio();
@@ -663,6 +780,23 @@ export function useRealtimeNegotiation({
         // Log session ID or other details if needed.
         console.log("Server confirmed session.created:", serverEvent.session?.id);
         // Potentially add a breadcrumb to transcript here if desired.
+        break;
+
+      case "input_audio_buffer.speech_started":
+        setIsUserSpeaking(true);
+        if (onUserSpeakingChange) {
+          onUserSpeakingChange(true);
+        }
+        resetIdleTimers(); // Reset idle timers on user activity
+        console.log("REALTIME_HOOK_DEBUG: input_audio_buffer.speech_started - User is now speaking");
+        break;
+
+      case "input_audio_buffer.speech_stopped":
+        setIsUserSpeaking(false);
+        if (onUserSpeakingChange) {
+          onUserSpeakingChange(false);
+        }
+        console.log("REALTIME_HOOK_DEBUG: input_audio_buffer.speech_stopped - User stopped speaking");
         break;
 
       case "output_audio_buffer.started":
@@ -734,15 +868,6 @@ export function useRealtimeNegotiation({
                 }
             };
             sendClientEvent(toolResponseEvent, "deferred_end_call_tool_response");
-            
-            // Update system message
-            const endMsgId = `system-call-ended-${Date.now()}`;
-            const endText = `[System: Call ended by agent${reason && reason !== "Agent ended call" ? ` (${reason})` : ''}]`;
-            setInternalMessages(prev => {
-                // Remove the "Agent is ending the call..." message
-                const filteredMessages = prev.filter(msg => !msg.text.startsWith("[System: Agent is ending the call"));
-                return [...filteredMessages, { id: endMsgId, role: 'user', text: endText }];
-            });
             
             // Play disconnect sound and notify
             playDisconnectAudio();
@@ -1119,7 +1244,7 @@ export function useRealtimeNegotiation({
         // console.log("Unhandled server event type:", serverEvent.type);
         break;
     }
-  }, [setInternalMessages, setIsAgentSpeaking, onUserTranscriptCompleted, onAgentEndedCall, currentAgentConfig, disconnect, onAgentTransferRequested, sendClientEvent, isTransferInProgress, sessionStatus, playWarningAudio, playDisconnectAudio, handleTransferToolCall, handleEndCallToolCall, isAgentSpeaking]); // Added sessionStatus to dependency array
+  }, [setInternalMessages, setIsAgentSpeaking, setIsUserSpeaking, onUserTranscriptCompleted, onAgentEndedCall, currentAgentConfig, disconnect, onAgentTransferRequested, sendClientEvent, isTransferInProgress, sessionStatus, playWarningAudio, playDisconnectAudio, handleTransferToolCall, handleEndCallToolCall, isAgentSpeaking, onUserSpeakingChange, resetIdleTimers]); // Added sessionStatus to dependency array
 
   return {
     connect,
@@ -1127,6 +1252,9 @@ export function useRealtimeNegotiation({
     sessionStatus,
     messages: internalMessages, // Expose internal messages
     isAgentSpeaking,
+    isUserSpeaking, // Expose user speaking state
+    userAudioStream, // Expose user audio stream for visualization
+    agentAudioStream, // Expose agent audio stream for visualization
     // TODO: Expose other necessary functions like sending user audio/text
     // Add a way to get the current message count or duration if needed by UI
     // TODO: Consider how to handle UI updates for warnings (e.g. visual timer)

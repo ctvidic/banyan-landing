@@ -114,3 +114,154 @@
     }
   }
 }
+
+/* Talking Orb Animations */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sound-wave {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes wave-flow {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes ring-oscillate {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+    stroke-dasharray: 0 283;
+  }
+  25% {
+    transform: scale(1.02) rotate(90deg);
+    stroke-dasharray: 70 213;
+  }
+  50% {
+    transform: scale(0.98) rotate(180deg);
+    stroke-dasharray: 141 142;
+  }
+  75% {
+    transform: scale(1.01) rotate(270deg);
+    stroke-dasharray: 70 213;
+  }
+}
+
+@keyframes wisp-flow {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) translateY(-10px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5) translateY(-20px);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+.animate-sound-wave {
+  animation: sound-wave 0.6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-wave-flow {
+  animation: wave-flow 1.5s ease-in-out infinite;
+}
+
+.animate-ring-oscillate {
+  animation: ring-oscillate 3s ease-in-out infinite;
+}
+
+.animate-wisp-flow {
+  animation: wisp-flow 2s ease-in-out infinite;
+}
+
+/* Star Rating Animations */
+@keyframes star-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-star-appear {
+  animation: star-appear 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
