@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 // Simple in-memory session tracking (replace with Redis in production)
 const activeSessions = new Map<string, { count: number; lastAccess: number }>();
-const SESSION_LIMIT_PER_IP = 3; // Max 3 sessions per hour per IP
+const SESSION_LIMIT_PER_IP = 10; // Max 10 sessions per hour per IP
 const SESSION_WINDOW = 60 * 60 * 1000; // 1 hour
 
 function getClientIP(request: Request): string {
