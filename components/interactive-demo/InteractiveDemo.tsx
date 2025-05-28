@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import LessonSlide from './LessonSlide'; // Import the LessonSlide component
 import { useSwipeable } from 'react-swipeable';
