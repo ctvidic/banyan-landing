@@ -11,6 +11,7 @@ import HeroAnimation from "@/components/hero-animation"
 import MobileMenu from "@/components/mobile-menu"
 import ModuleCard from "@/components/module-card"
 import { WaitlistForm } from "./components/WaitlistForm"
+import RoadmapSection from "@/components/roadmap-section"
 import { motion } from "framer-motion"
 import React, { useState, useRef, useEffect } from "react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -188,6 +189,74 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Curriculum Alignment Section - With Logo Carousel */}
+      <section className="py-12 md:py-16 border-y bg-gray-50/50">
+        <div className="container">
+          <h2 className="text-center text-lg font-medium text-gray-600 mb-10">
+            Curriculum Aligned with Global Financial Literacy Frameworks & Leading Research
+          </h2>
+          {/* Carousel Wrapper */}
+          <div className="relative overflow-hidden group">
+            <motion.div 
+              className="flex gap-x-12 md:gap-x-16 lg:gap-x-20"
+              animate={{
+                x: ['0%', '-50%']
+              }}
+              transition={{
+                ease: 'linear', 
+                duration: 20,
+                repeat: Infinity
+              }}
+            >
+              {/* First set of logos */}
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={0} style={{ width: 'auto', height: '40px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/stanford.png" alt="Stanford University Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/texas.png" alt="University of Texas Logo" height={50} width={0} style={{ width: 'auto', height: '50px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/ngpf.svg" alt="Next Gen Personal Finance Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/jumpstart.webp" alt="JumpStart Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+              </div>
+              
+              {/* Second set of logos (duplicate for seamless loop) */}
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={0} style={{ width: 'auto', height: '40px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/stanford.png" alt="Stanford University Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/texas.png" alt="University of Texas Logo" height={50} width={0} style={{ width: 'auto', height: '50px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/ngpf.svg" alt="Next Gen Personal Finance Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/jumpstart.webp" alt="JumpStart Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+              </div>
+              <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
+                <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+                </div>
+            </motion.div>
+            {/* Gradient fade edges */}
+            <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-gray-50/50 to-transparent"></div>
+            <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-gray-50/50 to-transparent"></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Roadmap Section */}
+      <RoadmapSection />
       {/* --- NEW SECTION 1: Modern Skills -> Real Tools --- */}
       <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-white to-emerald-50/50 overflow-hidden">
         <div className="container grid md:grid-cols-2 gap-12 md:gap-16 items-center">
@@ -618,7 +687,7 @@ export default function Home() {
                       <div className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">1</div>
                     </div>
                     <h3 className="text-lg font-semibold mb-2 text-gray-800">Learn</h3>
-                    <p className="text-sm text-gray-600 mt-auto pt-2">Master Finance Skills</p> { /* Adjusted styling */}
+                    <p className="text-sm text-gray-600 mt-auto pt-2">Master Finance Skills</p>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
@@ -635,7 +704,7 @@ export default function Home() {
                        <div className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">2</div>
                    </div>
                     <h3 className="text-lg font-semibold mb-2 text-gray-800">Quiz</h3>
-                    <p className="text-sm text-gray-600 mt-auto pt-2">Test Your Knowledge</p> { /* Adjusted styling */}
+                    <p className="text-sm text-gray-600 mt-auto pt-2">Test Your Knowledge</p>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
@@ -652,7 +721,7 @@ export default function Home() {
                       <div className="absolute -top-1 -right-1 bg-emerald-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">3</div>
                     </div>
                     <h3 className="text-lg font-semibold mb-2 text-gray-800">Earn $</h3>
-                    <p className="text-sm text-gray-600 mt-auto pt-2">Get Rewarded Daily</p> { /* Adjusted styling */}
+                    <p className="text-sm text-gray-600 mt-auto pt-2">Get Rewarded Daily</p>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
