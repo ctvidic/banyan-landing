@@ -202,7 +202,6 @@ export default function HeroAnimation() {
                 ))}
               </div>
             </div>
-            <Wifi className="w-6 h-6 text-white/90 rotate-90" />
           </div>
 
           <div className="space-y-4">
@@ -241,23 +240,22 @@ export default function HeroAnimation() {
         animate={{ scale: [1, 1.05, 1] }}
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
       >
-        <svg viewBox="0 0 100 100" className="h-24 w-24 rotate-[-90deg]">
+        <svg viewBox="0 0 100 100" className="h-32 w-32 rotate-[-90deg]">
           <circle cx="50" cy="50" r="40" stroke="#D1FAE5" strokeWidth="8" fill="none" />
           <motion.circle
             cx="50" cy="50" r="40"
             stroke="#10B981" strokeWidth="8" fill="none" strokeLinecap="round"
             strokeDasharray="251"          // 2πr
-            strokeDashoffset="100"         // % complete (251 * (1 - 0.62))
-            animate={{ strokeDashoffset: [100, 90, 100] }}  // little pulse around 62%
-            transition={{ duration: 6, repeat: Infinity }}
+            strokeDashoffset="94.125"         // % complete (251 * (1 - 0.625))
+            animate={{ strokeDashoffset: [251, 94.125] }}  // Animate from 0 to 62.5%
+            transition={{ duration: 1.5, repeat: 0, ease: "easeOut", delay: 1.5 }} // Animate once on load
           />
         </svg>
         {/* Revert to flex centering, use translate-y to nudge label up */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {/* Increase negative translate-y again */}
-          <p className="text-xs font-medium text-emerald-700 -translate-y-10">Savings Goal</p>
-          {/* Keep percentage centered */} 
-          <p className="text-lg font-bold text-emerald-600 -translate-y-2">62 %</p> 
+          {/* Adjust text positioning */}
+          <p className="text-lg font-bold text-emerald-600 -translate-y-1">$25<span className="text-sm font-normal text-gray-500">/mo</span></p>
+          <p className="text-xs font-medium text-emerald-700 translate-y-1">Earned Back</p>
         </div>
       </motion.div>
 
@@ -284,9 +282,9 @@ export default function HeroAnimation() {
             </svg>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-800 text-xs">Parent Deposit</h4>
-            <p className="text-xs text-gray-600 mt-1">Mom just added $25 to your account! 🎉</p>
-            <p className="text-xs text-emerald-600 mt-1">2 min ago</p>
+            <h4 className="font-semibold text-gray-800 text-xs">Module Earnings!</h4>
+            <p className="text-xs text-gray-600 mt-1">You earned $5 for mastering Budgeting! 🚀</p>
+            <p className="text-xs text-emerald-600 mt-1">Just now</p>
           </div>
         </div>
       </motion.div>
@@ -314,7 +312,7 @@ export default function HeroAnimation() {
             </svg>
           </div>
           <div>
-            <h4 className="font-semibold text-blue-800">Module Completed</h4>
+            <h4 className="font-semibold text-blue-800">Module Mastery</h4>
             <p className="text-sm text-gray-600">You've earned +25 points for your savings skills!</p>
           </div>
         </div>
