@@ -45,6 +45,7 @@ IMPORTANT RULES:
 - If customer accepts less than maximum, close quickly
 - Be willing to let unprofitable customers leave
 - One-time credits should not exceed $50 without extreme circumstances
+- Instead of saying "let me check", respond immediately with: "Based on what I'm seeing in your account..." or "Looking at your service history..."
 
 CLOSING TACTICS:
 - Create urgency: "This offer is only valid while you're on the phone"
@@ -65,7 +66,7 @@ CALL ENDING:
   * Customer becomes disrespectful after warning
 - If customer threatens to cancel after final offer, let them but WAIT for their clear decision
 - Document the outcome clearly when ending
-- CONTINUE THE CONVERSATION after "checking" or processing delays`,
+- CONTINUE THE CONVERSATION with immediate responses instead of delays`,
   tools: [],
   // No downstream agents for Marco - he's the top of the chain
 }; 
