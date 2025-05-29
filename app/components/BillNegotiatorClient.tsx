@@ -64,7 +64,7 @@ type Message = { id: string; role: string; text: string }
 /*-------------------------------------------------------------------------*/
 export default function BillNegotiatorClient() {
   // flow pages
-  const [phase, setPhase] = useState<"intro"|"scenario"|"call"|"report">("scenario")
+  const [phase, setPhase] = useState<"intro"|"scenario"|"call"|"report"|"leaderboard">("scenario")
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(true)
   const [showTermsDialog, setShowTermsDialog] = useState(false)
 
@@ -157,11 +157,17 @@ export default function BillNegotiatorClient() {
     // console.log("BN_CLIENT: Transcript for scoring:", transcript);
     try {
       const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean). Do not nest the result under any other key. 
+        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean), finalReduction (number), monthsApplied (number). Do not nest the result under any other key. 
 
-Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a star rating out of 5, based on the customer's success in getting ANY bill reduction or concession: ⭐⭐⭐⭐⭐ for 5 stars if bill reduced to $69 or below, ⭐⭐⭐⭐☆ for 4 stars if bill reduced to $70-$79, ⭐⭐⭐☆☆ for 3 stars if any discount/credit was obtained, ⭐⭐☆☆☆ for 2 stars if some concession was made, ⭐☆☆☆☆ for 1 star if no reduction achieved. Be generous with ratings for any success.
+Outcome should describe the final result of the negotiation, focusing on any bill reduction achieved. If the customer cancelled service or got no discount, explicitly mention this. Examples: "Successfully reduced bill from $89 to $69", "Failed negotiation - customer cancelled service", "No reduction achieved, bill remains at $89".
 
-confettiWorthy should be true ONLY if the customer achieved a truly excellent negotiation result - specifically if they got their monthly bill reduced to $70 or below. Do NOT set this to true for small credits, one-time discounts, or bills above $70.
+Rating should be a star rating out of 5, based on the customer's success in getting ANY bill reduction or concession: ⭐⭐⭐⭐⭐ for 5 stars if bill reduced by $20+ per month, ⭐⭐⭐⭐☆ for 4 stars if bill reduced by $10-19 per month, ⭐⭐⭐☆☆ for 3 stars if bill reduced by $5-9 per month or any meaningful discount obtained, ⭐⭐☆☆☆ for 2 stars if only a small one-time credit was obtained, ⭐☆☆☆☆ for 1 star if no reduction achieved or customer cancelled. Be generous with ratings for any meaningful success.
+
+finalReduction should be the monthly dollar amount reduced from the original $89 bill (e.g., if final bill is $69, this should be 20). If no reduction or customer cancelled, this should be 0.
+
+monthsApplied should be the number of months the reduction applies for. If permanent or unspecified, use 12. For one-time credits, use 1. If no reduction, use 0.
+
+confettiWorthy should be true ONLY if the customer achieved a truly excellent negotiation result - specifically if they got their monthly bill reduced by $15 or more. Do NOT set this to true for small credits, one-time discounts, or reductions under $15/month.
 
 \n\n${transcript}`})});
       
@@ -183,21 +189,110 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
     }
   }, [setReport]); // messages is removed as transcript is now an argument
 
-  // Function to extract final price from report
-  const extractFinalPrice = (reportData: any): number | null => {
-    if (!reportData?.outcome) return null;
+  // Function to extract total reduction over time from report
+  const extractFinalReduction = (reportData: any): number => {
+    if (!reportData) return 0;
     
-    const outcome = reportData.outcome.toLowerCase();
-    
-    // Look for price patterns like $69, $89, etc.
-    const priceMatch = outcome.match(/\$(\d+)/g);
-    if (priceMatch) {
-      // Get the last price mentioned, which is likely the final price
-      const lastPrice = priceMatch[priceMatch.length - 1];
-      return parseInt(lastPrice.replace('$', ''));
+    // Parse the report if it's from the API
+    let parsed = reportData;
+    if (reportData.text && typeof reportData.text === "string") {
+      try {
+        const cleanedText = reportData.text.replace(/```json\s*|\s*```/g, "").trim();
+        parsed = JSON.parse(cleanedText);
+      } catch (e) {
+        console.error("Failed to parse report for reduction extraction:", e);
+        return 0;
+      }
     }
     
-    return null;
+    // First, try to use structured fields from AI response
+    if (parsed && typeof parsed.finalReduction === 'number' && typeof parsed.monthsApplied === 'number') {
+      const monthlyReduction = parsed.finalReduction;
+      const months = parsed.monthsApplied;
+      const totalReduction = monthlyReduction * months;
+      console.log(`Using structured data: $${monthlyReduction}/month * ${months} months = $${totalReduction} total`);
+      return totalReduction;
+    }
+    
+    // Fallback to text parsing if structured fields aren't available
+    if (!parsed?.outcome) return 0;
+    
+    const outcome = parsed.outcome.toLowerCase();
+    
+    // Check for explicit cancellation or no deal scenarios
+    if (outcome.includes('cancel') || 
+        outcome.includes('no reduction') || 
+        outcome.includes('no discount') ||
+        outcome.includes('failed negotiation') ||
+        outcome.includes('remains at $89') ||
+        outcome.includes('remains $89')) {
+      return 0;
+    }
+    
+    // Look for reduction patterns and try to determine duration
+    let monthlyReduction = 0;
+    let months = 12; // Default to 12 months
+    
+    // Look for reduction patterns like "$20 off", "reduced by $15", "$10 monthly discount"
+    const reductionPatterns = [
+      /\$(\d+)\s*(?:off|discount|reduction|monthly\s*(?:off|discount))/gi,
+      /reduced?\s*(?:by|to)?\s*\$(\d+)/gi,
+      /save[sd]?\s*\$(\d+)/gi,
+    ];
+    
+    // Try each pattern to find reductions
+    for (const pattern of reductionPatterns) {
+      const matches = [...outcome.matchAll(pattern)];
+      if (matches.length > 0) {
+        const lastMatch = matches[matches.length - 1];
+        const reductionAmount = parseInt(lastMatch[1]);
+        if (reductionAmount > 0) {
+          monthlyReduction = reductionAmount;
+          break;
+        }
+      }
+    }
+    
+    // Look for price comparisons like "from $89 to $69" to calculate reduction
+    if (monthlyReduction === 0) {
+      const priceComparisonMatch = outcome.match(/from\s*\$(\d+).*to\s*\$(\d+)/i);
+      if (priceComparisonMatch) {
+        const originalPrice = parseInt(priceComparisonMatch[1]);
+        const finalPrice = parseInt(priceComparisonMatch[2]);
+        if (originalPrice > finalPrice) {
+          monthlyReduction = originalPrice - finalPrice;
+        }
+      }
+    }
+    
+    // If no specific reduction found but bill went down, try to calculate from final price
+    if (monthlyReduction === 0) {
+      const priceMatch = outcome.match(/\$(\d+)/g);
+      if (priceMatch) {
+        const prices = priceMatch.map((p: string) => parseInt(p.replace('$', '')));
+        const finalPrice = prices[prices.length - 1];
+        
+        // If final price is less than original $89, calculate reduction
+        if (finalPrice < 89) {
+          monthlyReduction = 89 - finalPrice;
+        }
+      }
+    }
+    
+    // Look for duration indicators
+    if (outcome.includes('one-time') || outcome.includes('credit')) {
+      months = 1; // One-time credit
+    } else if (outcome.includes('6 month')) {
+      months = 6;
+    } else if (outcome.includes('12 month') || outcome.includes('year')) {
+      months = 12;
+    }
+    // Default remains 12 months if not specified
+    
+    const totalReduction = monthlyReduction * months;
+    console.log(`Parsed from text: $${monthlyReduction}/month * ${months} months = $${totalReduction} total`);
+    
+    return totalReduction;
   };
 
   // Function to submit to leaderboard
@@ -211,15 +306,10 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       return;
     }
 
-    const finalPrice = extractFinalPrice(report);
-    if (finalPrice === null) {
-      toast({
-        title: "Error",
-        description: "Could not determine final negotiated price",
-        variant: "destructive",
-      });
-      return;
-    }
+    const totalReduction = extractFinalReduction(report);
+    
+    // Always allow submission, even with $0 reduction
+    console.log(`Submitting to leaderboard: ${userName.trim()}, total reduction: $${totalReduction}`);
 
     const callEndTime = new Date();
     const timeInSeconds = Math.floor((callEndTime.getTime() - callStartTime.getTime()) / 1000);
@@ -234,7 +324,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         },
         body: JSON.stringify({
           name: userName.trim(),
-          finalPrice,
+          totalReduction,
           timeInSeconds,
         }),
       });
@@ -733,7 +823,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               }}
               className="bg-green-100 hover:bg-green-200"
             >
-              5⭐ Perfect ($64)
+              5⭐ Perfect ($300)
             </Button>
             
             <Button 
@@ -758,7 +848,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               }}
               className="bg-blue-100 hover:bg-blue-200"
             >
-              4⭐ Good ($69)
+              4⭐ Good ($240)
             </Button>
             
             <Button 
@@ -783,7 +873,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               }}
               className="bg-yellow-100 hover:bg-yellow-200"
             >
-              3⭐ Okay ($84)
+              3⭐ Okay ($60)
             </Button>
             
             <Button 
@@ -808,7 +898,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               }}
               className="bg-orange-100 hover:bg-orange-200"
             >
-              2⭐ Poor (credit)
+              2⭐ Poor ($10 credit)
             </Button>
             
             <Button 
@@ -833,7 +923,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               }}
               className="bg-red-100 hover:bg-red-200"
             >
-              1⭐ Failed ($89)
+              1⭐ Failed ($0)
             </Button>
             
             <Button 
@@ -859,7 +949,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               }}
               className="bg-purple-100 hover:bg-purple-200"
             >
-              3⭐ Decent ($74)
+              3⭐ Decent ($180)
             </Button>
           </div>
           <p className="text-xs text-gray-600 mt-2">Test different negotiation outcomes and confetti triggers</p>
@@ -893,7 +983,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       <div className="text-center">
         <Button 
           size="lg" 
-          className="bg-emerald-600 hover:bg-emerald-700 rounded-full px-8 py-6 text-lg"
+          className="bg-emerald-600 hover:bg-emerald-700 rounded-full px-8 py-6 text-lg mb-4"
           onClick={() => {
             if (!hasAcceptedTerms) {
               setShowTermsDialog(true);
@@ -906,7 +996,20 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           <PhoneOff className="mr-2 h-5 w-5" />
           Start Negotiation Call
         </Button>
-        <p className="text-sm text-gray-500 mt-3">
+        
+        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+          <Button 
+            variant="outline"
+            size="lg"
+            className="px-6 py-3"
+            onClick={() => setPhase("leaderboard")}
+          >
+            <Trophy className="mr-2 h-5 w-5" />
+            View Leaderboard
+          </Button>
+        </div>
+        
+        <p className="text-sm text-gray-500 mt-4">
           Practice your negotiation skills with AI • 5 min max
         </p>
       </div>
@@ -1079,8 +1182,8 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               </TabsList>
               
               <TabsContent value="report" className="mt-4">
-                <h3 className="text-xl font-bold mb-4">Negotiation Report</h3>
-                {renderReportContent()}
+            <h3 className="text-xl font-bold mb-4">Negotiation Report</h3>
+            {renderReportContent()}
                 
                 {/* Name input and leaderboard submission */}
                 {!hasSubmittedToLeaderboard && (
@@ -1117,7 +1220,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
                   </div>
                 )}
                 
-                <Button variant="outline" className="mt-4 w-full" onClick={()=>location.reload()}>Try Again</Button>
+            <Button variant="outline" className="mt-4 w-full" onClick={()=>location.reload()}>Try Again</Button>
               </TabsContent>
               
               <TabsContent value="leaderboard" className="mt-4">
@@ -1157,8 +1260,8 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
             </TabsList>
             
             <TabsContent value="report" className="mt-4">
-              <h2 className="text-2xl font-bold mb-4">Negotiation Report</h2>
-              {renderReportContent()}
+          <h2 className="text-2xl font-bold mb-4">Negotiation Report</h2>
+          {renderReportContent()}
               
               {/* Name input and leaderboard submission */}
               {!hasSubmittedToLeaderboard && (
@@ -1182,18 +1285,18 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
                     >
                       {isSubmittingToLeaderboard ? "Adding..." : "Submit"}
                     </Button>
-                  </div>
+                </div>
                 </div>
               )}
               
               {hasSubmittedToLeaderboard && leaderboardRank && (
-                <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+            <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
                   <Trophy className="h-8 w-8 text-emerald-600 mx-auto mb-2 animate-bounce-slow" />
                   <p className="font-semibold text-emerald-800">
                     Congratulations! You ranked #{leaderboardRank} on the leaderboard!
                   </p>
-                </div>
-              )}
+            </div>
+        )}
               
               <Button variant="outline" className="mt-4" onClick={()=>location.reload()}>Try Again</Button>
             </TabsContent>
@@ -1202,7 +1305,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               <Leaderboard />
             </TabsContent>
           </Tabs>
-        </div>
+      </div>
       )}
     </div>
   )
@@ -1364,6 +1467,45 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
     );
   }
 
+  const renderLeaderboard = () => (
+    <div className="max-w-4xl mx-auto">
+      <div className="flex items-center gap-4 mb-6">
+        <Button 
+          variant="outline" 
+          onClick={() => setPhase("scenario")}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Challenge
+        </Button>
+      </div>
+      
+      <Leaderboard />
+      
+      <div className="mt-8 text-center">
+        <Button 
+          size="lg" 
+          className="bg-emerald-600 hover:bg-emerald-700 rounded-full px-8 py-6 text-lg"
+          onClick={() => {
+            if (!hasAcceptedTerms) {
+              setShowTermsDialog(true);
+            } else {
+              setCallStartTime(new Date());
+              setPhase("call");
+              setActiveDrawerTab("mission");
+            }
+          }}
+        >
+          <PhoneOff className="mr-2 h-5 w-5" />
+          Try the Challenge
+        </Button>
+        <p className="text-sm text-gray-500 mt-3">
+          Think you can beat the top score? Give it a try!
+        </p>
+      </div>
+    </div>
+  )
+
   /*-------------------------------------------------------------------------*/
   /*  Render wrapper                                                         */
   /*-------------------------------------------------------------------------*/
@@ -1389,6 +1531,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           {phase==="scenario" && renderScenario()}
           {phase==="call"     && renderCall()}
           {phase==="report"   && renderReport()}
+          {phase==="leaderboard" && renderLeaderboard()}
         </div>
       </section>
 

@@ -6,7 +6,7 @@ import { z } from "zod";
 // Define the expected request body schema for POST
 const leaderboardEntrySchema = z.object({
   name: z.string().min(1, "Name is required").max(50, "Name too long"),
-  finalPrice: z.number().min(0, "Final price must be positive"),
+  totalReduction: z.number().min(0, "Total reduction must be non-negative"),
   timeInSeconds: z.number().min(1, "Time must be positive"),
 });
 
@@ -14,7 +14,7 @@ const leaderboardEntrySchema = z.object({
 export type LeaderboardEntry = {
   id: string;
   name: string;
-  finalPrice: number;
+  totalReduction: number;
   timeInSeconds: number;
   timestamp: string;
 };
@@ -53,9 +53,9 @@ async function writeLeaderboardData(data: LeaderboardEntry[]): Promise<void> {
 
 function sortLeaderboard(entries: LeaderboardEntry[]): LeaderboardEntry[] {
   return entries.sort((a, b) => {
-    // Primary sort: lowest final price wins
-    if (a.finalPrice !== b.finalPrice) {
-      return a.finalPrice - b.finalPrice;
+    // Primary sort: highest total reduction wins
+    if (a.totalReduction !== b.totalReduction) {
+      return b.totalReduction - a.totalReduction;
     }
     // Tiebreaker: lowest time wins
     return a.timeInSeconds - b.timeInSeconds;
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       );
     }
     
-    const { name, finalPrice, timeInSeconds } = validation.data;
+    const { name, totalReduction, timeInSeconds } = validation.data;
 
     // Read existing data
     const entries = await readLeaderboardData();
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     const newEntry: LeaderboardEntry = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
-      finalPrice,
+      totalReduction,
       timeInSeconds,
       timestamp: new Date().toISOString(),
     };
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
     const sortedEntries = sortLeaderboard(entries);
     const rank = sortedEntries.findIndex(e => e.id === newEntry.id) + 1;
 
-    console.log(`New leaderboard entry added: ${name} - $${finalPrice} in ${timeInSeconds}s (Rank: ${rank})`);
+    console.log(`New leaderboard entry added: ${name} - $${totalReduction} total reduction in ${timeInSeconds}s (Rank: ${rank})`);
 
     return NextResponse.json({ 
       success: true, 

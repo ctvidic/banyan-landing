@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 export type LeaderboardEntry = {
   id: string;
   name: string;
-  finalPrice: number;
+  totalReduction: number;
   timeInSeconds: number;
   timestamp: string;
   rank: number;
@@ -120,7 +120,8 @@ export default function Leaderboard() {
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">🏆 Negotiation Leaderboard</h2>
-        <p className="text-gray-600">See how you rank against other negotiators. Lower final prices and faster times are better!</p>
+        <p className="text-gray-600">See how you rank against other negotiators. Higher total reductions and faster times are better!</p>
+        <p className="text-sm text-gray-500 mt-1">Maximum possible: $240 total (12 months × $20/month)</p>
       </div>
 
       {leaderboard.length === 0 ? (
@@ -135,7 +136,7 @@ export default function Leaderboard() {
           <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 bg-emerald-50 border border-emerald-200 rounded-lg font-semibold text-emerald-800 text-sm">
             <div className="col-span-2">Rank</div>
             <div className="col-span-4">Name</div>
-            <div className="col-span-3">Final Price</div>
+            <div className="col-span-3">Total 12-Month Reduction</div>
             <div className="col-span-3">Time</div>
           </div>
 
@@ -161,7 +162,7 @@ export default function Leaderboard() {
                 <div className="col-span-3">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-green-600" />
-                    <span className="font-bold text-green-700">${entry.finalPrice}</span>
+                    <span className="font-bold text-green-700">${entry.totalReduction}</span>
                   </div>
                 </div>
                 <div className="col-span-3">
@@ -187,7 +188,7 @@ export default function Leaderboard() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-green-600" />
-                    <span className="font-bold text-green-700">${entry.finalPrice}</span>
+                    <span className="font-bold text-green-700">${entry.totalReduction}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-blue-600" />
@@ -208,7 +209,7 @@ export default function Leaderboard() {
           </p>
           {leaderboard.length > 0 && (
             <p className="text-xs text-gray-500 mt-1">
-              Best price: <span className="font-semibold text-green-600">${leaderboard[0]?.finalPrice}</span> • 
+              Best total reduction: <span className="font-semibold text-green-600">${leaderboard[0]?.totalReduction}</span> • 
               Fastest time: <span className="font-semibold text-blue-600">{formatTime(Math.min(...leaderboard.map(e => e.timeInSeconds)))}</span>
             </p>
           )}
