@@ -121,7 +121,7 @@ export default function Leaderboard() {
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">🏆 Negotiation Leaderboard</h2>
         <p className="text-gray-600">See how you rank against other negotiators. Higher total reductions and faster times are better!</p>
-        <p className="text-sm text-gray-500 mt-1">Maximum possible: $240 total (12 months × $20/month)</p>
+        <p className="text-sm text-gray-500 mt-1">Back to original price: $240 total (12 months × $20/month)</p>
       </div>
 
       {leaderboard.length === 0 ? (

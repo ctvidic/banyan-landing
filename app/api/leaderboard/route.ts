@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import { z } from "zod";
+import { kv } from "@vercel/kv";
 
 // Define the expected request body schema for POST
 const leaderboardEntrySchema = z.object({
@@ -19,9 +20,12 @@ export type LeaderboardEntry = {
   timestamp: string;
 };
 
-// Define the directory and file path for storing leaderboard data
+// Define the directory and file path for storing leaderboard data (fallback for local dev)
 const dataDir = path.join(process.cwd(), '.vercel', 'output'); 
 const filePath = path.join(dataDir, "leaderboard.json");
+
+// KV storage key
+const LEADERBOARD_KEY = "negotiation_leaderboard";
 
 async function ensureDirectoryExists(dirPath: string) {
   try {
@@ -34,7 +38,20 @@ async function ensureDirectoryExists(dirPath: string) {
 }
 
 async function readLeaderboardData(): Promise<LeaderboardEntry[]> {
+  // Try KV storage first (for production)
+  if (process.env.KV_REST_API_URL) {
+    try {
+      console.log("Reading from KV storage...");
+      const data = await kv.get<LeaderboardEntry[]>(LEADERBOARD_KEY);
+      return data || [];
+    } catch (error) {
+      console.error("KV read error, falling back to file system:", error);
+    }
+  }
+
+  // Fallback to file system (for local development)
   try {
+    console.log("Reading from file system...");
     const data = await fs.readFile(filePath, 'utf-8');
     return JSON.parse(data);
   } catch (error: any) {
@@ -47,6 +64,19 @@ async function readLeaderboardData(): Promise<LeaderboardEntry[]> {
 }
 
 async function writeLeaderboardData(data: LeaderboardEntry[]): Promise<void> {
+  // Try KV storage first (for production)
+  if (process.env.KV_REST_API_URL) {
+    try {
+      console.log("Writing to KV storage...");
+      await kv.set(LEADERBOARD_KEY, data);
+      return;
+    } catch (error) {
+      console.error("KV write error, falling back to file system:", error);
+    }
+  }
+
+  // Fallback to file system (for local development)
+  console.log("Writing to file system...");
   await ensureDirectoryExists(dataDir);
   await fs.writeFile(filePath, JSON.stringify(data, null, 2));
 }
