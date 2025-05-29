@@ -39,9 +39,9 @@ async function ensureDirectoryExists(dirPath: string) {
 
 async function readLeaderboardData(): Promise<LeaderboardEntry[]> {
   // Try KV storage first (for production)
-  if (process.env.KV_REST_API_URL) {
+  if (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL) {
     try {
-      console.log("✅ KV_REST_API_URL found, trying KV storage...");
+      console.log("✅ Upstash/KV environment variables found, trying KV storage...");
       const data = await kv.get<LeaderboardEntry[]>(LEADERBOARD_KEY);
       console.log("✅ KV data retrieved:", data ? `${data.length} entries` : "null/empty");
       return data || [];
@@ -49,7 +49,7 @@ async function readLeaderboardData(): Promise<LeaderboardEntry[]> {
       console.error("❌ KV read error, falling back to file system:", error);
     }
   } else {
-    console.log("⚠️ KV_REST_API_URL not found, using file system storage");
+    console.log("⚠️ No KV environment variables found, using file system storage");
   }
 
   // Fallback to file system (for local development)
@@ -71,7 +71,7 @@ async function readLeaderboardData(): Promise<LeaderboardEntry[]> {
 
 async function writeLeaderboardData(data: LeaderboardEntry[]): Promise<void> {
   // Try KV storage first (for production)
-  if (process.env.KV_REST_API_URL) {
+  if (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL) {
     try {
       console.log("✅ Writing to KV storage...", `${data.length} entries`);
       await kv.set(LEADERBOARD_KEY, data);
@@ -81,7 +81,7 @@ async function writeLeaderboardData(data: LeaderboardEntry[]): Promise<void> {
       console.error("❌ KV write error, falling back to file system:", error);
     }
   } else {
-    console.log("⚠️ KV_REST_API_URL not found, using file system storage");
+    console.log("⚠️ No KV environment variables found, using file system storage");
   }
 
   // Fallback to file system (for local development)

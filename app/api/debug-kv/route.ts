@@ -4,6 +4,8 @@ import { kv } from '@vercel/kv';
 export async function GET() {
   try {
     console.log('=== KV DEBUG START ===');
+    console.log('UPSTASH_REDIS_REST_URL exists:', !!process.env.UPSTASH_REDIS_REST_URL);
+    console.log('UPSTASH_REDIS_REST_TOKEN exists:', !!process.env.UPSTASH_REDIS_REST_TOKEN);
     console.log('KV_REST_API_URL exists:', !!process.env.KV_REST_API_URL);
     console.log('KV_REST_API_TOKEN exists:', !!process.env.KV_REST_API_TOKEN);
     
@@ -26,8 +28,10 @@ export async function GET() {
     
     return NextResponse.json({
       hasEnvVars: {
-        url: !!process.env.KV_REST_API_URL,
-        token: !!process.env.KV_REST_API_TOKEN
+        upstashUrl: !!process.env.UPSTASH_REDIS_REST_URL,
+        upstashToken: !!process.env.UPSTASH_REDIS_REST_TOKEN,
+        kvUrl: !!process.env.KV_REST_API_URL,
+        kvToken: !!process.env.KV_REST_API_TOKEN
       },
       key: key,
       data: data,
