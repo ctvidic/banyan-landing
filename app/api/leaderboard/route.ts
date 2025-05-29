@@ -41,24 +41,30 @@ async function readLeaderboardData(): Promise<LeaderboardEntry[]> {
   // Try KV storage first (for production)
   if (process.env.KV_REST_API_URL) {
     try {
-      console.log("Reading from KV storage...");
+      console.log("✅ KV_REST_API_URL found, trying KV storage...");
       const data = await kv.get<LeaderboardEntry[]>(LEADERBOARD_KEY);
+      console.log("✅ KV data retrieved:", data ? `${data.length} entries` : "null/empty");
       return data || [];
     } catch (error) {
-      console.error("KV read error, falling back to file system:", error);
+      console.error("❌ KV read error, falling back to file system:", error);
     }
+  } else {
+    console.log("⚠️ KV_REST_API_URL not found, using file system storage");
   }
 
   // Fallback to file system (for local development)
   try {
-    console.log("Reading from file system...");
+    console.log("📁 Reading from file system...");
     const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    console.log("📁 File system data:", `${parsed.length} entries`);
+    return parsed;
   } catch (error: any) {
     if (error.code === 'ENOENT') {
-      // File doesn't exist, return empty array
+      console.log("📁 No file found, returning empty array");
       return [];
     }
+    console.error("❌ File system error:", error);
     throw error;
   }
 }
@@ -67,18 +73,22 @@ async function writeLeaderboardData(data: LeaderboardEntry[]): Promise<void> {
   // Try KV storage first (for production)
   if (process.env.KV_REST_API_URL) {
     try {
-      console.log("Writing to KV storage...");
+      console.log("✅ Writing to KV storage...", `${data.length} entries`);
       await kv.set(LEADERBOARD_KEY, data);
+      console.log("✅ KV write successful");
       return;
     } catch (error) {
-      console.error("KV write error, falling back to file system:", error);
+      console.error("❌ KV write error, falling back to file system:", error);
     }
+  } else {
+    console.log("⚠️ KV_REST_API_URL not found, using file system storage");
   }
 
   // Fallback to file system (for local development)
-  console.log("Writing to file system...");
+  console.log("📁 Writing to file system...", `${data.length} entries`);
   await ensureDirectoryExists(dataDir);
   await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+  console.log("📁 File system write successful");
 }
 
 function sortLeaderboard(entries: LeaderboardEntry[]): LeaderboardEntry[] {
