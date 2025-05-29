@@ -1,0 +1,152 @@
+import { NextResponse } from "next/server";
+import fs from "fs/promises";
+import path from "path";
+import { z } from "zod";
+
+// Define the expected request body schema for POST
+const leaderboardEntrySchema = z.object({
+  name: z.string().min(1, "Name is required").max(50, "Name too long"),
+  finalPrice: z.number().min(0, "Final price must be positive"),
+  timeInSeconds: z.number().min(1, "Time must be positive"),
+});
+
+// Define the leaderboard entry type
+export type LeaderboardEntry = {
+  id: string;
+  name: string;
+  finalPrice: number;
+  timeInSeconds: number;
+  timestamp: string;
+};
+
+// Define the directory and file path for storing leaderboard data
+const dataDir = path.join(process.cwd(), '.vercel', 'output'); 
+const filePath = path.join(dataDir, "leaderboard.json");
+
+async function ensureDirectoryExists(dirPath: string) {
+  try {
+    await fs.mkdir(dirPath, { recursive: true });
+  } catch (error: any) {
+    if (error.code !== 'EEXIST') {
+      throw error;
+    }
+  }
+}
+
+async function readLeaderboardData(): Promise<LeaderboardEntry[]> {
+  try {
+    const data = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(data);
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      // File doesn't exist, return empty array
+      return [];
+    }
+    throw error;
+  }
+}
+
+async function writeLeaderboardData(data: LeaderboardEntry[]): Promise<void> {
+  await ensureDirectoryExists(dataDir);
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+}
+
+function sortLeaderboard(entries: LeaderboardEntry[]): LeaderboardEntry[] {
+  return entries.sort((a, b) => {
+    // Primary sort: lowest final price wins
+    if (a.finalPrice !== b.finalPrice) {
+      return a.finalPrice - b.finalPrice;
+    }
+    // Tiebreaker: lowest time wins
+    return a.timeInSeconds - b.timeInSeconds;
+  });
+}
+
+// GET endpoint - retrieve leaderboard
+export async function GET() {
+  try {
+    const entries = await readLeaderboardData();
+    const sortedEntries = sortLeaderboard(entries);
+    
+    // Add rank to each entry
+    const rankedEntries = sortedEntries.map((entry, index) => ({
+      ...entry,
+      rank: index + 1
+    }));
+
+    return NextResponse.json({ 
+      leaderboard: rankedEntries,
+      count: rankedEntries.length 
+    }, { status: 200 });
+
+  } catch (error: any) {
+    console.error("Leaderboard GET Error:", error);
+    return NextResponse.json(
+      { error: "Failed to retrieve leaderboard data." },
+      { status: 500 }
+    );
+  }
+}
+
+// POST endpoint - add new leaderboard entry
+export async function POST(request: Request) {
+  try {
+    // Parse and validate the request body
+    const body = await request.json();
+    const validation = leaderboardEntrySchema.safeParse(body);
+
+    if (!validation.success) {
+      console.error("Validation Error:", validation.error.flatten());
+      return NextResponse.json(
+        { error: "Invalid leaderboard entry data.", details: validation.error.flatten() },
+        { status: 400 }
+      );
+    }
+    
+    const { name, finalPrice, timeInSeconds } = validation.data;
+
+    // Read existing data
+    const entries = await readLeaderboardData();
+
+    // Create new entry
+    const newEntry: LeaderboardEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name,
+      finalPrice,
+      timeInSeconds,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Add new entry and save
+    entries.push(newEntry);
+    await writeLeaderboardData(entries);
+
+    // Return the new entry with its rank
+    const sortedEntries = sortLeaderboard(entries);
+    const rank = sortedEntries.findIndex(e => e.id === newEntry.id) + 1;
+
+    console.log(`New leaderboard entry added: ${name} - $${finalPrice} in ${timeInSeconds}s (Rank: ${rank})`);
+
+    return NextResponse.json({ 
+      success: true, 
+      entry: { ...newEntry, rank },
+      message: `Added to leaderboard at rank ${rank}!`
+    }, { status: 201 });
+
+  } catch (error: any) {
+    console.error("Leaderboard POST Error:", error);
+    
+    let errorMessage = "Failed to add entry to leaderboard. Please try again later.";
+    let statusCode = 500;
+
+    if (error instanceof z.ZodError) {
+      errorMessage = "Invalid data format.";
+      statusCode = 400;
+    }
+
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: statusCode }
+    );
+  }
+} 

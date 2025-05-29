@@ -265,3 +265,87 @@
 .animate-fade-in {
   animation: fade-in 1s ease-out;
 }
+
+/* Leaderboard Animations */
+@keyframes trophy-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
+  }
+}
+
+@keyframes medal-shine {
+  0% {
+    filter: drop-shadow(0 0 3px rgba(192, 192, 192, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(192, 192, 192, 0.5));
+  }
+  100% {
+    filter: drop-shadow(0 0 3px rgba(192, 192, 192, 0.3));
+  }
+}
+
+@keyframes bronze-shine {
+  0% {
+    filter: drop-shadow(0 0 3px rgba(205, 127, 50, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(205, 127, 50, 0.5));
+  }
+  100% {
+    filter: drop-shadow(0 0 3px rgba(205, 127, 50, 0.3));
+  }
+}
+
+@keyframes rank-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes leaderboard-entry-appear {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-trophy-glow {
+  animation: trophy-glow 2s ease-in-out infinite;
+}
+
+.animate-medal-shine {
+  animation: medal-shine 2s ease-in-out infinite;
+}
+
+.animate-bronze-shine {
+  animation: bronze-shine 2s ease-in-out infinite;
+}
+
+.animate-rank-bounce {
+  animation: rank-bounce 0.3s ease-in-out;
+}
+
+.animate-leaderboard-entry-appear {
+  animation: leaderboard-entry-appear 0.5s ease-out forwards;
+}
+
+/* Leaderboard entry hover effects */
+.leaderboard-entry-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.leaderboard-entry-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}

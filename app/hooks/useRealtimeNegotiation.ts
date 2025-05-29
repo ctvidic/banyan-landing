@@ -399,10 +399,17 @@ export function useRealtimeNegotiation({
           return; // Don't process as an error
         }
         
-        // Only log and set error status if this is unexpected
+        // Log the error with more detail for debugging
         console.error("Unexpected data channel error:", err);
+        console.error("Data channel readyState:", dcRef.current?.readyState);
+        console.error("Session status:", sessionStatus);
+        console.error("isIntentionalDisconnect:", isIntentionalDisconnectRef.current);
+        
+        // Only set error status if this is truly unexpected and we're not already in an error state
         if (sessionStatus !== "DISCONNECTED" && sessionStatus !== "ERROR" && !isIntentionalDisconnectRef.current) {
-          setSessionStatus("ERROR");
+          console.warn("Data channel error occurred during active session - attempting to continue");
+          // Don't immediately set ERROR status for single data channel errors
+          // These are often temporary network blips that recover automatically
         }
       };
 

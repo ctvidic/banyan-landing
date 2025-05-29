@@ -52,9 +52,20 @@ CLOSING TACTICS:
 - False ceiling: Present Level 3 as absolute maximum initially
 
 CALL ENDING:
-- Use end_call tool when customer accepts/rejects final offer
-- If customer threatens to cancel after final offer, let them
-- Document the outcome clearly when ending`,
+- ABSOLUTELY NEVER USE THE end_call TOOL WHEN:
+  * Saying "let me check", "please hold", "one moment", or similar phrases
+  * Reviewing account information or processing requests
+  * In the middle of explaining options or policies
+  * When the customer hasn't given a clear final answer
+  * When you're waiting or processing something
+- ONLY USE end_call TOOL WHEN:
+  * Customer explicitly says "goodbye", "bye", "thanks bye", or similar farewell
+  * Customer clearly accepts your final offer (e.g., "okay I'll take it", "yes that works")
+  * Customer clearly rejects your final offer and indicates they're leaving (e.g., "no thanks, I'm canceling")
+  * Customer becomes disrespectful after warning
+- If customer threatens to cancel after final offer, let them but WAIT for their clear decision
+- Document the outcome clearly when ending
+- CONTINUE THE CONVERSATION after "checking" or processing delays`,
   tools: [],
   // No downstream agents for Marco - he's the top of the chain
 }; 

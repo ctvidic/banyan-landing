@@ -3,13 +3,16 @@
 import React, { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import {
   Leaf,
   ArrowLeft,
   Mic,
   List,
   PhoneOff,
-  AlertTriangle
+  AlertTriangle,
+  Trophy
 } from "lucide-react"
 import { 
   useRealtimeNegotiation, 
@@ -29,6 +32,7 @@ import {
 import type { AgentConfig } from "../banyanAgentConfigs/types"; // Import AgentConfig type
 import { frontlineAgentConfig, supervisorAgentConfig } from "../banyanAgentConfigs"; // Import agent configs
 import { TalkingOrb } from "./TalkingOrb" // Import the TalkingOrb component
+import Leaderboard from "./Leaderboard" // Import the Leaderboard component
 import confetti from "canvas-confetti" // Import confetti library
 
 /*-------------------------------------------------------------------------*/
@@ -103,6 +107,14 @@ export default function BillNegotiatorClient() {
   const [userRequestedDisconnect, setUserRequestedDisconnect] = useState<boolean>(false);
   const [isTransferInProgress, setIsTransferInProgress] = useState<boolean>(false); // Add state to track transfers
 
+  // Leaderboard state
+  const [callStartTime, setCallStartTime] = useState<Date | null>(null);
+  const [userName, setUserName] = useState<string>("");
+  const [isSubmittingToLeaderboard, setIsSubmittingToLeaderboard] = useState<boolean>(false);
+  const [hasSubmittedToLeaderboard, setHasSubmittedToLeaderboard] = useState<boolean>(false);
+  const [leaderboardRank, setLeaderboardRank] = useState<number | null>(null);
+  const [reportTab, setReportTab] = useState<"report" | "leaderboard">("report");
+
   // TEST MODE: Automatically set up test state
   useEffect(() => {
     if (TEST_MODE) {
@@ -169,8 +181,92 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       console.error("BN_CLIENT: Error in score function (fetching or parsing JSON):", error);
       setReport({ error: "Failed to fetch or parse score data.", details: String(error) });
     }
-  // }, [messages, setReport]);
   }, [setReport]); // messages is removed as transcript is now an argument
+
+  // Function to extract final price from report
+  const extractFinalPrice = (reportData: any): number | null => {
+    if (!reportData?.outcome) return null;
+    
+    const outcome = reportData.outcome.toLowerCase();
+    
+    // Look for price patterns like $69, $89, etc.
+    const priceMatch = outcome.match(/\$(\d+)/g);
+    if (priceMatch) {
+      // Get the last price mentioned, which is likely the final price
+      const lastPrice = priceMatch[priceMatch.length - 1];
+      return parseInt(lastPrice.replace('$', ''));
+    }
+    
+    return null;
+  };
+
+  // Function to submit to leaderboard
+  const submitToLeaderboard = async () => {
+    if (!userName.trim() || !callStartTime || !report) {
+      toast({
+        title: "Error",
+        description: "Missing required information for leaderboard submission",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const finalPrice = extractFinalPrice(report);
+    if (finalPrice === null) {
+      toast({
+        title: "Error",
+        description: "Could not determine final negotiated price",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const callEndTime = new Date();
+    const timeInSeconds = Math.floor((callEndTime.getTime() - callStartTime.getTime()) / 1000);
+
+    setIsSubmittingToLeaderboard(true);
+
+    try {
+      const response = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: userName.trim(),
+          finalPrice,
+          timeInSeconds,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit to leaderboard');
+      }
+
+      const data = await response.json();
+      setHasSubmittedToLeaderboard(true);
+      setLeaderboardRank(data.entry?.rank || null);
+      
+      toast({
+        title: "Success!",
+        description: data.message || "Added to leaderboard!",
+        variant: "default",
+      });
+
+      // Auto-switch to leaderboard tab
+      setReportTab("leaderboard");
+
+    } catch (error) {
+      console.error('Error submitting to leaderboard:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit to leaderboard. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingToLeaderboard(false);
+    }
+  };
 
   // agentLogic: Passed to the hook. Seems stable as it uses roleRef and its direct argument.
   // If it were to use other component state/props, it should be memoized with useCallback.
@@ -802,6 +898,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
             if (!hasAcceptedTerms) {
               setShowTermsDialog(true);
             } else {
+              setCallStartTime(new Date());
               setPhase("call");
               setActiveDrawerTab("mission");
             }
@@ -972,9 +1069,61 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         {/* Tab content OR Report */}
         {isCallEndedByAgent && report ? (
           <div className="bg-white rounded-lg shadow-md p-4">
-            <h3 className="text-xl font-bold mb-4">Negotiation Report</h3>
-            {renderReportContent()}
-            <Button variant="outline" className="mt-4 w-full" onClick={()=>location.reload()}>Try Again</Button>
+            <Tabs value={reportTab} onValueChange={(value) => setReportTab(value as "report" | "leaderboard")} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="report">Your Report</TabsTrigger>
+                <TabsTrigger value="leaderboard">
+                  <Trophy className="h-4 w-4 mr-1" />
+                  Leaderboard
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="report" className="mt-4">
+                <h3 className="text-xl font-bold mb-4">Negotiation Report</h3>
+                {renderReportContent()}
+                
+                {/* Name input and leaderboard submission */}
+                {!hasSubmittedToLeaderboard && (
+                  <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                    <h4 className="font-semibold mb-2">Add to Leaderboard</h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Share your negotiation skills with others! Enter your name to be added to the leaderboard.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter your name"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        className="flex-1"
+                        maxLength={50}
+                      />
+                      <Button 
+                        onClick={submitToLeaderboard}
+                        disabled={!userName.trim() || isSubmittingToLeaderboard}
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        {isSubmittingToLeaderboard ? "Adding..." : "Submit"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {hasSubmittedToLeaderboard && leaderboardRank && (
+                  <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+                    <Trophy className="h-8 w-8 text-emerald-600 mx-auto mb-2 animate-bounce-slow" />
+                    <p className="font-semibold text-emerald-800">
+                      Congratulations! You ranked #{leaderboardRank} on the leaderboard!
+                    </p>
+                  </div>
+                )}
+                
+                <Button variant="outline" className="mt-4 w-full" onClick={()=>location.reload()}>Try Again</Button>
+              </TabsContent>
+              
+              <TabsContent value="leaderboard" className="mt-4">
+                <Leaderboard />
+              </TabsContent>
+            </Tabs>
           </div>
         ) : (
           activeDrawerTab && (
@@ -998,94 +1147,65 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       {/* Desktop report - shown below on desktop */}
       {isCallEndedByAgent && report && (
         <div className="hidden md:block w-full max-w-2xl mt-8">
-          <h2 className="text-2xl font-bold mb-4">Negotiation Report</h2>
-          {renderReportContent()}
-          <Button variant="outline" className="mt-4" onClick={()=>location.reload()}>Try Again</Button>
+          <Tabs value={reportTab} onValueChange={(value) => setReportTab(value as "report" | "leaderboard")} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="report">Your Report</TabsTrigger>
+              <TabsTrigger value="leaderboard">
+                <Trophy className="h-4 w-4 mr-1" />
+                Leaderboard
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="report" className="mt-4">
+              <h2 className="text-2xl font-bold mb-4">Negotiation Report</h2>
+              {renderReportContent()}
+              
+              {/* Name input and leaderboard submission */}
+              {!hasSubmittedToLeaderboard && (
+                <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                  <h4 className="font-semibold mb-2">Add to Leaderboard</h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Share your negotiation skills with others! Enter your name to be added to the leaderboard.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter your name"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      className="flex-1"
+                      maxLength={50}
+                    />
+                    <Button 
+                      onClick={submitToLeaderboard}
+                      disabled={!userName.trim() || isSubmittingToLeaderboard}
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      {isSubmittingToLeaderboard ? "Adding..." : "Submit"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {hasSubmittedToLeaderboard && leaderboardRank && (
+                <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+                  <Trophy className="h-8 w-8 text-emerald-600 mx-auto mb-2 animate-bounce-slow" />
+                  <p className="font-semibold text-emerald-800">
+                    Congratulations! You ranked #{leaderboardRank} on the leaderboard!
+                  </p>
+                </div>
+              )}
+              
+              <Button variant="outline" className="mt-4" onClick={()=>location.reload()}>Try Again</Button>
+            </TabsContent>
+            
+            <TabsContent value="leaderboard" className="mt-4">
+              <Leaderboard />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
     </div>
   )
-
-  const renderReport = () => {
-    // Parse the report if needed
-    let parsed = report;
-    
-    if (report?.text && typeof report.text === "string") {
-      try {
-        const cleanedText = report.text.replace(/```json\s*|\s*```/g, "").trim();
-        parsed = JSON.parse(cleanedText);
-      } catch (e) {
-        console.error("Failed to parse report:", e);
-        parsed = null;
-      }
-    }
-    
-    // Extract star count for personalized message
-    const starCount = parsed ? (parsed.rating?.match(/⭐/g) || []).length : 0;
-
-    return (
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Negotiation Report</h1>
-        {parsed ? (
-          <>
-            <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
-              {parsed.strengths && (
-                <div>
-                  <h2 className="font-semibold mb-1">Strengths</h2>
-                  <ul className="list-disc pl-5">
-                    {parsed.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                  </ul>
-                </div>
-              )}
-              {parsed.improvements && (
-                <div>
-                  <h2 className="font-semibold mb-1">Improvements</h2>
-                  <ul className="list-disc pl-5">
-                    {parsed.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                  </ul>
-                </div>
-              )}
-              {parsed.outcome && (
-                  <div>
-                    <h2 className="font-semibold mb-1">Outcome</h2>
-                    <p>{parsed.outcome}</p>
-                  </div>
-              )}
-              {parsed.rating && (
-                <div>
-                  <h2 className="font-semibold mb-1">Rating</h2>
-                  <p>{parsed.rating}</p>
-                </div>
-              )}
-            </div>
-            
-            {/* Personalized message and CTA */}
-            <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
-              <p className="text-sm text-gray-700 mb-3">
-                {starCount >= 4 && "We noticed you're a skilled negotiator! 🎉"}
-                {starCount === 3 && "We noticed you have good negotiation potential! 💪"}
-                {starCount <= 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
-              </p>
-              <p className="text-sm font-semibold text-gray-800 mb-3">
-                Join Banyan to master money management and negotiation skills.
-              </p>
-              <a 
-                href="https://banyan.money" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors"
-              >
-                Join the Waitlist →
-              </a>
-            </div>
-          </>
-        ) : (
-          <p>Loading…</p>
-        )}
-        <Button variant="outline" className="mt-6" onClick={()=>location.reload()}>Try Again</Button>
-      </div>
-    );
-  }
 
   const renderReportContent = () => {
     // Parse the report if needed
@@ -1179,6 +1299,68 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           </a>
         </div>
       </>
+    );
+  }
+
+  const renderReport = () => {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Tabs value={reportTab} onValueChange={(value) => setReportTab(value as "report" | "leaderboard")} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="report">Your Report</TabsTrigger>
+            <TabsTrigger value="leaderboard">
+              <Trophy className="h-4 w-4 mr-1" />
+              Leaderboard
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="report" className="mt-4">
+            <h1 className="text-3xl font-bold mb-6">Negotiation Report</h1>
+            {renderReportContent()}
+            
+            {/* Name input and leaderboard submission */}
+            {!hasSubmittedToLeaderboard && (
+              <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <h4 className="font-semibold mb-2">Add to Leaderboard</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Share your negotiation skills with others! Enter your name to be added to the leaderboard.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter your name"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    className="flex-1"
+                    maxLength={50}
+                  />
+                  <Button 
+                    onClick={submitToLeaderboard}
+                    disabled={!userName.trim() || isSubmittingToLeaderboard}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {isSubmittingToLeaderboard ? "Adding..." : "Submit"}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {hasSubmittedToLeaderboard && leaderboardRank && (
+              <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+                <Trophy className="h-8 w-8 text-emerald-600 mx-auto mb-2 animate-bounce-slow" />
+                <p className="font-semibold text-emerald-800">
+                  Congratulations! You ranked #{leaderboardRank} on the leaderboard!
+                </p>
+              </div>
+            )}
+            
+            <Button variant="outline" className="mt-6" onClick={()=>location.reload()}>Try Again</Button>
+          </TabsContent>
+          
+          <TabsContent value="leaderboard" className="mt-4">
+            <Leaderboard />
+          </TabsContent>
+        </Tabs>
+      </div>
     );
   }
 

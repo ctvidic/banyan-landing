@@ -1,5 +1,4 @@
-"use client"                              // ← declare this page as a Client Component  [oai_citation:2‡Next.js](https://nextjs.org/docs/app/api-reference/directives/use-client?utm_source=chatgpt.com)
-
+"use client"                              // ← declare this page as a Client Component
 import { Metadata } from "next"
 import BillNegotiatorClient from "@/app/components/BillNegotiatorClient"
 
