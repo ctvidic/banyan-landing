@@ -46,7 +46,7 @@ const ParentDashboardCard = () => {
             <p className="text-xs text-gray-500">Managed by You</p>
           </div>
         </div>
-        <div className="p-1.5 bg-yellow-100 rounded-full animate-pulse">
+        <div className="p-1.5 bg-yellow-100 rounded-full animate-pulse-slow">
           <Bell size={16} className="text-yellow-600" />
         </div>
       </div>
@@ -665,7 +665,11 @@ export default function Home() {
             </div>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Turn Learning into Earning 💡</h2>
             <p className="text-lg text-gray-600">
-              Our unique Learn to Earn program directly rewards your teen's engagement. A portion of your monthly subscription fee is set aside, and your child can earn back up to 80% of it—that's potentially $40 each month!—based on their progress through the curriculum, quiz scores, and consistent learning habits.
+              Our <span className="font-bold text-emerald-600">Learn to Earn</span> program rewards your teen for engaging with the app.
+              Up to 80% of your monthly fee — as much as $40 — can be earned back through consistent progress, quiz scores, and learning habits.
+            </p>
+            <p className="text-lg font-medium text-gray-800 mt-4">
+              Real rewards for real learning.
             </p>
           </motion.div>
 
