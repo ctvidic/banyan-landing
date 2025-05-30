@@ -863,6 +863,20 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Float ing Button */}
+      <motion.button
+        type="button"
+        className="fixed bottom-8 right-8 z-[9999] inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer"
+        onClick={() => window.location.href = '/reality-check'}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        style={{ pointerEvents: 'auto' }}
+      >
+        <AlertTriangle className="mr-2 h-4 w-4" />
+        See the risks of financial illiteracy
+      </motion.button>
+
       {/* Footer */}
       <footer className="py-8 md:py-10 bg-gray-900 text-gray-300">
         <div className="container">
