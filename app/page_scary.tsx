@@ -12,6 +12,7 @@ import MobileMenu from "@/components/mobile-menu"
 import ModuleCard from "@/components/module-card"
 import { WaitlistForm } from "./components/WaitlistForm"
 import RoadmapSection from "@/components/roadmap-section"
+import Header from "@/components/Header"
 import { motion } from "framer-motion"
 import React, { useState, useRef, useLayoutEffect } from "react"
 
@@ -130,44 +131,7 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col bg-black">
       {/* Navigation */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-gray-900/70 border-b border-gray-800/20 supports-[backdrop-filter]:bg-gray-900/30">
-        <div className="container flex h-16 items-center justify-between">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2"
-          >
-            <Leaf className="h-6 w-6 text-emerald-500" />
-            <span className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-emerald-400">Banyan</span>
-          </motion.div>
-          {/* <nav className="hidden md:flex items-center gap-6">
-            {["Features", "Curriculum", "Testimonials", "Pricing"].map((item, i) => (
-              <motion.div
-                key={item}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Link 
-                  href={`#${item.toLowerCase()}`} 
-                  className="text-sm font-medium text-gray-300 hover:text-emerald-500 transition-colors relative group"
-                >
-                  {item}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-500 transition-all group-hover:w-full" />
-                </Link>
-              </motion.div>
-            ))}
-          </nav> */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4"
-          >
-            {/* <Button className="bg-emerald-600 hover:bg-emerald-700 rounded-full" onClick={() => document.getElementById('waitlist-form')?.scrollIntoView({ behavior: 'smooth' })}>Join Waitlist</Button> */}
-            <MobileMenu />
-          </motion.div>
-        </div>
-      </header>
+      <Header theme="dark" showJoinWaitlist={false} />
 
       {/* HERO SECTION PINNED UNTIL MAIN SECTION */}
       <div style={{ position: 'relative', zIndex: 20 }}>
