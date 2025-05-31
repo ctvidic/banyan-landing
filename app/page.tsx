@@ -838,7 +838,7 @@ export default function Home() {
         style={{ pointerEvents: 'auto' }}
       >
         <AlertTriangle className="mr-2 h-4 w-4" />
-        See the risks of financial illiteracy
+        Is your teen really prepared?
       </motion.button>
 
       {/* Footer */}
