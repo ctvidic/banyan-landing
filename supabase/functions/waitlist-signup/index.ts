@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { corsHeaders, validateEmail } from "./_shared/validation.ts"
-import { getWelcomeEmailHtml, getAdminNotificationHtml } from "./_shared/email-templates.ts"
+import { getWelcomeEmailHtml, getWelcomeEmailText, getAdminNotificationHtml } from "./_shared/email-templates.ts"
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -87,7 +87,7 @@ serve(async (req) => {
         to: email,
         subject: '🌿 Welcome to the Banyan Waitlist!',
         html: getWelcomeEmailHtml(),
-        text: getWelcomeEmailHtml() // Using same content for plain text
+        text: getWelcomeEmailText()
       }),
     })
 
