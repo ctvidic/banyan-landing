@@ -108,24 +108,26 @@ export default function Home() {
   const constraintsRef = useRef<HTMLDivElement>(null);
   const [dragConstraintsWidth, setDragConstraintsWidth] = useState(0);
 
-  //  // HERO SCROLL ANIMATION STATE
-  //  const [showText, setShowText] = useState(false);
-  //  const [showApp, setShowApp] = useState(false);
+  // HERO SCROLL ANIMATION STATE
+  const [showText, setShowText] = useState(true);
+  const [showApp, setShowApp] = useState(false);
+  
   useLayoutEffect(() => {
     if (!carouselRef.current || !constraintsRef.current) return;
     const scrollableWidth = carouselRef.current.scrollWidth;
     const viewportWidth = constraintsRef.current.offsetWidth;
     setDragConstraintsWidth(Math.max(0, scrollableWidth - viewportWidth));
-  // const handleScroll = () => {
-  //   const scrollY = window.scrollY;
-  //   const vh = window.innerHeight;
-  //   // Show text after 10% of viewport height scrolled
-  //   setShowText(scrollY > vh * 0.1);
-  //   // Show app after 30% of viewport height scrolled
-  //   setShowApp(scrollY > vh * 0.3);
-  // };
-  // window.addEventListener('scroll', handleScroll);
-  // return () => window.removeEventListener('scroll', handleScroll);
+    
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const vh = window.innerHeight;
+      // Text is always visible (removed the scroll-based logic for text)
+      setShowText(true);
+      // Show app after 30% of viewport height scrolled
+      setShowApp(scrollY > vh * 0.3);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
@@ -160,10 +162,10 @@ export default function Home() {
             {/* Scroll-driven overlays */}
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between h-screen container mx-auto">
               {/* Left: Headline and subheadline, fade/slide in on scroll */}
-              <div
-                // initial={{ opacity: 0, x: -40 }}
-                // animate={showText ? { opacity: 1, x: 0 } : { opacity: 0, x: -40 }}
-                // transition={{ duration: 0.8 }}
+              <motion.div
+                initial={{ opacity: 0, x: -40 }}
+                animate={showText ? { opacity: 1, x: 0 } : { opacity: 0, x: -40 }}
+                transition={{ duration: 0.8 }}
                 className="flex-1 flex flex-col justify-center items-start h-full px-4 md:px-0 pointer-events-none"
                 style={{ color: 'white', maxWidth: '600px' }}
               >
@@ -189,7 +191,7 @@ export default function Home() {
                     <p className="text-sm text-gray-300">of parents in debt for basics</p>
                   </div>
                 </div> */}
-              </div>
+              </motion.div>
               {/* Right: App preview, fade/slide in on further scroll, now absolutely positioned
               <motion.div
                 initial={{ opacity: 0, x: 40 }}
@@ -217,7 +219,7 @@ export default function Home() {
           Tell me more about Banyan
         </motion.button>
         {/* Spacer to allow scrolling through hero before main content */}
-        <div style={{ height: '120vh', width: '100%' }}></div>
+        <div style={{ height: '40vh', width: '100%' }}></div>
       </div>
 
     {/* --- NEW SECTION 1: WHY BANYAN? --- */}
