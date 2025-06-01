@@ -81,6 +81,7 @@ export function WaitlistForm() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${supabaseAnonKey}`,
           'apikey': supabaseAnonKey, // Add this header as well
+          'x-client-info': 'supabase-js/2.0.0', // Add this header for JWT verification
         },
         body: JSON.stringify(requestBody),
       })
@@ -142,7 +143,7 @@ export function WaitlistForm() {
           
           <div className="space-y-4">
             <p className="text-sm text-white/70">
-              Check your email for a welcome message.
+              Check your email for a welcome message. Be sure to check your spam folder or promotions tab if you don't see it!
             </p>
             <Button 
               onClick={() => setShowSuccess(false)}
