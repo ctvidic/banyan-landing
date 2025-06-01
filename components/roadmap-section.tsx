@@ -25,13 +25,13 @@ const roadmapItems: RoadmapItem[] = [
   {
     title: "Teen Debit Card",
     description: "Parent-controlled debit card with real-time monitoring",
-    date: "July 2024",
+    date: "July 2025",
     status: "upcoming"
   },
   {
     title: "Savings Account",
     description: "High-yield savings account with automated savings features",
-    date: "August 2024",
+    date: "August 2025",
     status: "upcoming"
   },
   {
