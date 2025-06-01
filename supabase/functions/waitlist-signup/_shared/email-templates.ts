@@ -1,4 +1,5 @@
 // Welcome email template for new signups (HTML formatted)
+// Email is much nicer now
 export function getWelcomeEmailHtml(): string {
   return `
 <!DOCTYPE html>
