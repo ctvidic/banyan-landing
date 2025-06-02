@@ -17,11 +17,19 @@ export function injectTransferTools(agentConfigs: AgentConfig[]): AgentConfig[] 
       type: 'function',
       name: 'end_call',
       description: `Ends the current call with the customer. 
-Use this tool when:
-- The customer's issue has been fully resolved
-- The customer explicitly wants to end the call
-- The conversation has reached a natural conclusion
+
+ONLY use this tool when:
+- The customer explicitly says they want to end the call (e.g., "goodbye", "thanks, bye", "I'm done")
+- The customer's issue has been FULLY resolved AND they have confirmed they have no more questions
+- The customer accepts or rejects your final offer AND indicates they're done
 - The customer becomes abusive or the call cannot continue productively
+
+NEVER use this tool when:
+- You are checking information or looking something up
+- You say things like "Let me check", "I'll look into that", "Let me see", "Hold on"
+- You are putting the customer on a brief hold
+- You are in the middle of negotiating or discussing options
+- The customer hasn't explicitly indicated they want to end the call
 
 Always provide a polite closing statement before using this tool.`,
       parameters: {

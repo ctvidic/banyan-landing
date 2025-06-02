@@ -120,11 +120,23 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
         <Tabs value={timeframe} onValueChange={setTimeframe}>
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4">
-            <TabsTrigger value="today" className="text-xs sm:text-sm">Today</TabsTrigger>
-            <TabsTrigger value="week" className="text-xs sm:text-sm">This Week</TabsTrigger>
-            <TabsTrigger value="month" className="text-xs sm:text-sm">This Month</TabsTrigger>
-            <TabsTrigger value="all" className="text-xs sm:text-sm">All Time</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 gap-1">
+            <TabsTrigger value="today" className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="sm:hidden">Today</span>
+              <span className="hidden sm:inline">Today</span>
+            </TabsTrigger>
+            <TabsTrigger value="week" className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="sm:hidden">Week</span>
+              <span className="hidden sm:inline">This Week</span>
+            </TabsTrigger>
+            <TabsTrigger value="month" className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="sm:hidden">Month</span>
+              <span className="hidden sm:inline">This Month</span>
+            </TabsTrigger>
+            <TabsTrigger value="all" className="text-xs sm:text-sm px-2 sm:px-3">
+              <span className="sm:hidden">All</span>
+              <span className="hidden sm:inline">All Time</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={timeframe} className="space-y-4 mt-0">
