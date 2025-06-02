@@ -1,12 +1,15 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion"
 import { Leaf, Wifi, Lightbulb, ShieldCheck } from "lucide-react"
 import Image from "next/image"
 
 export default function HeroAnimation() {
   const [mounted, setMounted] = useState(false)
+  const [showCoin, setShowCoin] = useState(false)
+  const [coinKey, setCoinKey] = useState(0)
+  const [currentScreen, setCurrentScreen] = useState(0)
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
 
@@ -17,6 +20,38 @@ export default function HeroAnimation() {
   const rotateX = useTransform(y, [-20, 20], [5, -5])
   const rotateY = useTransform(x, [-20, 20], [-5, 5])
   const translateZ = useTransform(x, [-20, 20], [-30, 30])
+
+  // Trigger coin animation on scroll transitions
+  useEffect(() => {
+    const scrollTimes = [0.2, 0.4, 0.6] // Only when scrolling down to screens 2, 3, 4
+    const duration = 24000 // 24 seconds total duration
+    
+    const triggerCoin = () => {
+      setShowCoin(true)
+      setCoinKey(prev => prev + 1)
+      setTimeout(() => setShowCoin(false), 1500) // Hide after 1.5 seconds
+    }
+
+    // Trigger coin for each transition
+    const startAnimation = () => {
+      scrollTimes.forEach((time, index) => {
+        setTimeout(() => {
+          triggerCoin()
+          setCurrentScreen(index + 1)
+        }, time * duration)
+      })
+    }
+
+    // Start initial animation
+    startAnimation()
+    
+    // Repeat animation
+    const interval = setInterval(startAnimation, duration)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [])
 
   useEffect(() => {
     setMounted(true)
@@ -61,6 +96,36 @@ export default function HeroAnimation() {
           rotateY,
         }}
       >
+        {/* Coin Animation - Positioned relative to phone */}
+        <AnimatePresence>
+          {showCoin && (
+            <motion.div
+              key={coinKey}
+              className="absolute -top-5 right-0 z-[200]"
+              initial={{ scale: 0, opacity: 0, y: 0 }}
+              animate={{ 
+                scale: [0, 1.1, 1, 1, 0.9],
+                opacity: [0, 1, 1, 1, 0],
+                y: [0, -20, -30, -40, -60]
+              }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ 
+                duration: 1.5,
+                times: [0, 0.2, 0.4, 0.7, 1],
+                ease: "easeOut"
+              }}
+            >
+              <Image
+                src="/coins.png"
+                alt="Coins"
+                width={56}
+                height={56}
+                className="drop-shadow-lg"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
         <div className="relative h-[600px] w-[300px] bg-gray-900 rounded-[3rem] shadow-xl overflow-hidden border-[12px] border-gray-900 font-sans">
           <div className="absolute top-0 left-0 right-0 h-6 bg-gray-900 flex justify-center items-center">
             <div className="h-2 w-24 rounded-full bg-gray-800"></div>
@@ -85,64 +150,243 @@ export default function HeroAnimation() {
               </div>
             </div>
             {/* App Content */}
-            <div className="p-4 space-y-4">
+            <div className="relative h-[calc(100%-80px)] overflow-hidden">
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-xl p-4 shadow-sm"
+                className="absolute inset-0"
+                animate={{
+                  y: [
+                    "0%",      // Start at screen 1
+                    "0%",      // Hold on screen 1
+                    "-102%",   // Slight overshoot past screen 2
+                    "-100%",   // Settle on screen 2
+                    "-100%",   // Hold on screen 2
+                    "-202%",   // Slight overshoot past screen 3
+                    "-200%",   // Settle on screen 3
+                    "-200%",   // Hold on screen 3
+                    "-302%",   // Slight overshoot past screen 4
+                    "-300%",   // Settle on screen 4
+                    "-300%",   // Hold on screen 4
+                    "2%",      // Slight overshoot when returning
+                    "0%"       // Back to start
+                  ]
+                }}
+                transition={{
+                  duration: 24,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  times: [
+                    0,      // Start
+                    0.15,   // Hold screen 1
+                    0.18,   // Overshoot to screen 2
+                    0.2,    // Settle on screen 2
+                    0.35,   // Hold screen 2
+                    0.38,   // Overshoot to screen 3
+                    0.4,    // Settle on screen 3
+                    0.55,   // Hold screen 3
+                    0.58,   // Overshoot to screen 4
+                    0.6,    // Settle on screen 4
+                    0.75,   // Hold screen 4
+                    0.78,   // Overshoot back
+                    0.8     // Back to start
+                  ]
+                }}
               >
-                <div className="text-sm text-gray-500 mb-1">Module 1</div>
-                <div className="text-xl font-bold mb-3 font-display">Foundations of Money</div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                {/* Screen 1: Current Content */}
+                <div className="h-full p-4 space-y-4">
                   <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: "75%" }}
-                    transition={{ delay: 0.5, duration: 1 }}
-                    className="h-full bg-emerald-500"
-                  ></motion.div>
-                </div>
-                <div className="text-sm text-right mt-2 text-gray-500">75% complete</div>
-              </motion.div>
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="bg-white rounded-xl p-4 shadow-sm"
+                  >
+                    <div className="text-sm text-gray-500 mb-1">Module 1</div>
+                    <div className="text-xl font-bold mb-3 font-display">Foundations of Money</div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: "75%" }}
+                        transition={{ delay: 0.5, duration: 1 }}
+                        className="h-full bg-emerald-500"
+                      ></motion.div>
+                    </div>
+                    <div className="text-sm text-right mt-2 text-gray-500">75% complete</div>
+                  </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="bg-white rounded-xl p-4 shadow-sm"
-              >
-                <div className="text-xl font-bold mb-3 font-display">Investment Portfolio</div>
-                <div className="flex justify-between text-sm mb-4">
-                  <span>$100 invested</span>
-                  <span className="text-emerald-500">+5.2%</span>
-                </div>
-                <div className="h-24 bg-gray-50 rounded-lg flex items-end gap-1 p-2">
-                  {[30, 45, 40, 50, 48, 60, 55].map((height, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ height: 0 }}
-                      animate={{ height: `${height}%` }}
-                      transition={{ delay: 0.8 + i * 0.1, duration: 1 }}
-                      className="flex-1 bg-emerald-500/80 rounded-t-sm"
-                    ></motion.div>
-                  ))}
-                </div>
-              </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                    className="bg-white rounded-xl p-4 shadow-sm"
+                  >
+                    <div className="text-xl font-bold mb-3 font-display">Investment Portfolio</div>
+                    <div className="flex justify-between text-sm mb-4">
+                      <span>$100 invested</span>
+                      <span className="text-emerald-500">+5.2%</span>
+                    </div>
+                    <div className="h-24 bg-gray-50 rounded-lg flex items-end gap-1 p-2">
+                      {[30, 45, 40, 50, 48, 60, 55].map((height, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ height: 0 }}
+                          animate={{ height: `${height}%` }}
+                          transition={{ delay: 0.8 + i * 0.1, duration: 1 }}
+                          className="flex-1 bg-emerald-500/80 rounded-t-sm"
+                        ></motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
 
-              {/* AI Assist Card - Updated Text */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 }}
-                className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 shadow-sm border border-blue-100"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="p-1.5 bg-blue-100 rounded-full mt-1">
-                    <Lightbulb size={16} className="text-blue-600" />
+                  {/* AI Assist Card */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9 }}
+                    className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 shadow-sm border border-blue-100"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-1.5 bg-blue-100 rounded-full mt-1">
+                        <Lightbulb size={16} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-blue-800 mb-1">AI Suggestion</p>
+                        <p className="text-xs text-gray-600">Nice progress on saving! 🎯 Consider allocating a bit more towards your 'College Fund' goal this week.</p> 
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Screen 2: Fullscreen Panda Video */}
+                <div className="h-full relative bg-black">
+                  <video 
+                    className="w-full h-full object-cover"
+                    src="/panda.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
+                  <div className="absolute top-4 left-4 bg-black/70 backdrop-blur text-white px-3 py-2 rounded-lg">
+                    <p className="text-xs font-medium mb-1">Now Learning</p>
+                    <p className="text-sm font-bold">Smart Spending Habits</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-blue-800 mb-1">AI Suggestion</p>
-                    <p className="text-xs text-gray-600">Nice progress on saving! 🎯 Consider allocating a bit more towards your 'College Fund' goal this week.</p> 
+                  <div className="absolute bottom-4 right-4 bg-emerald-500/90 backdrop-blur text-white px-3 py-2 rounded-lg">
+                    <p className="text-xs mb-1">Daily Streak</p>
+                    <p className="text-lg font-bold flex items-center gap-1">14 <span className="text-sm">🔥</span></p>
+                  </div>
+                </div>
+
+                {/* Screen 3: Achievements & Rewards */}
+                <div className="h-full p-4 space-y-4 flex flex-col justify-center">
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <div className="text-xl font-bold mb-4 font-display">Recent Achievements</div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
+                        <span className="text-2xl">🏆</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">First Investment!</p>
+                          <p className="text-xs text-gray-600">Made your first stock purchase</p>
+                        </div>
+                        <span className="text-emerald-600 font-bold">+$5</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                        <span className="text-2xl">💎</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">Quiz Master</p>
+                          <p className="text-xs text-gray-600">Scored 100% on 5 quizzes</p>
+                        </div>
+                        <span className="text-emerald-600 font-bold">+$10</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg">
+                        <span className="text-2xl">🚀</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">7-Day Streak!</p>
+                          <p className="text-xs text-gray-600">Keep learning every day</p>
+                        </div>
+                        <span className="text-emerald-600 font-bold">+$3</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl p-4 text-white">
+                    <div className="text-sm font-medium mb-1">Total Earned</div>
+                    <div className="text-3xl font-bold mb-2">$47.50</div>
+                    <div className="text-xs opacity-90">This month • Top 10% of users</div>
+                  </div>
+                </div>
+
+                {/* Screen 4: Community */}
+                <div className="h-full p-4 space-y-4 flex flex-col justify-center">
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <div className="text-xl font-bold mb-3 font-display">Community Feed</div>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-sm">
+                          <Image
+                            src="/genmojis/teen-girl-success.png"
+                            alt="Sarah"
+                            width={32}
+                            height={32}
+                            className="rounded-full"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold">Sarah M.</p>
+                          <p className="text-xs text-gray-600">Just hit my first $1000 in investments! 🚀</p>
+                          <div className="flex items-center gap-4 mt-1">
+                            <span className="text-xs text-gray-500">2m ago</span>
+                            <span className="text-xs text-emerald-600">❤️ 24</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm">
+                          <Image
+                            src="/genmojis/teen-investor.png"
+                            alt="Alex"
+                            width={32}
+                            height={32}
+                            className="rounded-full"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold">Alex T.</p>
+                          <p className="text-xs text-gray-600">Started my dropshipping business today!</p>
+                          <div className="flex items-center gap-4 mt-1">
+                            <span className="text-xs text-gray-500">5m ago</span>
+                            <span className="text-xs text-emerald-600">❤️ 18</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-sm">
+                          <Image
+                            src="/genmojis/teen-focused.png"
+                            alt="Jordan"
+                            width={32}
+                            height={32}
+                            className="rounded-full"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold">Jordan K.</p>
+                          <p className="text-xs text-gray-600">Completed the crypto module! Mind = blown 🤯</p>
+                          <div className="flex items-center gap-4 mt-1">
+                            <span className="text-xs text-gray-500">8m ago</span>
+                            <span className="text-xs text-emerald-600">❤️ 31</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+                    <p className="text-sm font-semibold text-purple-800 mb-1">Weekly Challenge</p>
+                    <p className="text-xs text-gray-600">Complete 5 lessons to unlock bonus content!</p>
+                    <div className="mt-2 flex gap-1">
+                      {[1,2,3,4,5].map((i) => (
+                        <div key={i} className={`h-1 flex-1 rounded-full ${i <= 3 ? 'bg-purple-500' : 'bg-gray-200'}`} />
+                      ))}
+                    </div>
                   </div>
                 </div>
               </motion.div>
