@@ -32,6 +32,8 @@ import { frontlineAgentConfig, supervisorAgentConfig } from "../../banyanAgentCo
 import { TalkingOrb } from "@/app/components/TalkingOrb" // Import the TalkingOrb component
 import confetti from "canvas-confetti" // Import confetti library
 import BillNegotiatorLeaderboard from "@/app/bill-negotiator/components/BillNegotiatorLeaderboard"
+import { WaitlistForm } from "@/app/components/WaitlistForm"
+import { Input } from "@/components/ui/input"
 
 /*-------------------------------------------------------------------------*/
 /*  Message + Scenario types                                               */
@@ -77,6 +79,10 @@ export default function BillNegotiatorClient() {
   } | null>(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showLeaderboardSection, setShowLeaderboardSection] = useState(false)
+  const [showEmailDialog, setShowEmailDialog] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false)
+  const [hasSubmittedEmail, setHasSubmittedEmail] = useState(false)
 
   // TEST MODE: Set to true to skip to report with mock data
   const TEST_MODE = false; // Change to true for testing
@@ -154,7 +160,7 @@ export default function BillNegotiatorClient() {
   }, [setIsUserSpeaking]);
 
   // Add function to save score to backend
-  const saveScoreToBackend = useCallback(async (scoreReport: any) => {
+  const saveScoreToBackend = useCallback(async (scoreReport: any, email?: string) => {
     if (!sessionStartTime) return;
     
     const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000); // in seconds
@@ -167,7 +173,8 @@ export default function BillNegotiatorClient() {
         },
         body: JSON.stringify({
           report: scoreReport,
-          sessionDuration
+          sessionDuration,
+          email: email || userEmail // Include email if provided
         })
       });
       
@@ -175,13 +182,16 @@ export default function BillNegotiatorClient() {
         const data = await response.json();
         setSavedScoreData(data);
         console.log('Score saved successfully:', data);
+        return data;
       } else {
         console.error('Failed to save score:', response.statusText);
+        return null;
       }
     } catch (error) {
       console.error('Error saving score:', error);
+      return null;
     }
-  }, [sessionStartTime]);
+  }, [sessionStartTime, userEmail]);
 
   const score = useCallback(async (transcript: string) => {
     console.log("BN_CLIENT: score() called. Transcript provided:", transcript);
@@ -189,11 +199,20 @@ export default function BillNegotiatorClient() {
     // console.log("BN_CLIENT: Transcript for scoring:", transcript);
     try {
       const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean). Do not nest the result under any other key. 
+        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer's negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean). Do not nest the result under any other key. 
 
-Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a star rating out of 5, based on the customer's success in getting ANY bill reduction or concession: ⭐⭐⭐⭐⭐ for 5 stars if bill reduced to $69 or below, ⭐⭐⭐⭐☆ for 4 stars if bill reduced to $70-$79, ⭐⭐⭐☆☆ for 3 stars if any discount/credit was obtained, ⭐⭐☆☆☆ for 2 stars if some concession was made, ⭐☆☆☆☆ for 1 star if no reduction achieved. Be generous with ratings for any success.
+CRITICAL SCORING RULES:
+- If the customer says nothing or only greets without negotiating: ☆☆☆☆☆ (0 stars - display as empty stars)
+- If the customer mentions the bill increase but accepts it without trying to negotiate: ⭐☆☆☆☆ (1 star)
+- If the customer makes minimal effort but gets no reduction: ⭐☆☆☆☆ (1 star)
+- If the customer tries to negotiate but only gets a small credit (<$10 off monthly): ⭐⭐☆☆☆ (2 stars)
+- If the customer negotiates and gets $10-19 monthly reduction: ⭐⭐⭐☆☆ (3 stars)
+- If the customer negotiates well and gets $20+ reduction or back to $69: ⭐⭐⭐⭐☆ (4 stars)
+- If the customer negotiates excellently and gets below $69 or significant extras: ⭐⭐⭐⭐⭐ (5 stars)
 
-confettiWorthy should be true ONLY if the customer achieved a truly excellent negotiation result - specifically if they got their monthly bill reduced to $70 or below. Do NOT set this to true for small credits, one-time discounts, or bills above $70.
+For outcome, state the final result. If no negotiation happened, say "No negotiation attempted - bill remains at $89/month"
+
+confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (significant reduction).
 
 \n\n${transcript}`})});
       
@@ -210,16 +229,20 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       console.log("BN_CLIENT: Score API response JSON:", JSON.stringify(j, null, 2));
       setReport(j);
       
-      // Save score to backend
+      // Check if score is good enough for leaderboard (2+ stars)
       if (!j.error) {
-        await saveScoreToBackend(j);
+        const starCount = (j.rating?.match(/⭐/g) || []).length;
+        if (starCount >= 2 && !hasSubmittedEmail) {
+          // Show email dialog for leaderboard entry
+          setShowEmailDialog(true);
+        }
       }
     } catch (error) {
       console.error("BN_CLIENT: Error in score function (fetching or parsing JSON):", error);
       setReport({ error: "Failed to fetch or parse score data.", details: String(error) });
     }
   // }, [messages, setReport]);
-  }, [setReport, saveScoreToBackend]); // messages is removed as transcript is now an argument
+  }, [setReport, hasSubmittedEmail]); // removed saveScoreToBackend from dependencies
 
   // agentLogic: Passed to the hook. Seems stable as it uses roleRef and its direct argument.
   // If it were to use other component state/props, it should be memoized with useCallback.
@@ -572,6 +595,60 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       setShowLeaderboardSection(false);
     }
   }, [phase, isCallEndedByAgent]);
+
+  // Handle email submission for leaderboard
+  const handleEmailSubmit = useCallback(async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (!userEmail || !report) return;
+    
+    setIsSubmittingEmail(true);
+    
+    try {
+      // First, submit to waitlist
+      const waitlistResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/waitlist-signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+        },
+        body: JSON.stringify({ email: userEmail.toLowerCase().trim() }),
+      });
+      
+      if (waitlistResponse.ok) {
+        // Then save score with email
+        const scoreData = await saveScoreToBackend(report, userEmail);
+        if (scoreData) {
+          setHasSubmittedEmail(true);
+          setShowEmailDialog(false);
+          setShowLeaderboardSection(true); // Show leaderboard after email submission
+          
+          // Show success message
+          toast({
+            title: "You're on the leaderboard!",
+            description: `Ranked #${scoreData.rank} out of ${scoreData.totalParticipants} negotiators`,
+            duration: 5000,
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save your score. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Email submission error:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingEmail(false);
+    }
+  }, [userEmail, report, saveScoreToBackend, toast]);
 
   /*-------------------------------------------------------------------------*/
   /* UI SECTIONS                                                             */
@@ -1124,6 +1201,8 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
     
     // Extract star count for personalized message
     const starCount = parsed ? (parsed.rating?.match(/⭐/g) || []).length : 0;
+    const emptyStarCount = parsed ? (parsed.rating?.match(/☆/g) || []).length : 0;
+    const totalStars = Math.max(5, starCount + emptyStarCount);
 
     return (
       <div className="max-w-2xl mx-auto">
@@ -1166,7 +1245,9 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               <p className="text-sm text-gray-700 mb-3">
                 {starCount >= 4 && "We noticed you're a skilled negotiator! 🎉"}
                 {starCount === 3 && "We noticed you have good negotiation potential! 💪"}
-                {starCount <= 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+                {starCount === 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+                {starCount === 1 && "We noticed you need to practice your negotiation skills. 🎯"}
+                {starCount === 0 && "We noticed you didn't attempt to negotiate. Try speaking up next time! 🗣️"}
               </p>
               <p className="text-sm font-semibold text-gray-800 mb-3">
                 Join Banyan to master money management and negotiation skills.
@@ -1207,8 +1288,10 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       return <p>Loading report...</p>;
     }
 
-    // Extract star count for large display
-    const starCount = (parsed.rating?.match(/⭐/g) || []).length;
+    // Extract star count for personalized message
+    const starCount = parsed ? (parsed.rating?.match(/⭐/g) || []).length : 0;
+    const emptyStarCount = parsed ? (parsed.rating?.match(/☆/g) || []).length : 0;
+    const totalStars = Math.max(5, starCount + emptyStarCount);
 
     return (
       <>
@@ -1216,13 +1299,13 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         {parsed.rating && (
           <div className="text-center mb-6">
             <div className="text-4xl mb-2">
-              {[...Array(starCount)].map((_, i) => (
+              {[...Array(totalStars)].map((_, i) => (
                 <span 
                   key={i} 
-                  className="inline-block animate-star-appear"
+                  className={`inline-block ${i < starCount ? 'animate-star-appear' : ''}`}
                   style={{ animationDelay: `${i * 0.2}s` }}
                 >
-                  ⭐
+                  {i < starCount ? '⭐' : '☆'}
                 </span>
               ))}
             </div>
@@ -1232,12 +1315,13 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               {starCount === 3 && "Good Effort"}
               {starCount === 2 && "Needs Improvement"}
               {starCount === 1 && "Try Again"}
+              {starCount === 0 && "No Negotiation Detected"}
             </p>
           </div>
         )}
         
         {/* Quick success message with rank for short attention spans */}
-        {savedScoreData && savedScoreData.rank && (
+        {savedScoreData && savedScoreData.rank && starCount > 0 && (
           <div className="text-center mb-4 animate-bounce-once">
             <p className="text-2xl">
               {starCount >= 4 ? '🏆' : starCount === 3 ? '🥈' : '💪'} 
@@ -1277,6 +1361,24 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           </div>
         )}
         
+        {/* Show email prompt if not submitted and got 2+ stars */}
+        {!hasSubmittedEmail && starCount >= 2 && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-center font-semibold text-amber-800 mb-2">
+              📧 Join the leaderboard!
+            </p>
+            <p className="text-center text-sm text-amber-700">
+              Enter your email to save your score and see how you rank
+            </p>
+            <button
+              onClick={() => setShowEmailDialog(true)}
+              className="mt-3 w-full px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors font-medium"
+            >
+              Add My Score to Leaderboard
+            </button>
+          </div>
+        )}
+        
         <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
           {parsed.outcome && (
               <div>
@@ -1307,7 +1409,9 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           <p className="text-sm text-gray-700 mb-3">
             {starCount >= 4 && "We noticed you're a skilled negotiator! 🎉"}
             {starCount === 3 && "We noticed you have good negotiation potential! 💪"}
-            {starCount <= 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+            {starCount === 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+            {starCount === 1 && "We noticed you need to practice your negotiation skills. 🎯"}
+            {starCount === 0 && "We noticed you didn't attempt to negotiate. Try speaking up next time! 🗣️"}
           </p>
           <p className="text-sm font-semibold text-gray-800 mb-3">
             Join Banyan to master money management and negotiation skills.
@@ -1359,6 +1463,60 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           © {new Date().getFullYear()} Banyan Financial Education. All rights reserved.
         </div>
       </footer>
+      
+      {/* Email Dialog for Leaderboard */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl">
+              {savedScoreData ? '🎉 You Made the Leaderboard!' : '🏆 Join the Leaderboard!'}
+            </DialogTitle>
+            <DialogDescription className="text-center pt-2">
+              {savedScoreData ? (
+                <>You ranked #{savedScoreData.rank} out of {savedScoreData.totalParticipants} negotiators!</>
+              ) : (
+                <>Enter your email to save your score and compete with other negotiators</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleEmailSubmit} className="space-y-4 pt-4">
+            <div>
+              <Input
+                type="email"
+                placeholder="your@email.com"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                required
+                className="w-full"
+                disabled={isSubmittingEmail}
+              />
+            </div>
+            
+            <div className="text-xs text-gray-500 text-center">
+              By submitting, you'll also join the Banyan waitlist for early access
+            </div>
+            
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEmailDialog(false)}
+                disabled={isSubmittingEmail}
+              >
+                Skip
+              </Button>
+              <Button
+                type="submit"
+                disabled={!userEmail || isSubmittingEmail}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {isSubmittingEmail ? 'Saving...' : 'Join Leaderboard'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 interface LeaderboardEntry {
   rank: number
   userId: string
+  email?: string
   billReduction: number
   finalBill: number
   rating: number
@@ -60,6 +61,7 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
   }, [timeframe, currentUserId])
 
   const getRatingStars = (rating: number) => {
+    if (rating === 0) return '☆☆☆☆☆'
     return '⭐'.repeat(rating) + '☆'.repeat(5 - rating)
   }
 
@@ -83,6 +85,18 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
       default:
         return <span className="text-sm font-semibold text-gray-600">#{rank}</span>
     }
+  }
+
+  const formatUsername = (entry: LeaderboardEntry, currentUserId?: string) => {
+    if (entry.userId === currentUserId) return 'You'
+    
+    if (entry.email) {
+      // Show first letter and domain
+      const [name, domain] = entry.email.split('@')
+      return `${name[0].toUpperCase()}***@${domain.split('.')[0]}`
+    }
+    
+    return `User ${entry.userId.substring(0, 6)}`
   }
 
   return (
@@ -160,7 +174,7 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
                     <div className="flex-grow">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
-                          {entry.userId === currentUserId ? 'You' : `User ${entry.userId.substring(0, 6)}`}
+                          {formatUsername(entry, currentUserId)}
                         </span>
                         <span className="text-sm">{getRatingStars(entry.rating)}</span>
                       </div>

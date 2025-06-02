@@ -31,6 +31,14 @@ function extractBillAmounts(outcome: string): { reduction: number; finalBill: nu
     finalBill = 89 - reduction
   }
   
+  // Handle "no negotiation" or "remains at $89" cases
+  if (outcome.toLowerCase().includes('no negotiation') || 
+      outcome.toLowerCase().includes('remains at $89') ||
+      outcome.toLowerCase().includes('bill remains')) {
+    reduction = 0
+    finalBill = 89
+  }
+  
   return { reduction, finalBill }
 }
 
@@ -52,7 +60,7 @@ function generateAnonymousUserId(request: Request): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { report, sessionDuration } = body
+    const { report, sessionDuration, email } = body
     
     if (!report) {
       return NextResponse.json({ error: 'Report is required' }, { status: 400 })
@@ -62,6 +70,9 @@ export async function POST(request: Request) {
     const ratingStars = (report.rating?.match(/⭐/g) || []).length
     const { reduction, finalBill } = extractBillAmounts(report.outcome || '')
     
+    // Handle 0 stars (no negotiation) - DB requires minimum 1
+    const starsToSave = Math.max(1, ratingStars)
+    
     // Generate anonymous user ID
     const userId = generateAnonymousUserId(request)
     
@@ -70,8 +81,9 @@ export async function POST(request: Request) {
       .from('bill_negotiator_scores')
       .insert({
         user_id: userId,
+        email: email || null,
         score_data: report,
-        rating_stars: ratingStars,
+        rating_stars: starsToSave,
         bill_reduction_amount: reduction,
         final_bill_amount: finalBill,
         session_duration: sessionDuration || null
