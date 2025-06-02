@@ -137,3 +137,23 @@ Note: This project uses React 19, which is newer than what many packages officia
 ## 👥 Contributing
 
 [Add contribution guidelines if applicable]
+
+## Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```bash
+# OpenAI API Key (required for bill negotiator feature)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Feature Flags
+NEXT_PUBLIC_ENABLE_BILL_NEGOTIATOR=false  # Set to 'true' to enable bill negotiator feature
+```
+
+### Feature Flags
+
+- **NEXT_PUBLIC_ENABLE_BILL_NEGOTIATOR**: Controls visibility of the bill negotiator feature
+  - `false` (default): Bill negotiator link is hidden
+  - `true`: Bill negotiator link appears in navigation
+
+## Landing Page Routes

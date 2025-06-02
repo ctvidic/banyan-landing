@@ -1,40 +1,36 @@
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 
-type GenmojiName = 
+export type GenmojiName = 
   | "confident-teen-smile"
-  | "proud-parent-smile"
-  | "teen-thinking"
-  | "teen-success"
-  | "parent-approval"
-  | "teen-focused"
-  | "happy-graduate"
-  | "teen-wink"
-  | "teen-girl-confident"
-  | "mom-supportive"
-  | "teen-girl-success"
-  | "dad-thumbs-up"
-  | "teen-girl-focused"
-  | "teen-boy-excited"
-  | "parent-peace-mind"
-  | "teen-girl-wink"
-  // Old ones if they still exist
-  | "teen-money-eyes"
-  | "parent-proud-face"
-  | "mind-blown-teen"
   | "cool-investor-teen"
-  | "celebration-face"
   | "focused-learning-face"
+  | "teen-thinking"
+  | "dad-thumbs-up"
+  | "graduation-money"
+  | "happy-graduate"
+  | "mind-blown-teen"
+  | "mom-supportive"
+  | "parent-approval"
+  | "teen-girl-success"
+  | "parent-peace-mind"
+  | "parent-proud-face"
+  | "piggy-bank-happy"
+  | "proud-parent-smile"
+  | "rocket-money"
   | "shocked-happy-parent"
-  | "money-mouth-teen"
+  | "teen-focused"
+  | "teen-girl-focused"
+  | "teen-investor"
+  | "teen-success"
 
 interface GenmojiProps {
   name: GenmojiName
-  size?: number
+  size: number
   className?: string
 }
 
-export default function Genmoji({ name, size = 40, className }: GenmojiProps) {
+export default function Genmoji({ name, size, className }: GenmojiProps) {
   return (
     <Image
       src={`/genmojis/${name}.png`}

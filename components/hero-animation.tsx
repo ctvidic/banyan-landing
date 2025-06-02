@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion"
 import { Leaf, Wifi, Lightbulb, ShieldCheck } from "lucide-react"
 import Image from "next/image"
+import OptimizedVideo from "./optimized-video"
 
 export default function HeroAnimation() {
   const [mounted, setMounted] = useState(false)
@@ -257,13 +258,10 @@ export default function HeroAnimation() {
 
                 {/* Screen 2: Fullscreen Panda Video */}
                 <div className="h-full relative bg-black">
-                  <video 
+                  <OptimizedVideo 
                     className="w-full h-full object-cover"
-                    src="/panda.mp4"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
+                    src="/panda-optimized.mp4"
+                    poster="/panda-poster.jpg"
                   />
                   <div className="absolute top-4 left-4 bg-black/70 backdrop-blur text-white px-3 py-2 rounded-lg">
                     <p className="text-xs font-medium mb-1">Now Learning</p>
@@ -327,6 +325,7 @@ export default function HeroAnimation() {
                             width={32}
                             height={32}
                             className="rounded-full"
+                            loading="lazy"
                           />
                         </div>
                         <div className="flex-1">
@@ -346,6 +345,7 @@ export default function HeroAnimation() {
                             width={32}
                             height={32}
                             className="rounded-full"
+                            loading="lazy"
                           />
                         </div>
                         <div className="flex-1">
@@ -365,6 +365,7 @@ export default function HeroAnimation() {
                             width={32}
                             height={32}
                             className="rounded-full"
+                            loading="lazy"
                           />
                         </div>
                         <div className="flex-1">
@@ -420,6 +421,8 @@ export default function HeroAnimation() {
           width={512}
           height={320}
           className="w-full h-full object-contain drop-shadow-xl"
+          priority={false}
+          quality={75}
         />
       </motion.div>
 

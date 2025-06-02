@@ -61,13 +61,17 @@ export default function Header({ showJoinWaitlist = true, theme = 'light' }: Hea
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-600 transition-all group-hover:w-full" />
               </Link>
             ))}
-            <Link
-              href="/bill-negotiator"
-              className="text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 hover:bg-emerald-100 transition-colors flex items-center gap-2"
-            >
-              <span>Bill Negotiator</span>
-              <span className="text-xs font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">TRY</span>
-            </Link>
+            {process.env.NEXT_PUBLIC_ENABLE_BILL_NEGOTIATOR === 'true' && (
+              <Link 
+                href="/bill-negotiator" 
+                className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1.5"
+              >
+                Bill Negotiator
+                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full uppercase tracking-wide">
+                  Try
+                </span>
+              </Link>
+            )}
           </nav>
           {showJoinWaitlist && (
             <Button 

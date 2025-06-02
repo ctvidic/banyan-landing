@@ -230,43 +230,43 @@ export default function Home() {
             >
               {/* First set of logos */}
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={0} style={{ width: 'auto', height: '40px' }} unoptimized />
+                <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={120} style={{ height: '40px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/stanford.png" alt="Stanford University Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+                <Image src="/stanford.png" alt="Stanford University Logo" height={45} width={150} style={{ height: '45px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/texas.png" alt="University of Texas Logo" height={50} width={0} style={{ width: 'auto', height: '50px' }} unoptimized />
+                <Image src="/texas.png" alt="University of Texas Logo" height={50} width={160} style={{ height: '50px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/ngpf.svg" alt="Next Gen Personal Finance Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+                <Image src="/ngpf.svg" alt="Next Gen Personal Finance Logo" height={45} width={150} style={{ height: '45px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/jumpstart.webp" alt="JumpStart Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+                <Image src="/jumpstart.webp" alt="JumpStart Logo" height={45} width={120} style={{ height: '45px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+                <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={150} style={{ height: '45px', width: 'auto' }} />
               </div>
               
               {/* Second set of logos (duplicate for seamless loop) */}
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={0} style={{ width: 'auto', height: '40px' }} unoptimized />
+                <Image src="/alpha.png" alt="Alpha Org Logo" height={40} width={120} style={{ height: '40px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/stanford.png" alt="Stanford University Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+                <Image src="/stanford.png" alt="Stanford University Logo" height={45} width={150} style={{ height: '45px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/texas.png" alt="University of Texas Logo" height={50} width={0} style={{ width: 'auto', height: '50px' }} unoptimized />
+                <Image src="/texas.png" alt="University of Texas Logo" height={50} width={160} style={{ height: '50px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/ngpf.svg" alt="Next Gen Personal Finance Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+                <Image src="/ngpf.svg" alt="Next Gen Personal Finance Logo" height={45} width={150} style={{ height: '45px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/jumpstart.webp" alt="JumpStart Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
+                <Image src="/jumpstart.webp" alt="JumpStart Logo" height={45} width={120} style={{ height: '45px', width: 'auto' }} />
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
-                <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={0} style={{ width: 'auto', height: '45px' }} unoptimized />
-                </div>
+                <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={150} style={{ height: '45px', width: 'auto' }} />
+              </div>
             </motion.div>
             {/* Gradient fade edges */}
             <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-gray-50/50 to-transparent"></div>
@@ -297,7 +297,7 @@ export default function Home() {
             transition={{ duration: 0.5 }}
           >
               <div className="flex items-center gap-3 mb-6">
-                <Genmoji name="teen-thinking" size={48} />
+                <Genmoji name="focused-learning-face" size={48} />
                 <h3 className="text-xl font-bold text-gray-900">For Teens</h3>
             </div>
               <ul className="space-y-4">
@@ -509,7 +509,7 @@ export default function Home() {
               <div className="space-y-3">
                 {[
                   { rank: 1, name: 'Alex C.', xp: '3,420', avatar: 'teen-girl-focused' },
-                  { rank: 2, name: 'Sarah M.', xp: '3,180', avatar: 'teen-girl-confident' },
+                  { rank: 2, name: 'Sarah M.', xp: '3,180', avatar: 'teen-girl-success' },
                   { rank: 3, name: 'You', xp: '2,950', avatar: 'teen-success', highlight: true },
                 ].map((player) => (
                   <div
@@ -602,10 +602,10 @@ export default function Home() {
                 </p>
                 <div className="flex -space-x-2 mb-2">
                   {[
-                    { type: 'genmoji', name: 'teen-girl-confident' },
-                    { type: 'genmoji', name: 'teen-boy-excited' },
+                    { type: 'genmoji', name: 'teen-girl-success' },
+                    { type: 'genmoji', name: 'cool-investor-teen' },
                     { type: 'genmoji', name: 'teen-girl-focused' },
-                    { type: 'genmoji', name: 'teen-thinking' },
+                    { type: 'genmoji', name: 'focused-learning-face' },
                     { type: 'text', value: '+42' }
                   ].map((avatar, i) => (
                     <div
@@ -1505,6 +1505,22 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      
+      {/* Scary Page Link - Bottom Right */}
+      <a
+        href="/reality-check"
+        className="fixed bottom-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2 group"
+      >
+        <span className="text-sm font-semibold">Reality Check</span>
+        <svg
+          className="w-4 h-4 transition-transform group-hover:translate-x-1"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+      </a>
     </main>
   )
 }
