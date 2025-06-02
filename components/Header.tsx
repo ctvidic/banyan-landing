@@ -20,14 +20,14 @@ export default function Header({ showJoinWaitlist = true, theme = 'light' }: Hea
         ? 'bg-gray-900/70 border-gray-800/20 supports-[backdrop-filter]:bg-gray-900/30' 
         : 'bg-white/70 border-gray-100/20 supports-[backdrop-filter]:bg-white/30'
     }`}>
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-20 items-center justify-between">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <Link href="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-            <Leaf className={`h-6 w-6 ${isDark ? 'text-emerald-500' : 'text-emerald-600'}`} />
-            <span className={`text-xl font-display font-bold bg-clip-text text-transparent ${
+          <Link href="/" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+            <Leaf className={`h-8 w-8 ${isDark ? 'text-emerald-500' : 'text-emerald-600'}`} />
+            <span className={`text-2xl md:text-3xl font-display font-bold bg-clip-text text-transparent ${
               isDark 
                 ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' 
                 : 'bg-gradient-to-r from-emerald-600 to-emerald-400'

@@ -1,8 +1,9 @@
 import { motion } from "framer-motion"
 import Image from "next/image"
+import { ReactNode } from "react"
 
 interface TestimonialCardProps {
-  quote: string
+  quote: string | ReactNode
   author: string
   role: string
   avatar: string
@@ -47,7 +48,7 @@ export default function TestimonialCard({ quote, author, role, avatar }: Testimo
             viewport={{ once: true }}
             className="text-gray-700 italic"
           >
-            "{quote}"
+            {typeof quote === 'string' ? `"${quote}"` : <>{quote}</>}
           </motion.p>
         </div>
         <div className="flex items-center gap-3">
