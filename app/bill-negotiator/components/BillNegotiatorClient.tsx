@@ -9,13 +9,14 @@ import {
   Mic,
   List,
   PhoneOff,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown
 } from "lucide-react"
 import { 
   useRealtimeNegotiation, 
   SessionStatus as RealtimeSessionStatus,
   // AgentRole as RealtimeAgentRole // Removed unused import
-} from "../hooks/useRealtimeNegotiation"
+} from "../../hooks/useRealtimeNegotiation"
 import { useToast } from "@/hooks/use-toast"
 import {
   Dialog,
@@ -26,10 +27,11 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog"
-import type { AgentConfig } from "../banyanAgentConfigs/types"; // Import AgentConfig type
-import { frontlineAgentConfig, supervisorAgentConfig } from "../banyanAgentConfigs"; // Import agent configs
-import { TalkingOrb } from "./TalkingOrb" // Import the TalkingOrb component
+import type { AgentConfig } from "../../banyanAgentConfigs/types"; // Import AgentConfig type
+import { frontlineAgentConfig, supervisorAgentConfig } from "../../banyanAgentConfigs"; // Import agent configs
+import { TalkingOrb } from "@/app/components/TalkingOrb" // Import the TalkingOrb component
 import confetti from "canvas-confetti" // Import confetti library
+import BillNegotiatorLeaderboard from "@/app/bill-negotiator/components/BillNegotiatorLeaderboard"
 
 /*-------------------------------------------------------------------------*/
 /*  Message + Scenario types                                               */
@@ -64,6 +66,17 @@ export default function BillNegotiatorClient() {
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(true)
   const [showTermsDialog, setShowTermsDialog] = useState(false)
 
+  // Add session tracking
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null)
+  const [savedScoreData, setSavedScoreData] = useState<{
+    scoreId: string
+    userId: string
+    rank: number | null
+    percentile: number | null
+    totalParticipants: number
+  } | null>(null)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
+
   // TEST MODE: Set to true to skip to report with mock data
   const TEST_MODE = false; // Change to true for testing
   const MOCK_REPORT = {
@@ -83,7 +96,7 @@ export default function BillNegotiatorClient() {
   // call state
   const [messages,  setMsgs]      = useState<Message[]>([])
   // const [stepId,    setStepId]    = useState("greeting") // Removed for MVP
-  const [activeDrawerTab, setActiveDrawerTab] = useState<null|"transcript"|"mission"|"tips">(null)
+  const [activeDrawerTab, setActiveDrawerTab] = useState<null|"transcript"|"mission"|"tips"|"leaderboard">(null)
   const [report,    setReport]    = useState<any>(TEST_MODE ? MOCK_REPORT : null)
   // const roleRef = useRef<RealtimeAgentRole>("agent_frontline") // To be replaced by agent config state
   const { toast } = useToast()
@@ -139,6 +152,36 @@ export default function BillNegotiatorClient() {
     setIsUserSpeaking(isSpeaking);
   }, [setIsUserSpeaking]);
 
+  // Add function to save score to backend
+  const saveScoreToBackend = useCallback(async (scoreReport: any) => {
+    if (!sessionStartTime) return;
+    
+    const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000); // in seconds
+    
+    try {
+      const response = await fetch('/api/bill-negotiator/save-score', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          report: scoreReport,
+          sessionDuration
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSavedScoreData(data);
+        console.log('Score saved successfully:', data);
+      } else {
+        console.error('Failed to save score:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error saving score:', error);
+    }
+  }, [sessionStartTime]);
+
   const score = useCallback(async (transcript: string) => {
     console.log("BN_CLIENT: score() called. Transcript provided:", transcript);
     // const transcript = messages.map(m=>`${m.role.toUpperCase()}: ${m.text}`).join("\n"); // Transcript is now passed as an argument
@@ -165,12 +208,17 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       const j = await r.json(); 
       console.log("BN_CLIENT: Score API response JSON:", JSON.stringify(j, null, 2));
       setReport(j);
+      
+      // Save score to backend
+      if (!j.error) {
+        await saveScoreToBackend(j);
+      }
     } catch (error) {
       console.error("BN_CLIENT: Error in score function (fetching or parsing JSON):", error);
       setReport({ error: "Failed to fetch or parse score data.", details: String(error) });
     }
   // }, [messages, setReport]);
-  }, [setReport]); // messages is removed as transcript is now an argument
+  }, [setReport, saveScoreToBackend]); // messages is removed as transcript is now an argument
 
   // agentLogic: Passed to the hook. Seems stable as it uses roleRef and its direct argument.
   // If it were to use other component state/props, it should be memoized with useCallback.
@@ -300,6 +348,12 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
     ) {
       console.log("BN_CLIENT: Phase is call, session disconnected, and call not terminated by agent/user/transfer. Attempting to connect to Realtime API...");
       console.log("BN_CLIENT: Current agent config:", currentAgentConfig.name);
+      
+      // Track session start time
+      if (!sessionStartTime) {
+        setSessionStartTime(Date.now());
+      }
+      
       realtimeConnect();
     }
 
@@ -320,7 +374,9 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
     isCallEndedByAgent, 
     userRequestedDisconnect,
     isTransferInProgress,
-    currentAgentConfig // Add this to trigger reconnection when agent changes
+    currentAgentConfig, // Add this to trigger reconnection when agent changes
+    sessionStartTime,
+    setSessionStartTime
   ]); 
   
   // Effect to handle agent role change (e.g. escalation to supervisor)
@@ -861,7 +917,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
     >
       <div className="sticky top-0 z-10 bg-white pb-2 mb-4 border-b border-gray-100 px-4 pt-5 md:pt-4">
         <div className="flex items-center justify-between">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="transcript" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
               onClick={()=>setActiveDrawerTab("transcript")}
@@ -874,6 +930,10 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
               onClick={()=>setActiveDrawerTab("tips")}
             >Tips</button>
+            <button
+              className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="leaderboard" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
+              onClick={()=>setActiveDrawerTab("leaderboard")}
+            >Leaderboard</button>
           </div>
           <button
             className="ml-auto text-gray-400 hover:text-gray-700 text-xl font-bold md:block"
@@ -896,6 +956,9 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         )}
         {activeDrawerTab==="mission" && renderMission()}
         {activeDrawerTab==="tips" && renderTips()}
+        {activeDrawerTab==="leaderboard" && (
+          <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
+        )}
       </div>
     </aside>
   )
@@ -937,6 +1000,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         <Button variant="outline" onClick={()=>setActiveDrawerTab("transcript")} className="hidden md:inline-flex"> Transcript </Button>
         <Button variant="outline" onClick={()=>setActiveDrawerTab("mission")} className="hidden md:inline-flex"> Mission </Button>
         <Button variant="outline" onClick={()=>setActiveDrawerTab("tips")} className="hidden md:inline-flex"> Tips </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("leaderboard")} className="hidden md:inline-flex"> Leaderboard </Button>
         <Button
           className={`px-4 py-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background ${isCallEndedByAgent ? 'bg-gray-400 hover:bg-gray-500 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
           onClick={endCallByUser}
@@ -954,7 +1018,7 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       {/* Mobile tabs - shown below call interface on mobile */}
       <div className="md:hidden w-full mt-6">
         {/* Tab buttons */}
-        <div className="flex gap-2 justify-center mb-4">
+        <div className="flex gap-2 justify-center mb-4 flex-wrap">
           <button
             className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="transcript" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
             onClick={()=>setActiveDrawerTab(activeDrawerTab === "transcript" ? null : "transcript")}
@@ -967,6 +1031,10 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
             className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
             onClick={()=>setActiveDrawerTab(activeDrawerTab === "tips" ? null : "tips")}
           >Tips</button>
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="leaderboard" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
+            onClick={()=>setActiveDrawerTab(activeDrawerTab === "leaderboard" ? null : "leaderboard")}
+          >Leaderboard</button>
         </div>
 
         {/* Tab content OR Report */}
@@ -990,6 +1058,9 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               )}
               {activeDrawerTab==="mission" && renderMission()}
               {activeDrawerTab==="tips" && renderTips()}
+              {activeDrawerTab==="leaderboard" && (
+                <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
+              )}
             </div>
           )
         )}
@@ -1131,6 +1202,38 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               {starCount === 2 && "Needs Improvement"}
               {starCount === 1 && "Try Again"}
             </p>
+          </div>
+        )}
+        
+        {/* Percentile display if available */}
+        {savedScoreData && savedScoreData.percentile !== null && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+            <h3 className="font-semibold mb-3 text-center text-gray-800">Your Performance</h3>
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <p className="text-sm text-gray-600">Percentile</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  Top {savedScoreData.percentile}%
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Global Rank</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  #{savedScoreData.rank || 'N/A'} 
+                  {savedScoreData.totalParticipants > 0 && (
+                    <span className="text-sm font-normal text-gray-600"> of {savedScoreData.totalParticipants}</span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => setActiveDrawerTab("leaderboard")}
+                className="text-sm text-emerald-600 hover:text-emerald-700 underline font-medium"
+              >
+                View Full Leaderboard →
+              </button>
+            </div>
           </div>
         )}
         
