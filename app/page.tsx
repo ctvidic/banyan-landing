@@ -148,8 +148,8 @@ export default function Home() {
               <span className="text-2xl md:text-3xl lg:text-4xl">Start Their Journey</span>
             </h1>
             <p className="text-lg text-gray-600">
-              The only financial education platform where teens earn real money while learning to invest, 
-              negotiate, and build businesses. <span className="font-medium text-gray-800">Designed for the next generation of leaders.</span>
+              The only financial literacy platform where teens master budgeting, saving, investing, and 
+              entrepreneurship—while earning real money. <span className="font-medium text-gray-800">Designed for the next generation of leaders.</span>
             </p>
             <div className="flex flex-wrap gap-3 text-sm">
               <motion.div 
@@ -157,16 +157,16 @@ export default function Home() {
                 whileHover={{ scale: 1.02, y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <span className="text-base">📈</span>
-                <span className="font-medium text-gray-700">Portfolio Building</span>
+                <span className="text-base">💰</span>
+                <span className="font-medium text-gray-700">Budgeting & Saving</span>
               </motion.div>
               <motion.div 
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-100 hover:border-emerald-200 transition-all"
                 whileHover={{ scale: 1.02, y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <span className="text-base">💳</span>
-                <span className="font-medium text-gray-700">Premium Debit Card</span>
+                <span className="text-base">📈</span>
+                <span className="font-medium text-gray-700">Real Investing</span>
               </motion.div>
               <motion.div 
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-100 hover:border-emerald-200 transition-all"
@@ -174,7 +174,7 @@ export default function Home() {
                 whileTap={{ scale: 0.98 }}
               >
                 <span className="text-base">🎮</span>
-                <span className="font-medium text-gray-700">Gamified Learning</span>
+                <span className="font-medium text-gray-700">Earn While Learning</span>
               </motion.div>
             </div>
             <div className="flex flex-col md:flex-row gap-4 mt-2">
@@ -266,7 +266,7 @@ export default function Home() {
               </div>
               <div className="flex-shrink-0 h-12 flex items-center opacity-60 group-hover:opacity-100 transition-opacity filter grayscale group-hover:grayscale-0">
                 <Image src="/cee.png" alt="Council for Economic Education Logo" height={45} width={150} style={{ height: '45px', width: 'auto' }} />
-              </div>
+                </div>
             </motion.div>
             {/* Gradient fade edges */}
             <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-gray-50/50 to-transparent"></div>
