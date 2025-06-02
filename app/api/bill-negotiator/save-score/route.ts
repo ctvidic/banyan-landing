@@ -60,7 +60,7 @@ function generateAnonymousUserId(request: Request): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { report, sessionDuration, email } = body
+    const { report, sessionDuration, email, username } = body
     
     if (!report) {
       return NextResponse.json({ error: 'Report is required' }, { status: 400 })
@@ -82,6 +82,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: userId,
         email: email || null,
+        username: username || null,
         score_data: report,
         rating_stars: starsToSave,
         bill_reduction_amount: reduction,

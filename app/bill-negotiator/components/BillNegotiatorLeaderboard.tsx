@@ -10,6 +10,7 @@ interface LeaderboardEntry {
   rank: number
   userId: string
   email?: string
+  username?: string
   billReduction: number
   finalBill: number
   rating: number
@@ -88,13 +89,20 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
   }
 
   const formatUsername = (entry: LeaderboardEntry, currentUserId?: string) => {
-    if (entry.userId === currentUserId) return 'You'
+    // Show username if available
+    if (entry.username) {
+      return entry.username
+    }
     
+    // Fallback to masked email if available
     if (entry.email) {
       // Show first letter and domain
       const [name, domain] = entry.email.split('@')
       return `${name[0].toUpperCase()}***@${domain.split('.')[0]}`
     }
+    
+    // Only show "You" if no email/username and it's the current user
+    if (entry.userId === currentUserId) return 'You'
     
     return `User ${entry.userId.substring(0, 6)}`
   }
@@ -131,7 +139,7 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
                     <div>
                       <p className="font-semibold">Your Rank</p>
                       <p className="text-sm text-gray-600">
-                        Top {data.userRank.percentile}% • Saved {formatCurrency(data.userRank.billReduction)}
+                        Top {data.userRank.percentile}%
                       </p>
                     </div>
                   </div>
@@ -179,7 +187,7 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
                         <span className="text-sm">{getRatingStars(entry.rating)}</span>
                       </div>
                       <p className="text-sm text-gray-600 truncate">
-                        {entry.outcome || `Saved ${formatCurrency(entry.billReduction)}`}
+                        {entry.outcome || `Negotiated bill to ${formatCurrency(entry.finalBill)}`}
                       </p>
                     </div>
                     

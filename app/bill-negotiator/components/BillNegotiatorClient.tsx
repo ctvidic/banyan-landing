@@ -34,6 +34,7 @@ import confetti from "canvas-confetti" // Import confetti library
 import BillNegotiatorLeaderboard from "@/app/bill-negotiator/components/BillNegotiatorLeaderboard"
 import { WaitlistForm } from "@/app/components/WaitlistForm"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 
 /*-------------------------------------------------------------------------*/
 /*  Message + Scenario types                                               */
@@ -81,8 +82,10 @@ export default function BillNegotiatorClient() {
   const [showLeaderboardSection, setShowLeaderboardSection] = useState(false)
   const [showEmailDialog, setShowEmailDialog] = useState(false)
   const [userEmail, setUserEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [isSubmittingEmail, setIsSubmittingEmail] = useState(false)
   const [hasSubmittedEmail, setHasSubmittedEmail] = useState(false)
+  const [wantsLeaderboard, setWantsLeaderboard] = useState(true) // Default to true
 
   // TEST MODE: Set to true to skip to report with mock data
   const TEST_MODE = false; // Change to true for testing
@@ -160,7 +163,7 @@ export default function BillNegotiatorClient() {
   }, [setIsUserSpeaking]);
 
   // Add function to save score to backend
-  const saveScoreToBackend = useCallback(async (scoreReport: any, email?: string) => {
+  const saveScoreToBackend = useCallback(async (scoreReport: any, email?: string, username?: string) => {
     if (!sessionStartTime) return;
     
     const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000); // in seconds
@@ -174,7 +177,8 @@ export default function BillNegotiatorClient() {
         body: JSON.stringify({
           report: scoreReport,
           sessionDuration,
-          email: email || userEmail // Include email if provided
+          email: email || userEmail, // Include email if provided
+          username: username || null // Include username if provided
         })
       });
       
@@ -229,13 +233,10 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
       console.log("BN_CLIENT: Score API response JSON:", JSON.stringify(j, null, 2));
       setReport(j);
       
-      // Check if score is good enough for leaderboard (2+ stars)
-      if (!j.error) {
-        const starCount = (j.rating?.match(/⭐/g) || []).length;
-        if (starCount >= 2 && !hasSubmittedEmail) {
-          // Show email dialog for leaderboard entry
-          setShowEmailDialog(true);
-        }
+      // Check if user hasn't submitted email yet
+      if (!j.error && !hasSubmittedEmail) {
+        // Show email dialog for all users
+        setShowEmailDialog(true);
       }
     } catch (error) {
       console.error("BN_CLIENT: Error in score function (fetching or parsing JSON):", error);
@@ -622,26 +623,43 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
         }),
       });
       
-      // Save score regardless of waitlist response (they might already be on it)
-      const scoreData = await saveScoreToBackend(report, userEmail);
-      
-      if (scoreData) {
+      // Only save score if user wants to be on leaderboard
+      if (wantsLeaderboard) {
+        const scoreData = await saveScoreToBackend(report, userEmail, username);
+        
+        if (scoreData) {
+          setHasSubmittedEmail(true);
+          setShowEmailDialog(false);
+          setShowLeaderboardSection(true); // Show leaderboard after email submission
+          
+          // Show success message
+          toast({
+            title: "🎉 You're on the leaderboard!",
+            description: `Ranked #${scoreData.rank} out of ${scoreData.totalParticipants} negotiators`,
+            duration: 5000,
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to save your score. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Just joined waitlist, no leaderboard
         setHasSubmittedEmail(true);
         setShowEmailDialog(false);
-        setShowLeaderboardSection(true); // Show leaderboard after email submission
         
-        // Show success message
         toast({
-          title: "🎉 You're on the leaderboard!",
-          description: `Ranked #${scoreData.rank} out of ${scoreData.totalParticipants} negotiators`,
+          title: "✅ You're on the waitlist!",
+          description: "We'll notify you when Banyan launches",
           duration: 5000,
         });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to save your score. Please try again.",
-          variant: "destructive",
-        });
+        
+        // Allow user to try again after a brief delay
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
       }
     } catch (error) {
       console.error('Email submission error:', error);
@@ -653,7 +671,7 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
     } finally {
       setIsSubmittingEmail(false);
     }
-  }, [userEmail, report, saveScoreToBackend, toast]);
+  }, [userEmail, report, saveScoreToBackend, toast, wantsLeaderboard, username]);
 
   /*-------------------------------------------------------------------------*/
   /* UI SECTIONS                                                             */
@@ -1047,192 +1065,139 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
   )
 
   const renderCall = () => (
-    <div className="w-full">
-      {/* Desktop layout with leaderboard on right */}
-      <div className="hidden md:grid md:grid-cols-[1fr,400px] md:gap-8 max-w-7xl mx-auto">
-        {/* Left column - Call interface */}
-        <div className="flex flex-col items-center px-4">
-          {/* iPhone-ish frame */}
-          <div className="relative w-72 h-96 bg-black rounded-[2.5rem] shadow-inner flex flex-col items-center pt-16">
-            <p className="text-white/60 text-xs">
-              {currentAgentConfig.name.toLowerCase().includes("supervisor") ? "Supervisor" : "Customer Service"}
-            </p>
-            <h2 className="text-white mt-1">
-              {currentAgentConfig.publicDescription.split(",")[0] || currentAgentConfig.name}
-            </h2>
+    <div className="flex flex-col items-center px-4">
+      {/* iPhone-ish frame */}
+      <div className="relative w-72 h-96 bg-black rounded-[2.5rem] shadow-inner flex flex-col items-center pt-16">
+        <p className="text-white/60 text-xs">
+          {/* {roleRef.current==="agent_supervisor" ? "Supervisor" : "Customer Service"} // Use currentAgentConfig */}
+          {currentAgentConfig.name.toLowerCase().includes("supervisor") ? "Supervisor" : "Customer Service"}
+        </p>
+        <h2 className="text-white mt-1">
+          {/* {roleRef.current==="agent_supervisor" ? "Marco (Supervisor)" : "Sarah (Customer Service Rep)"} // Use currentAgentConfig */}
+          {currentAgentConfig.publicDescription.split(",")[0] || currentAgentConfig.name}
+        </h2>
 
-            {/* Talking Orb instead of mic button */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <TalkingOrb 
-                isAgentSpeaking={isRealtimeAgentSpeaking}
-                isUserSpeaking={isUserSpeaking}
-                size={120}
-                userAudioStream={userAudioStream || undefined}
-                agentAudioStream={agentAudioStream || undefined}
-              />
-            </div>
-
-            {/* Connection status indicator */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 text-xs">
-              {currentSessionStatus === "CONNECTING" && "Connecting..."}
-              {currentSessionStatus === "ERROR" && "Connection Error"}
-              {currentSessionStatus === "DISCONNECTED" && "Disconnected"}
-            </div>
-          </div>
-
-          {/* controls */}
-          <div className="mt-4 flex items-center gap-4">
-            <Button variant="outline" onClick={()=>setActiveDrawerTab("transcript")}> Transcript </Button>
-            <Button variant="outline" onClick={()=>setActiveDrawerTab("mission")}> Mission </Button>
-            <Button variant="outline" onClick={()=>setActiveDrawerTab("tips")}> Tips </Button>
-            <Button
-              className={`px-4 py-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background ${isCallEndedByAgent ? 'bg-gray-400 hover:bg-gray-500 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
-              onClick={endCallByUser}
-              disabled={isCallEndedByAgent}
-            >
-              {isCallEndedByAgent ? "Call Ended" : "End Call"}
-            </Button>
-          </div>
-
-          {/* Drawer for desktop */}
-          {activeDrawerTab && renderDrawer()}
-
-          {/* Desktop report - shown below controls */}
-          {isCallEndedByAgent && report && (
-            <div className="w-full max-w-2xl mt-8">
-              <h2 className="text-2xl font-bold mb-4">Negotiation Report</h2>
-              {renderReportContent()}
-              <Button variant="outline" className="mt-4" onClick={()=>location.reload()}>Try Again</Button>
-            </div>
-          )}
+        {/* Talking Orb instead of mic button */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <TalkingOrb 
+            isAgentSpeaking={isRealtimeAgentSpeaking}
+            isUserSpeaking={isUserSpeaking}
+            size={120}
+            userAudioStream={userAudioStream || undefined}
+            agentAudioStream={agentAudioStream || undefined}
+          />
         </div>
 
-        {/* Right column - Leaderboard (desktop only) */}
-        <div className="sticky top-20 h-fit">
-          <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
+        {/* Connection status indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 text-xs">
+          {currentSessionStatus === "CONNECTING" && "Connecting..."}
+          {currentSessionStatus === "ERROR" && "Connection Error"}
+          {currentSessionStatus === "DISCONNECTED" && "Disconnected"}
         </div>
       </div>
 
-      {/* Mobile layout - unchanged */}
-      <div className="md:hidden flex flex-col items-center px-4">
-        {/* iPhone-ish frame */}
-        <div className="relative w-72 h-96 bg-black rounded-[2.5rem] shadow-inner flex flex-col items-center pt-16">
-          <p className="text-white/60 text-xs">
-            {currentAgentConfig.name.toLowerCase().includes("supervisor") ? "Supervisor" : "Customer Service"}
-          </p>
-          <h2 className="text-white mt-1">
-            {currentAgentConfig.publicDescription.split(",")[0] || currentAgentConfig.name}
-          </h2>
+      {/* controls */}
+      <div className="mt-4 flex items-center gap-4">
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("transcript")} className="hidden md:inline-flex"> Transcript </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("mission")} className="hidden md:inline-flex"> Mission </Button>
+        <Button variant="outline" onClick={()=>setActiveDrawerTab("tips")} className="hidden md:inline-flex"> Tips </Button>
+        <Button
+          className={`px-4 py-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background ${isCallEndedByAgent ? 'bg-gray-400 hover:bg-gray-500 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+          onClick={endCallByUser}
+          disabled={isCallEndedByAgent}
+        >
+          {isCallEndedByAgent ? "Call Ended" : "End Call"}
+        </Button>
+      </div>
 
-          {/* Talking Orb instead of mic button */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <TalkingOrb 
-              isAgentSpeaking={isRealtimeAgentSpeaking}
-              isUserSpeaking={isUserSpeaking}
-              size={120}
-              userAudioStream={userAudioStream || undefined}
-              agentAudioStream={agentAudioStream || undefined}
-            />
-          </div>
+      {/* Desktop drawer - hidden on mobile */}
+      <div className="hidden md:block">
+        {activeDrawerTab && renderDrawer()}
+      </div>
 
-          {/* Connection status indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 text-xs">
-            {currentSessionStatus === "CONNECTING" && "Connecting..."}
-            {currentSessionStatus === "ERROR" && "Connection Error"}
-            {currentSessionStatus === "DISCONNECTED" && "Disconnected"}
-          </div>
+      {/* Mobile tabs - shown below call interface on mobile */}
+      <div className="md:hidden w-full mt-6">
+        {/* Tab buttons */}
+        <div className="flex gap-2 justify-center mb-4 flex-wrap">
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="transcript" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
+            onClick={()=>setActiveDrawerTab(activeDrawerTab === "transcript" ? null : "transcript")}
+          >Transcript</button>
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="mission" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
+            onClick={()=>setActiveDrawerTab(activeDrawerTab === "mission" ? null : "mission")}
+          >Mission</button>
+          <button
+            className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
+            onClick={()=>setActiveDrawerTab(activeDrawerTab === "tips" ? null : "tips")}
+          >Tips</button>
         </div>
 
-        {/* controls */}
-        <div className="mt-4 flex items-center gap-4">
-          <Button
-            className={`px-4 py-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background ${isCallEndedByAgent ? 'bg-gray-400 hover:bg-gray-500 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
-            onClick={endCallByUser}
-            disabled={isCallEndedByAgent}
-          >
-            {isCallEndedByAgent ? "Call Ended" : "End Call"}
-          </Button>
-        </div>
-
-        {/* Mobile tabs */}
-        <div className="w-full mt-6">
-          {/* Tab buttons */}
-          <div className="flex gap-2 justify-center mb-4 flex-wrap">
-            <button
-              className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="transcript" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
-              onClick={()=>setActiveDrawerTab(activeDrawerTab === "transcript" ? null : "transcript")}
-            >Transcript</button>
-            <button
-              className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="mission" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
-              onClick={()=>setActiveDrawerTab(activeDrawerTab === "mission" ? null : "mission")}
-            >Mission</button>
-            <button
-              className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
-              onClick={()=>setActiveDrawerTab(activeDrawerTab === "tips" ? null : "tips")}
-            >Tips</button>
+        {/* Tab content OR Report */}
+        {isCallEndedByAgent && report ? (
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h3 className="text-xl font-bold mb-4">Negotiation Report</h3>
+            {renderReportContent()}
           </div>
-
-          {/* Tab content OR Report */}
-          {isCallEndedByAgent && report ? (
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <h3 className="text-xl font-bold mb-4">Negotiation Report</h3>
-              {renderReportContent()}
-              <Button variant="outline" className="mt-4 w-full" onClick={()=>location.reload()}>Try Again</Button>
+        ) : (
+          activeDrawerTab && (
+            <div className="bg-white rounded-lg shadow-md p-4 max-h-64 overflow-y-auto">
+              {activeDrawerTab==="transcript" && (
+                <div>
+                  {messages.slice().reverse().map(m=>(
+                    <p key={m.id} className={`text-sm mb-2 ${m.role !== "user" ? "text-gray-800" : "text-blue-600"}`}>
+                      <strong>{m.role === "user" ? "You" : m.role}:</strong> {m.text}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {activeDrawerTab==="mission" && renderMission()}
+              {activeDrawerTab==="tips" && renderTips()}
             </div>
-          ) : (
-            activeDrawerTab && (
-              <div className="bg-white rounded-lg shadow-md p-4 max-h-64 overflow-y-auto">
-                {activeDrawerTab==="transcript" && (
-                  <div>
-                    {messages.slice().reverse().map(m=>(
-                      <p key={m.id} className={`text-sm mb-2 ${m.role !== "user" ? "text-gray-800" : "text-blue-600"}`}>
-                        <strong>{m.role === "user" ? "You" : m.role}:</strong> {m.text}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                {activeDrawerTab==="mission" && renderMission()}
-                {activeDrawerTab==="tips" && renderTips()}
-              </div>
-            )
-          )}
+          )
+        )}
+      </div>
+
+      {/* Desktop report - shown below on desktop */}
+      {isCallEndedByAgent && report && (
+        <div className="hidden md:block w-full max-w-2xl mt-8">
+          <h2 className="text-2xl font-bold mb-4">Negotiation Report</h2>
+          {renderReportContent()}
         </div>
-        
-        {/* Mobile Leaderboard - collapsible tab below */}
-        {(!isCallEndedByAgent || showLeaderboardSection) && (
-          <div className="w-full max-w-2xl mt-8 leaderboard-section">
-            <button
-              onClick={() => setShowLeaderboardSection(!showLeaderboardSection)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-all ${
-                showLeaderboardSection 
-                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
-                  : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
-              } ${
-                savedScoreData && savedScoreData.rank && !showLeaderboardSection 
-                  ? 'animate-pulse' 
-                  : ''
-              }`}
-            >
-              <span className="font-medium flex items-center gap-2">
-                🏆 Leaderboard
-                {savedScoreData && savedScoreData.rank && (
-                  <span className="text-sm font-normal">
-                    (You're #{savedScoreData.rank})
-                  </span>
-                )}
+      )}
+      
+      {/* Leaderboard Section - collapsible tab below call (hidden when report shows) */}
+      <div className="w-full max-w-2xl mt-8 leaderboard-section">
+        <button
+          onClick={() => setShowLeaderboardSection(!showLeaderboardSection)}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-all ${
+            showLeaderboardSection 
+              ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
+              : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+          } ${
+            savedScoreData && savedScoreData.rank && !showLeaderboardSection 
+              ? 'animate-pulse' 
+              : ''
+          }`}
+        >
+          <span className="font-medium flex items-center gap-2">
+            🏆 Leaderboard
+            {savedScoreData && savedScoreData.rank && (
+              <span className="text-sm font-normal">
+                (You're #{savedScoreData.rank})
               </span>
-              <ChevronDown 
-                className={`h-5 w-5 transition-transform ${
-                  showLeaderboardSection ? 'rotate-180' : ''
-                }`} 
-              />
-            </button>
-            
-            {showLeaderboardSection && (
-              <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
-                <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
-              </div>
             )}
+          </span>
+          <ChevronDown 
+            className={`h-5 w-5 transition-transform ${
+              showLeaderboardSection ? 'rotate-180' : ''
+            }`} 
+          />
+        </button>
+        
+        {showLeaderboardSection && (
+          <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
+            <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
           </div>
         )}
       </div>
@@ -1303,23 +1268,14 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
                 {starCount === 1 && "We noticed you need to practice your negotiation skills. 🎯"}
                 {starCount === 0 && "We noticed you didn't attempt to negotiate. Try speaking up next time! 🗣️"}
               </p>
-              <p className="text-sm font-semibold text-gray-800 mb-3">
+              <p className="text-sm font-semibold text-gray-800">
                 Join Banyan to master money management and negotiation skills.
               </p>
-              <a 
-                href="https://banyanfinancial.app" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors"
-              >
-                Join the Waitlist →
-              </a>
             </div>
           </>
         ) : (
           <p>Loading…</p>
         )}
-        <Button variant="outline" className="mt-6" onClick={()=>location.reload()}>Try Again</Button>
       </div>
     );
   }
@@ -1374,6 +1330,19 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
           </div>
         )}
         
+        {/* Join Waitlist/Leaderboard button - prominent at the top */}
+        {!hasSubmittedEmail && (
+          <div className="text-center mb-6">
+            <Button 
+              size="lg"
+              className="bg-emerald-600 hover:bg-emerald-700 px-8" 
+              onClick={() => setShowEmailDialog(true)}
+            >
+              🏆 Join Waitlist & Leaderboard
+            </Button>
+          </div>
+        )}
+        
         {/* Quick success message with rank for short attention spans */}
         {savedScoreData && savedScoreData.rank && starCount > 0 && (
           <div className="text-center mb-4 animate-bounce-once">
@@ -1415,33 +1384,6 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
           </div>
         )}
         
-        {/* Show email prompt if not submitted and got 2+ stars */}
-        {!hasSubmittedEmail && starCount >= 2 && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-center font-semibold text-amber-800 mb-2">
-              📧 Join the leaderboard!
-            </p>
-            <p className="text-center text-sm text-amber-700">
-              Enter your email to save your score and see how you rank
-            </p>
-            <button
-              onClick={() => setShowEmailDialog(true)}
-              className="mt-3 w-full px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors font-medium"
-            >
-              Add My Score to Leaderboard
-            </button>
-          </div>
-        )}
-        
-        {/* For low scores (0-1 stars), don't show leaderboard prompt */}
-        {starCount < 2 && (
-          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-            <p className="text-sm text-gray-700">
-              💡 Tip: To join the leaderboard, you need to negotiate and achieve at least a 2-star rating!
-            </p>
-          </div>
-        )}
-        
         <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
           {parsed.outcome && (
               <div>
@@ -1467,27 +1409,56 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
           )}
         </div>
         
-        {/* Personalized message and CTA */}
+        {/* Personalized message - NO BUTTON HERE */}
         <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
           <p className="text-sm text-gray-700 mb-3">
             {starCount >= 4 && "We noticed you're a skilled negotiator! 🎉"}
             {starCount === 3 && "We noticed you have good negotiation potential! 💪"}
             {starCount === 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
             {starCount === 1 && "We noticed you need to practice your negotiation skills. 🎯"}
-            {starCount === 0 && "We noticed you didn't attempt to negotiate. Try speaking up next time! 🗣️"}
+            {starCount === 0 && "Don't give up! Speaking up is the first step to saving money. 💬"}
           </p>
-          <p className="text-sm font-semibold text-gray-800 mb-3">
-            Join Banyan to master money management and negotiation skills.
+          <p className="text-sm font-semibold text-gray-800">
+            {starCount === 0 
+              ? "Practice makes perfect. Try again and negotiate for a better deal!"
+              : "Join Banyan to master money management and negotiation skills."}
           </p>
-          <a 
-            href="https://banyanfinancial.app" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors"
-          >
-            Join the Waitlist →
-          </a>
+          
+          {/* Button for 0 stars - inside the message box */}
+          {starCount === 0 && !hasSubmittedEmail && (
+            <Button 
+              size="lg"
+              className="mt-4 bg-emerald-600 hover:bg-emerald-700 px-8" 
+              onClick={() => location.reload()}
+            >
+              Try Again
+            </Button>
+          )}
         </div>
+        
+        {/* Button for 1+ stars - outside the message box */}
+        {starCount > 0 && (
+          <div className="mt-8 text-center">
+            {!hasSubmittedEmail ? (
+              <Button 
+                size="lg"
+                className="bg-emerald-600 hover:bg-emerald-700 px-8" 
+                onClick={() => setShowEmailDialog(true)}
+              >
+                Join Waitlist & Try Again
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="px-8" 
+                onClick={() => location.reload()}
+              >
+                Try Another Negotiation
+              </Button>
+            )}
+          </div>
+        )}
       </>
     );
   }
@@ -1532,16 +1503,24 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-center text-2xl">
-              {savedScoreData ? '🎉 You Made the Leaderboard!' : '🏆 Join the Leaderboard!'}
+              🏆 Join Banyan Waitlist & Leaderboard
             </DialogTitle>
             <DialogDescription className="text-center pt-2">
-              {savedScoreData ? (
-                <>You ranked #{savedScoreData.rank} out of {savedScoreData.totalParticipants} negotiators!</>
-              ) : (
-                <>Enter your email to save your score and compete with other negotiators</>
-              )}
+              Enter your email to join the waitlist and compete on the leaderboard!
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Show score outside of DialogDescription to avoid hydration error */}
+          <div className="text-center mb-4">
+            <div className="text-lg font-semibold">
+              Your Score: {(() => {
+                const starCount = report && report.rating ? (report.rating.match(/⭐/g) || []).length : 0;
+                return [...Array(5)].map((_, i) => (
+                  <span key={i}>{i < starCount ? '⭐' : '☆'}</span>
+                ));
+              })()}
+            </div>
+          </div>
           
           <form onSubmit={handleEmailSubmit} className="space-y-4 pt-4">
             <div>
@@ -1556,25 +1535,60 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
               />
             </div>
             
-            <div className="text-xs text-gray-500 text-center">
-              By submitting, you'll also join the Banyan waitlist for early access
+            <div>
+              <Input
+                type="text"
+                placeholder="Choose a username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="w-full"
+                disabled={isSubmittingEmail}
+                maxLength={20}
+              />
+              <p className="text-xs text-gray-500 mt-1">This will be shown on the leaderboard</p>
+            </div>
+            
+            {/* ALWAYS show checkbox for leaderboard */}
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="leaderboard-opt-in"
+                checked={wantsLeaderboard}
+                onCheckedChange={(checked) => setWantsLeaderboard(checked as boolean)}
+                disabled={isSubmittingEmail}
+              />
+              <label 
+                htmlFor="leaderboard-opt-in" 
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Add my score to the public leaderboard
+              </label>
+            </div>
+            
+            <div className="text-xs text-gray-500 text-center space-y-1">
+              <p>By submitting, you'll join the Banyan waitlist</p>
+              <p className="text-xs italic">You can try multiple times to improve your score!</p>
             </div>
             
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowEmailDialog(false)}
+                onClick={() => {
+                  setShowEmailDialog(false);
+                  // Allow trying again without email
+                  setTimeout(() => location.reload(), 100);
+                }}
                 disabled={isSubmittingEmail}
               >
-                Skip
+                Skip & Try Again
               </Button>
               <Button
                 type="submit"
                 disabled={!userEmail || isSubmittingEmail}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
-                {isSubmittingEmail ? 'Saving...' : 'Join Leaderboard'}
+                {isSubmittingEmail ? 'Saving...' : 'Join Waitlist'}
               </Button>
             </DialogFooter>
           </form>

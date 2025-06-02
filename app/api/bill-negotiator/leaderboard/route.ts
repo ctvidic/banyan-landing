@@ -83,6 +83,8 @@ export async function GET(request: Request) {
     const formattedScores = topScores.map((score: any, index: number) => ({
       rank: score.rank || index + 1,
       userId: score.user_id,
+      email: score.email,
+      username: score.username,
       billReduction: score.bill_reduction_amount,
       finalBill: score.final_bill_amount,
       rating: score.rating_stars,
