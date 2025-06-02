@@ -348,7 +348,7 @@ export function useRealtimeNegotiation({
               type: "server_vad",
               threshold: 0.9, // Even less sensitive to noise
               prefix_padding_ms: 500, // More padding before speech
-              silence_duration_ms: 2000, // 2 seconds of silence required before considering speech ended
+              silence_duration_ms: 3000, // 2 seconds of silence required before considering speech ended
               create_response: true, // Keep this true for agent to respond
               interrupt_response: true // Still allow interruptions
             },
