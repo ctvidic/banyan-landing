@@ -552,8 +552,9 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 md:py-16 bg-gray-950 text-gray-400">
+      <footer className="py-6 md:py-8 bg-gray-950 text-gray-400">
         <div className="container">
+          {/* Commented out navigation sections until pages are created
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             <div>
               <h3 className="font-bold text-white mb-4">Banyan</h3>
@@ -657,7 +658,9 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-2 mb-4 md:mb-0">
+          */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
               <Leaf className="h-5 w-5 text-emerald-500" />
               <span className="font-bold text-white">Banyan</span>
             </div>

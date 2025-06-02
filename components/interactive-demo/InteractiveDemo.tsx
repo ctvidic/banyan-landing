@@ -56,7 +56,7 @@ const lessonSlidesSeedData: SlideData[] = [
     id: 2,
     title: "Checks and Debit Cards",
     content: "Checks: Secure for big payments (rent, fees). Bank-verified but slow (2-5 days to clear) & not all stores accept. Debit Cards: Pull money from your bank account for daily buys (e.g., Target). Risk overdraft fees ($30+!) if you overspend. Teens average $2,600/year on debit. Always check your balance!",
-    imageSrc: "/check.png"
+    imageSrc: "/debitcard.png"
   },
   {
     id: 3,
@@ -68,7 +68,7 @@ const lessonSlidesSeedData: SlideData[] = [
     id: 4,
     title: "Digital Wallets Are the Future",
     content: "Digital Wallets (Apple/Google Pay): Pay with your phone—fast & contactless. Secure (face/fingerprint ID), but need charged phone & Wi-Fi. >50% of teens use them for food delivery/apps. Phone dead? You\'re stuck. Pro tip: Link a debit card to avoid credit debt. Ready to tap & pay?",
-    imageSrc: "/debitcard.png"
+    imageSrc: "/shield.png"
   }
 ];
 

@@ -30,6 +30,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
   openGraph: {
     title: "Banyan - Where Future Millionaires Start Their Journey",
     description: "The only financial education platform where teens earn real money while learning to invest, negotiate, and build businesses.",

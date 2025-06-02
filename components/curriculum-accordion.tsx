@@ -88,7 +88,7 @@ export default function CurriculumAccordion() {
     },
     {
       title: "Regulatory Environment & Consumer Rights",
-      description: "Know the roles of consumer protection agencies (e.g., CFPB). Understand borrower rights under Truth-in-Lending and debt collection laws. Explain how FDIC/NCUA insurance protects bank deposits.",
+      description: "Know the roles of consumer protection agencies (e.g., CFPB). Understand borrower rights under Truth-in-Lending and debt collection laws. Learn about financial institution oversight and consumer protections.",
     },
     {
       title: "Global Finance & Currency Exchange",

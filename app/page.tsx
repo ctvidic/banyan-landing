@@ -710,7 +710,7 @@ export default function Home() {
                     <div className="flex flex-col items-center gap-2">
                       <Leaf className="h-8 w-8 text-emerald-600" />
                       <span className="font-bold text-gray-900 text-lg">Banyan</span>
-                      <span className="text-xs text-emerald-600 font-medium">Premium</span>
+                      {/* <span className="text-xs text-emerald-600 font-medium">Premium</span> */}
               </div>
                   </th>
                   <th className="p-4 text-center">
@@ -773,7 +773,7 @@ export default function Home() {
                     feature: 'Monthly Cost',
                     banyan: { value: '$99.99*', icon: '✨' },
                     greenlight: { value: '$9.98+', icon: '💸' },
-                    step: { value: 'Free**', icon: '🤔' },
+                    step: { value: 'Free', icon: '🤔' },
                     traditional: { value: '$5-25', icon: '💵' }
                   }
                 ].map((row, i) => (
@@ -812,10 +812,7 @@ export default function Home() {
 
           <div className="text-center mt-8 space-y-2">
             <p className="text-sm text-gray-500">
-              * Teens can earn back up to 80% through Learn to Earn program
-            </p>
-            <p className="text-sm text-gray-500">
-              ** Step has hidden fees and limited features
+              * Teens can earn back up to 40% through Learn to Earn program
             </p>
           </div>
         </div>
@@ -1133,15 +1130,15 @@ export default function Home() {
             className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6"
           >
             {[ 
-              { icon: Globe, label: "Start an LLC" },
-              { icon: Bitcoin, label: "Crypto Basics" },
-              { icon: TrendingUp, label: "Stock Trading" },
-              { icon: MessageCircle, label: "Negotiation" },
               { icon: CreditCard, label: "Credit Mastery" },
-              { icon: Award, label: "Startup Funding" },
-              { icon: LineChart, label: "Online Business" },
-              { icon: DollarSign, label: "Tax Strategy" },
               { icon: GraduationCap, label: "College Finance" },
+              { icon: MessageCircle, label: "Negotiation" },
+              { icon: TrendingUp, label: "Stock Trading" },
+              { icon: LineChart, label: "Online Business" },
+              { icon: Globe, label: "Start an LLC" },
+              { icon: DollarSign, label: "Tax Strategy" },
+              { icon: Bitcoin, label: "Crypto Basics" },
+              { icon: Award, label: "Startup Funding" },
             ].map((item, i) => (
               <motion.div 
                 key={item.label}
@@ -1203,7 +1200,7 @@ export default function Home() {
               </li>
               <li className="flex items-center gap-3">
                 <Lock className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-                <span><strong>Bank-Level Security:</strong> FDIC insured, always protected</span>
+                <span><strong>Enterprise Security:</strong> Bank-level protection, always secure</span>
               </li>
             </ul>
           </motion.div>
@@ -1373,8 +1370,8 @@ export default function Home() {
             </div>
             <div className="w-px h-12 bg-white/20"></div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-emerald-300">FDIC</div>
-              <div className="text-sm opacity-80">Bank-insured</div>
+              <div className="text-3xl font-bold text-emerald-300">100%</div>
+              <div className="text-sm opacity-80">Secure platform</div>
             </div>
             <div className="w-px h-12 bg-white/20"></div>
             <div className="text-center">
@@ -1388,8 +1385,9 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 md:py-16 bg-gray-900 text-gray-300">
+      <footer className="py-6 md:py-8 bg-gray-900 text-gray-300">
         <div className="container">
+          {/* Commented out navigation sections until pages are created
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>
               <h3 className="font-semibold text-white mb-4">Company</h3>
@@ -1472,7 +1470,8 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <Leaf className="h-5 w-5 text-emerald-500" />
               <span className="font-bold text-white">Banyan</span>
