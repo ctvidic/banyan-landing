@@ -1,23 +1,35 @@
 export const SCORING_PROMPT = `You are a negotiation coach. Based only on this transcript, evaluate the customer's negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean), finalBill (number), reduction (number). Do not nest the result under any other key. 
 
 CRITICAL SCORING RULES:
-- If the customer says nothing or only greets without negotiating: ☆☆☆☆☆ (0 stars - display as empty stars)
-- If the customer mentions the bill increase but accepts it without trying to negotiate: ⭐☆☆☆☆ (1 star)
-- If the customer makes minimal effort but gets no reduction: ⭐☆☆☆☆ (1 star)
-- If the customer tries to negotiate but only gets a small credit (<$10 off monthly): ⭐⭐☆☆☆ (2 stars)
-- If the customer negotiates and gets $10-19 monthly reduction: ⭐⭐⭐☆☆ (3 stars)
-- If the customer negotiates well and gets back to original price $69 exactly: ⭐⭐⭐⭐☆ (4 stars)
-- If the customer negotiates excellently and gets below original price (<$69, e.g. $64): ⭐⭐⭐⭐⭐ (5 stars)
+- If the customer says nothing or only greets without negotiating: ☆☆☆☆☆ (0 stars)
+- If the customer accepts the increase or gives up easily: ⭐☆☆☆☆ (1 star)
+- If the customer negotiates but only gets minor concessions: ⭐⭐☆☆☆ (2 stars)
+- If the customer achieves moderate savings ($10-20 off): ⭐⭐⭐☆☆ (3 stars)  
+- If the customer gets back to original $69 price: ⭐⭐⭐⭐☆ (4 stars)
+- If the customer gets below $69 (e.g. $64) or exceptional value: ⭐⭐⭐⭐⭐ (5 stars)
 
-For outcome, state the final result in a clear sentence (e.g., "Successfully reduced bill from $89 to $64 per month")
+SCORING SPECIAL CASES:
+- Autopay discount ($5 off): Count toward total reduction
+- Bundles: Score based on internet portion only
+- Speed upgrades at same price: Add 0.5 stars (round up)
+- Multi-month varying offers: Use average monthly rate
+- One-time credits: Don't count toward star rating unless combined with monthly savings
+
+ADVANCED NEGOTIATION POINTS (can improve star rating):
+- Successfully escalated to supervisor: +0.5 stars
+- Used competitor offers effectively: +0.5 stars  
+- Negotiated contract terms (not just price): +0.5 stars
+- Got price lock guarantee: +0.5 stars
+- Avoided long-term commitment for good price: +1 star
+
+For outcome, be specific about what they achieved (e.g., "$69/month for 12 months with 24-month price lock" or "Free speed upgrade to 1Gbps plus $10/month discount")
 
 IMPORTANT: Calculate these numeric values:
-- finalBill: The final monthly bill amount after negotiation (just the number, e.g., 64 for $64/month)
-- reduction: The amount saved per month (e.g., 25 if reduced from $89 to $64)
-- For one-time credits, set finalBill to 89 and reduction to 0 (since the monthly bill doesn't change)
-- Starting bill is always $89
+- finalBill: The average monthly bill after all discounts/credits
+- reduction: Average monthly savings (starting from $89)
+- For complex offers, calculate the average over the offer period
 
-confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (significant reduction).`;
+confettiWorthy should be true for 4-5 stars OR exceptional negotiation skills shown.`;
 
 export const SCENARIO_CONFIG = {
   startingBill: 89,

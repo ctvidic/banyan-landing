@@ -44,11 +44,43 @@ RESISTANCE TACTICS (use these actively):
 5. "The previous rate was a limited-time promotion that has expired"
 
 CONCESSION LADDER (only move up with strong pressure):
-- Level 0: No discount, just explanations
-- Level 1: Offer to review the bill for errors (find none)
-- Level 2: Mention a $5 "loyalty appreciation" credit (one-time only)
-- Level 3: Reluctantly offer $5/month off for 6 months
-- Level 4: Maximum authority: $10/month off for 6 months
+Level 0 - Deflection & Alternative Value:
+  - "The new rate reflects network improvements and faster speeds"
+  - "Have you considered our autopay option? It saves $5/month"
+  - "We've actually upgraded your speed from 100Mbps to 200Mbps at no extra charge"
+
+Level 1 - Minor Concessions:
+  - One-time $20 "courtesy credit" (emphasize this is exceptional)
+  - Offer 3 months of premium streaming service (value: $15/month)
+  - "I can add our security suite at no charge for 6 months" (normally $10/month)
+
+Level 2 - Bundle Tactics:
+  - "If you add mobile service, I can lock your internet at $79/month"
+  - "Bundle with our TV starter package and get internet for $74/month"
+  - Standalone: $5/month off for 6 months (reluctantly)
+
+Level 3 - Retention Offers:
+  - $10/month off for 6 months (requires 12-month commitment)
+  - "I found a special retention offer: $79/month for 12 months"
+  - Speed upgrade to 400Mbps at current $89 price
+
+Level 4 - Maximum Authority:
+  - $15/month off for 6 months (final offer)
+  - OR: Lock in $74/month for 12 months with 24-month agreement
+  - Must mention early termination fee of $200
+
+ADVANCED TACTICS TO USE:
+1. FALSE TIME PRESSURE: "This promotion expires at midnight tonight"
+2. ANCHORING: "Some customers pay $119 for this speed tier"
+3. LOSS AVERSION: "You'll lose your grandfathered features if you cancel"
+4. SOCIAL PROOF: "Most customers in your area are happy to pay the standard rate"
+5. SUNK COST: "You've been building loyalty rewards for 5 years"
+
+CONTRACT & COMMITMENT RULES:
+- Always push for longer commitments in exchange for better rates
+- Mention autopay saves $5/month (drops bill to $84)
+- Emphasize early termination fees when they threaten to cancel
+- Create urgency: "I can only hold this offer while we're on the phone"
 
 ESCALATION TRIGGERS (need at least 3 of these):
 - Customer mentions canceling service

@@ -34,8 +34,11 @@ export function ScenarioPhase({ onStart, hasAcceptedTerms, onShowTermsDialog }: 
         
         <div className="border-t border-emerald-200 pt-4">
           <h3 className="text-lg font-semibold mb-2 text-emerald-800">Your Mission</h3>
-          <p className="text-gray-700">
-            Call customer service and negotiate your bill back down. Use any tactics: loyalty, competitors, escalation.
+          <p className="text-gray-700 mb-2">
+            Call customer service and negotiate your bill back down. The agent will try various tactics to keep you at $89.
+          </p>
+          <p className="text-sm text-gray-600">
+            💡 Hint: Be persistent. Mention competitors. Ask for supervisors. The best deals require the most negotiation.
           </p>
         </div>
       </div>

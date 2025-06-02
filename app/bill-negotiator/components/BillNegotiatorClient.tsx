@@ -148,6 +148,11 @@ export default function BillNegotiatorClientV2() {
       }
       realtimeConnect()
     }
+    
+    // Disconnect if call has ended
+    if (isCallEndedByAgent && (currentSessionStatus === "CONNECTED" || currentSessionStatus === "CONNECTING")) {
+      realtimeDisconnect()
+    }
 
     return () => {
       if (phase !== "call" && (currentSessionStatus === "CONNECTED" || currentSessionStatus === "CONNECTING")) {
@@ -197,6 +202,11 @@ export default function BillNegotiatorClientV2() {
   const endCallByUser = useCallback(() => {
     setIsCallEndedByAgent(true)
     setUserRequestedDisconnect(true)
+    
+    // Disconnect the OpenAI realtime connection immediately
+    if (currentSessionStatus === "CONNECTED" || currentSessionStatus === "CONNECTING") {
+      realtimeDisconnect()
+    }
     
     // Calculate call duration
     const callDuration = sessionStartTime ? (Date.now() - sessionStartTime) / 1000 : 0 // in seconds
@@ -259,7 +269,7 @@ export default function BillNegotiatorClientV2() {
         }
       })
     }
-  }, [messages, score, hasSubmittedEmail, setShowEmailDialog, setReport, sessionStartTime])
+  }, [messages, score, hasSubmittedEmail, setShowEmailDialog, setReport, sessionStartTime, currentSessionStatus, realtimeDisconnect])
 
   // Main render
   return (

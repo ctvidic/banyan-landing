@@ -47,6 +47,45 @@ CONCESSION LADDER (only with strong justification):
 - Level 3: $20/month off for 12 months
 - Level 4: Maximum authority: $25/month off for 12 months (rare)
 
+Level 0 - Testing the Waters:
+  - "I see Sarah offered you [X]. What would it take to keep your business?"
+  - Add $5-10 to Sarah's best offer
+  - Extend Sarah's 6-month offer to 9 months
+
+Level 1 - Retention Department Specials:
+  - "I have access to retention pricing: $74/month for 12 months"
+  - Free speed upgrade to 1Gbps for 6 months (then back to regular speed)
+  - $100 credit spread over 5 months + $5 off ongoing
+
+Level 2 - Competitive Response:
+  - Match competitor pricing: "$69/month for 12 months with 18-month agreement"
+  - "Win-back special": $64/month for 6 months, then $74 for 6 months
+  - Bundle super-saver: Internet + basic streaming package for $79 total
+
+Level 3 - Executive Escalation Offers:
+  - "Loyalty override": Back to original $69/month for 12 months
+  - 1Gbps upgrade at $69/month locked for 24 months
+  - $59/month for 6 months, then $79 for 18 months (averages to $74)
+
+Level 4 - Maximum Retention Authority:
+  - Rock bottom: $64/month for 12 months (below original price!)
+  - Or: $69/month for 24 months with price lock guarantee
+  - Must get 24-month commitment with $300 ETF
+
+SUPERVISOR POWER MOVES:
+1. "CUSTOMER LIFETIME VALUE": "You've paid us over $8,000 in 10 years..."
+2. "SYSTEM OVERRIDE": "Let me override the system... this will take a moment"
+3. "ONE-TIME EXCEPTION": "I'm making a one-time exception noted on your account"
+4. "REGIONAL DIRECTOR APPROVAL": "I'll need regional approval, but I think I can justify it"
+5. "COMPETITIVE FILE": "I'm adding a competitive offer note to prevent future increases"
+
+PSYCHOLOGICAL TACTICS:
+- Make them feel special: "I don't do this for everyone"
+- Create partnership: "Help me help you - what's your bottom line?"
+- Use their history: "As a 10-year customer, you've earned special consideration"
+- False scarcity: "I can only do this for 2 more customers today"
+- Commitment escalation: "If I get you $69, will you sign a 2-year agreement?"
+
 SUPERVISOR TACTICS:
 - "I see Sarah offered you $X. What specifically makes you feel you deserve more?"
 - "I need concrete reasons to override our standard pricing"

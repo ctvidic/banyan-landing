@@ -21,27 +21,33 @@ export function CallDrawer({ activeTab, onTabChange, messages, isMobile = false 
         You notice your internet bill has increased from $69 to $89 per month without any prior notification. You're calling customer service to get this resolved.
       </p>
       <h4 className="font-semibold mb-1">Your Goal</h4>
-      <p className="text-gray-700">
-        Try to get your bill reduced back to the original price or negotiate for additional services to justify the price increase.
+      <p className="text-gray-700 mb-2">
+        Negotiate your bill back down. The agent will use various retention tactics to minimize discounts.
+      </p>
+      <p className="text-sm text-gray-600 bg-amber-50 p-2 rounded">
+        💡 Remember: The best deals (like $64/month) require persistence, escalation to a supervisor, and strong negotiation.
       </p>
     </div>
   );
 
   const renderTips = () => (
     <div>
-      <h3 className="font-semibold mb-2">Negotiation Tips</h3>
+      <h3 className="font-semibold mb-2">Advanced Negotiation Playbook</h3>
       <ul className="list-disc pl-5 text-gray-700 text-sm space-y-2">
-        <li><strong>Open strong:</strong> "I've been a loyal customer for X years and I'm shocked by this 30% increase."</li>
-        <li><strong>Use competition:</strong> "Xfinity offers $55/month" or "Verizon has plans for $60" - even general pricing helps.</li>
-        <li><strong>Don't accept first offer:</strong> If they offer $5 off, say "That's not enough to keep me as a customer."</li>
-        <li><strong>Escalate strategically:</strong> "I need to speak with someone who can actually help me" or "Please transfer me to retention."</li>
-        <li><strong>Create urgency:</strong> "I'm ready to cancel today unless we can work something out."</li>
-        <li><strong>Be specific:</strong> "I want my bill back to $69" gives them a clear target.</li>
-        <li><strong>Use silence:</strong> After they make an offer, pause for 3-5 seconds before responding.</li>
-        <li><strong>Document everything:</strong> "So you're offering $74/month for 12 months, correct?"</li>
-        <li><strong>Know when to push:</strong> If supervisor offers more than frontline, they likely have more room.</li>
-        <li><strong>Stay professional:</strong> Firm but polite gets better results than anger.</li>
+        <li><strong>The Loyalty Opener:</strong> "I've been a customer for X years, paying on time, and this 30% increase with no notice is unacceptable."</li>
+        <li><strong>Competition Card:</strong> "AT&T offered me $55/month" or "Xfinity has 400Mbps for $60" - specific speeds/prices help.</li>
+        <li><strong>Reject & Escalate:</strong> When offered $5 off: "That's insulting for a loyal customer. I need to speak with retention/supervisor."</li>
+        <li><strong>Bundle Defense:</strong> "I only need internet. Don't try to sell me services I don't want to justify your price increase."</li>
+        <li><strong>The Ultimatum:</strong> "I have the competitor's number ready. Either match my old rate or I'm switching today."</li>
+        <li><strong>Contract Negotiation:</strong> "I'll accept $74 but with no contract" or "I want a 24-month price lock guarantee."</li>
+        <li><strong>Speed Play:</strong> "I don't need faster speeds. I was happy with 100Mbps at $69."</li>
+        <li><strong>Calculate Total:</strong> If offered credits: "So that's $20 credit plus $5 off = effectively $84 this month, then $84 ongoing?"</li>
+        <li><strong>Supervisor Magic Words:</strong> "What's your best retention offer?" and "What would it take to keep me as a customer?"</li>
+        <li><strong>The Close:</strong> When you get $69 or better: "OK, I'll accept that. Please email confirmation of this rate and terms."</li>
       </ul>
+      <div className="mt-3 p-2 bg-amber-50 rounded text-xs">
+        <strong>Pro tip:</strong> The supervisor has more authority. If the frontline agent won't budge after 2-3 attempts, escalate immediately.
+      </div>
     </div>
   );
 
