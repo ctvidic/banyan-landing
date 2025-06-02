@@ -178,7 +178,7 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
                   No negotiations yet for this timeframe
                 </div>
               ) : (
-                data?.leaderboard.map((entry) => (
+                data?.leaderboard.map((entry, index) => (
                   <div
                     key={`${entry.userId}-${entry.createdAt}`}
                     className={`flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-lg border ${
@@ -189,7 +189,7 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
                   >
                     {/* Rank */}
                     <div className="flex-shrink-0 w-8 sm:w-12 flex justify-center">
-                      {getRankIcon(entry.rank)}
+                      {getRankIcon(index + 1)}
                     </div>
                     
                     {/* User info */}
