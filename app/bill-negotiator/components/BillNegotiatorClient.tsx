@@ -605,32 +605,37 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
     setIsSubmittingEmail(true);
     
     try {
-      // First, submit to waitlist
-      const waitlistResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/waitlist-signup`, {
+      // First, submit to existing waitlist
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      const waitlistResponse = await fetch(`${supabaseUrl}/functions/v1/waitlist-signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'apikey': supabaseAnonKey || '',
         },
-        body: JSON.stringify({ email: userEmail.toLowerCase().trim() }),
+        body: JSON.stringify({ 
+          email: userEmail.toLowerCase().trim(),
+          source: 'bill-negotiator' // Track where signup came from
+        }),
       });
       
-      if (waitlistResponse.ok) {
-        // Then save score with email
-        const scoreData = await saveScoreToBackend(report, userEmail);
-        if (scoreData) {
-          setHasSubmittedEmail(true);
-          setShowEmailDialog(false);
-          setShowLeaderboardSection(true); // Show leaderboard after email submission
-          
-          // Show success message
-          toast({
-            title: "You're on the leaderboard!",
-            description: `Ranked #${scoreData.rank} out of ${scoreData.totalParticipants} negotiators`,
-            duration: 5000,
-          });
-        }
+      // Save score regardless of waitlist response (they might already be on it)
+      const scoreData = await saveScoreToBackend(report, userEmail);
+      
+      if (scoreData) {
+        setHasSubmittedEmail(true);
+        setShowEmailDialog(false);
+        setShowLeaderboardSection(true); // Show leaderboard after email submission
+        
+        // Show success message
+        toast({
+          title: "🎉 You're on the leaderboard!",
+          description: `Ranked #${scoreData.rank} out of ${scoreData.totalParticipants} negotiators`,
+          duration: 5000,
+        });
       } else {
         toast({
           title: "Error",
@@ -1376,6 +1381,15 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
             >
               Add My Score to Leaderboard
             </button>
+          </div>
+        )}
+        
+        {/* For low scores (0-1 stars), don't show leaderboard prompt */}
+        {starCount < 2 && (
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+            <p className="text-sm text-gray-700">
+              💡 Tip: To join the leaderboard, you need to negotiate and achieve at least a 2-star rating!
+            </p>
           </div>
         )}
         
