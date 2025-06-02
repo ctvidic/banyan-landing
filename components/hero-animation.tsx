@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
 import { Leaf, Wifi, Lightbulb, ShieldCheck } from "lucide-react"
+import Image from "next/image"
 
 export default function HeroAnimation() {
   const [mounted, setMounted] = useState(false)
@@ -152,7 +153,7 @@ export default function HeroAnimation() {
 
       {/* Credit Card Element - Hidden on smaller screens */}
       <motion.div
-        className="hidden xl:block absolute top-[65%] left-[38%] w-80 h-52 bg-gradient-to-br from-emerald-500 to-emerald-400 rounded-2xl shadow-xl z-50 -rotate-6"
+        className="hidden xl:block absolute top-[55%] left-[25%] w-[32rem] h-[20rem] z-50 -rotate-6"
         animate={{
           y: [0, -10, 0],
           rotate: [-6, -5, -6],
@@ -169,66 +170,13 @@ export default function HeroAnimation() {
           translateZ,
         }}
       >
-        {/* Card Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute h-32 w-32 border border-white/20 rounded-full"
-              style={{
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                transform: `translate(-50%, -50%) scale(${Math.random() * 1 + 0.5})`,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="p-6 text-white h-full flex flex-col justify-between relative">
-          {/* Bank Logo */}
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-white/90 flex items-center justify-center">
-              <Leaf className="h-5 w-5 text-emerald-500" />
-            </div>
-            <span className="font-semibold tracking-wider">BANYAN</span>
-          </div>
-
-          {/* Chip and Wireless */}
-          <div className="flex items-center gap-3 my-4">
-            <div className="w-12 h-9 rounded-md bg-gradient-to-br from-yellow-200 to-yellow-400 flex items-center justify-center overflow-hidden relative">
-              <div className="absolute inset-0 flex flex-col gap-1 p-1">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-1 w-full bg-yellow-600/30 rounded-full" />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {/* Card Number */}
-            <div className="flex gap-3 font-mono text-lg tracking-wider">
-              <div className="flex gap-1">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="w-2 h-2 rounded-full bg-white/40" />
-                ))}
-              </div>
-              <div className="flex gap-1">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="w-2 h-2 rounded-full bg-white/40" />
-                ))}
-              </div>
-              <div className="flex gap-1">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="w-2 h-2 rounded-full bg-white/40" />
-                ))}
-              </div>
-            </div>
-
-           
-          </div>
-        </div>
-
-        {/* Hologram Effect */}
+        <Image
+          src="/metallic_card.png"
+          alt="Banyan Credit Card"
+          width={512}
+          height={320}
+          className="w-full h-full object-contain drop-shadow-xl"
+        />
       </motion.div>
 
       {/* Savings Progress Ring - Hidden on smaller screens */}
