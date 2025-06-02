@@ -164,4 +164,60 @@
                 0 0 40px rgba(16, 185, 129, 0.3),
                 0 0 60px rgba(16, 185, 129, 0.1);
   }
+  
+  /* Star appear animation */
+  @keyframes star-appear {
+    0% {
+      transform: scale(0) rotate(0deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.2) rotate(180deg);
+    }
+    100% {
+      transform: scale(1) rotate(360deg);
+      opacity: 1;
+    }
+  }
+  
+  .animate-star-appear {
+    animation: star-appear 0.6s ease-out forwards;
+    opacity: 0;
+  }
+  
+  /* Fade in animation */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+  
+  /* Bounce once animation */
+  @keyframes bounce-once {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    25% {
+      transform: translateY(-10px);
+    }
+    50% {
+      transform: translateY(0);
+    }
+    75% {
+      transform: translateY(-5px);
+    }
+  }
+  
+  .animate-bounce-once {
+    animation: bounce-once 1s ease-out;
+  }
 }

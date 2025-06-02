@@ -76,6 +76,7 @@ export default function BillNegotiatorClient() {
     totalParticipants: number
   } | null>(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showLeaderboardSection, setShowLeaderboardSection] = useState(false)
 
   // TEST MODE: Set to true to skip to report with mock data
   const TEST_MODE = false; // Change to true for testing
@@ -564,6 +565,13 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       if (timerId) clearTimeout(timerId);
     };
   }, [userRequestedDisconnect, currentSessionStatus, realtimeDisconnect, setUserRequestedDisconnect]);
+
+  // Reset leaderboard visibility when starting a new call
+  useEffect(() => {
+    if (phase === "call" && !isCallEndedByAgent) {
+      setShowLeaderboardSection(false);
+    }
+  }, [phase, isCallEndedByAgent]);
 
   /*-------------------------------------------------------------------------*/
   /* UI SECTIONS                                                             */
@@ -1060,10 +1068,43 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         </div>
       )}
       
-      {/* Leaderboard - shown below call on both mobile and desktop */}
-      <div className="w-full max-w-2xl mt-8">
-        <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
-      </div>
+      {/* Leaderboard Section - collapsible tab below call (hidden when report shows) */}
+      {(!isCallEndedByAgent || showLeaderboardSection) && (
+        <div className="w-full max-w-2xl mt-8 leaderboard-section">
+          <button
+            onClick={() => setShowLeaderboardSection(!showLeaderboardSection)}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-all ${
+              showLeaderboardSection 
+                ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
+                : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+            } ${
+              savedScoreData && savedScoreData.rank && !showLeaderboardSection 
+                ? 'animate-pulse' 
+                : ''
+            }`}
+          >
+            <span className="font-medium flex items-center gap-2">
+              🏆 Leaderboard
+              {savedScoreData && savedScoreData.rank && (
+                <span className="text-sm font-normal">
+                  (You're #{savedScoreData.rank})
+                </span>
+              )}
+            </span>
+            <ChevronDown 
+              className={`h-5 w-5 transition-transform ${
+                showLeaderboardSection ? 'rotate-180' : ''
+              }`} 
+            />
+          </button>
+          
+          {showLeaderboardSection && (
+            <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
+              <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 
@@ -1195,26 +1236,43 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           </div>
         )}
         
+        {/* Quick success message with rank for short attention spans */}
+        {savedScoreData && savedScoreData.rank && (
+          <div className="text-center mb-4 animate-bounce-once">
+            <p className="text-2xl">
+              {starCount >= 4 ? '🏆' : starCount === 3 ? '🥈' : '💪'} 
+              <span className="ml-2 text-lg font-bold text-gray-700">
+                You're #{savedScoreData.rank}!
+              </span>
+            </p>
+          </div>
+        )}
+        
         {/* Percentile display if available */}
         {savedScoreData && savedScoreData.percentile !== null && (
           <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-            <h3 className="font-semibold mb-3 text-center text-gray-800">Your Performance</h3>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <p className="text-sm text-gray-600">Percentile</p>
-                <p className="text-2xl font-bold text-emerald-600">
-                  Top {savedScoreData.percentile}%
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Global Rank</p>
-                <p className="text-2xl font-bold text-emerald-600">
-                  #{savedScoreData.rank || 'N/A'} 
-                  {savedScoreData.totalParticipants > 0 && (
-                    <span className="text-sm font-normal text-gray-600"> of {savedScoreData.totalParticipants}</span>
-                  )}
-                </p>
-              </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-emerald-600">
+                🎯 You ranked #{savedScoreData.rank || 'N/A'} out of {savedScoreData.totalParticipants} negotiators!
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                Top {savedScoreData.percentile}% performance
+              </p>
+              <button
+                onClick={() => {
+                  setShowLeaderboardSection(true);
+                  // Scroll to leaderboard
+                  setTimeout(() => {
+                    document.querySelector('.leaderboard-section')?.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'start' 
+                    });
+                  }, 100);
+                }}
+                className="mt-3 text-sm text-emerald-600 hover:text-emerald-700 underline font-medium"
+              >
+                View Full Leaderboard →
+              </button>
             </div>
           </div>
         )}
