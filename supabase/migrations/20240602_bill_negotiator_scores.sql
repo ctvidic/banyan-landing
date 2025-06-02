@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS bill_negotiator_scores (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id TEXT NOT NULL, -- Anonymous identifier
+  email TEXT, -- User email (optional for leaderboard)
   score_data JSONB NOT NULL, -- Store the full report
   rating_stars INTEGER NOT NULL CHECK (rating_stars >= 1 AND rating_stars <= 5), -- Star count
   bill_reduction_amount DECIMAL(10,2), -- Amount saved for leaderboard ranking
@@ -15,11 +16,13 @@ CREATE TABLE IF NOT EXISTS bill_negotiator_scores (
 CREATE INDEX idx_bill_reduction ON bill_negotiator_scores(bill_reduction_amount DESC);
 CREATE INDEX idx_rating_stars ON bill_negotiator_scores(rating_stars DESC);
 CREATE INDEX idx_created_at ON bill_negotiator_scores(created_at DESC);
+CREATE INDEX idx_email ON bill_negotiator_scores(email);
 
 -- Create a view for leaderboard with calculated percentiles
 CREATE VIEW bill_negotiator_leaderboard AS
 SELECT 
   user_id,
+  email,
   score_data,
   rating_stars,
   bill_reduction_amount,

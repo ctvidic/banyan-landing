@@ -32,6 +32,9 @@ import { frontlineAgentConfig, supervisorAgentConfig } from "../../banyanAgentCo
 import { TalkingOrb } from "@/app/components/TalkingOrb" // Import the TalkingOrb component
 import confetti from "canvas-confetti" // Import confetti library
 import BillNegotiatorLeaderboard from "@/app/bill-negotiator/components/BillNegotiatorLeaderboard"
+import { WaitlistForm } from "@/app/components/WaitlistForm"
+import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 
 /*-------------------------------------------------------------------------*/
 /*  Message + Scenario types                                               */
@@ -76,6 +79,13 @@ export default function BillNegotiatorClient() {
     totalParticipants: number
   } | null>(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showLeaderboardSection, setShowLeaderboardSection] = useState(false)
+  const [showEmailDialog, setShowEmailDialog] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
+  const [username, setUsername] = useState("")
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false)
+  const [hasSubmittedEmail, setHasSubmittedEmail] = useState(false)
+  const [wantsLeaderboard, setWantsLeaderboard] = useState(true) // Default to true
 
   // TEST MODE: Set to true to skip to report with mock data
   const TEST_MODE = false; // Change to true for testing
@@ -153,10 +163,19 @@ export default function BillNegotiatorClient() {
   }, [setIsUserSpeaking]);
 
   // Add function to save score to backend
-  const saveScoreToBackend = useCallback(async (scoreReport: any) => {
+  const saveScoreToBackend = useCallback(async (scoreReport: any, email?: string, username?: string) => {
     if (!sessionStartTime) return;
     
     const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000); // in seconds
+    
+    console.log("BN_CLIENT: Saving score to backend:", {
+      starCount: scoreReport.starCount,
+      rating: scoreReport.rating,
+      outcome: scoreReport.outcome,
+      sessionDuration,
+      email,
+      username
+    });
     
     try {
       const response = await fetch('/api/bill-negotiator/save-score', {
@@ -166,7 +185,9 @@ export default function BillNegotiatorClient() {
         },
         body: JSON.stringify({
           report: scoreReport,
-          sessionDuration
+          sessionDuration,
+          email: email || userEmail, // Include email if provided
+          username: username || null // Include username if provided
         })
       });
       
@@ -174,13 +195,16 @@ export default function BillNegotiatorClient() {
         const data = await response.json();
         setSavedScoreData(data);
         console.log('Score saved successfully:', data);
+        return data;
       } else {
         console.error('Failed to save score:', response.statusText);
+        return null;
       }
     } catch (error) {
       console.error('Error saving score:', error);
+      return null;
     }
-  }, [sessionStartTime]);
+  }, [sessionStartTime, userEmail]);
 
   const score = useCallback(async (transcript: string) => {
     console.log("BN_CLIENT: score() called. Transcript provided:", transcript);
@@ -188,11 +212,26 @@ export default function BillNegotiatorClient() {
     // console.log("BN_CLIENT: Transcript for scoring:", transcript);
     try {
       const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer\'s negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean). Do not nest the result under any other key. 
+        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer's negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean), finalBill (number), reduction (number). Do not nest the result under any other key. 
 
-Outcome should be focused mainly on the reduction the customer got from the bill. Rating should be a star rating out of 5, based on the customer's success in getting ANY bill reduction or concession: ⭐⭐⭐⭐⭐ for 5 stars if bill reduced to $69 or below, ⭐⭐⭐⭐☆ for 4 stars if bill reduced to $70-$79, ⭐⭐⭐☆☆ for 3 stars if any discount/credit was obtained, ⭐⭐☆☆☆ for 2 stars if some concession was made, ⭐☆☆☆☆ for 1 star if no reduction achieved. Be generous with ratings for any success.
+CRITICAL SCORING RULES:
+- If the customer says nothing or only greets without negotiating: ☆☆☆☆☆ (0 stars - display as empty stars)
+- If the customer mentions the bill increase but accepts it without trying to negotiate: ⭐☆☆☆☆ (1 star)
+- If the customer makes minimal effort but gets no reduction: ⭐☆☆☆☆ (1 star)
+- If the customer tries to negotiate but only gets a small credit (<$10 off monthly): ⭐⭐☆☆☆ (2 stars)
+- If the customer negotiates and gets $10-19 monthly reduction: ⭐⭐⭐☆☆ (3 stars)
+- If the customer negotiates well and gets back to original price $69 exactly: ⭐⭐⭐⭐☆ (4 stars)
+- If the customer negotiates excellently and gets below original price (<$69, e.g. $64): ⭐⭐⭐⭐⭐ (5 stars)
 
-confettiWorthy should be true ONLY if the customer achieved a truly excellent negotiation result - specifically if they got their monthly bill reduced to $70 or below. Do NOT set this to true for small credits, one-time discounts, or bills above $70.
+For outcome, state the final result in a clear sentence (e.g., "Successfully reduced bill from $89 to $64 per month")
+
+IMPORTANT: Calculate these numeric values:
+- finalBill: The final monthly bill amount after negotiation (just the number, e.g., 64 for $64/month)
+- reduction: The amount saved per month (e.g., 25 if reduced from $89 to $64)
+- For one-time credits, set finalBill to 89 and reduction to 0 (since the monthly bill doesn't change)
+- Starting bill is always $89
+
+confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (significant reduction).
 
 \n\n${transcript}`})});
       
@@ -207,18 +246,40 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
 
       const j = await r.json(); 
       console.log("BN_CLIENT: Score API response JSON:", JSON.stringify(j, null, 2));
-      setReport(j);
       
-      // Save score to backend
-      if (!j.error) {
-        await saveScoreToBackend(j);
+      // Parse the report ONCE here if needed
+      let finalReport = j;
+      if (j.text && typeof j.text === "string") {
+        console.log("BN_CLIENT: Report has text property, parsing it ONCE");
+        try {
+          const cleanedText = j.text.replace(/```json\s*|\s*```/g, "").trim();
+          finalReport = JSON.parse(cleanedText);
+          // Add star count to the report object
+          finalReport.starCount = (finalReport.rating?.match(/⭐/g) || []).length;
+          console.log("BN_CLIENT: Parsed report with star count:", finalReport.starCount);
+        } catch (e) {
+          console.error("BN_CLIENT: Failed to parse report:", e);
+          finalReport = { error: "Failed to parse report", details: String(e) };
+        }
+      } else if (j.rating) {
+        // Already parsed, just add star count
+        finalReport.starCount = (j.rating?.match(/⭐/g) || []).length;
+        console.log("BN_CLIENT: Direct report with star count:", finalReport.starCount);
+      }
+      
+      setReport(finalReport);
+      
+      // Check if user hasn't submitted email yet
+      if (!j.error && !hasSubmittedEmail) {
+        // Show email dialog for all users
+        setShowEmailDialog(true);
       }
     } catch (error) {
       console.error("BN_CLIENT: Error in score function (fetching or parsing JSON):", error);
       setReport({ error: "Failed to fetch or parse score data.", details: String(error) });
     }
   // }, [messages, setReport]);
-  }, [setReport, saveScoreToBackend]); // messages is removed as transcript is now an argument
+  }, [setReport, hasSubmittedEmail]); // removed saveScoreToBackend from dependencies
 
   // agentLogic: Passed to the hook. Seems stable as it uses roleRef and its direct argument.
   // If it were to use other component state/props, it should be memoized with useCallback.
@@ -564,6 +625,89 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
       if (timerId) clearTimeout(timerId);
     };
   }, [userRequestedDisconnect, currentSessionStatus, realtimeDisconnect, setUserRequestedDisconnect]);
+
+  // Reset leaderboard visibility when starting a new call
+  useEffect(() => {
+    if (phase === "call" && !isCallEndedByAgent) {
+      setShowLeaderboardSection(false);
+    }
+  }, [phase, isCallEndedByAgent]);
+
+  // Handle email submission for leaderboard
+  const handleEmailSubmit = useCallback(async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (!userEmail || !report) return;
+    
+    setIsSubmittingEmail(true);
+    
+    try {
+      // First, submit to existing waitlist
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      const waitlistResponse = await fetch(`${supabaseUrl}/functions/v1/waitlist-signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'apikey': supabaseAnonKey || '',
+        },
+        body: JSON.stringify({ 
+          email: userEmail.toLowerCase().trim(),
+          source: 'bill-negotiator' // Track where signup came from
+        }),
+      });
+      
+      // Only save score if user wants to be on leaderboard
+      if (wantsLeaderboard) {
+        const scoreData = await saveScoreToBackend(report, userEmail, username);
+        
+        if (scoreData) {
+          setHasSubmittedEmail(true);
+          setShowEmailDialog(false);
+          setShowLeaderboardSection(true); // Show leaderboard after email submission
+          
+          // Show success message
+          toast({
+            title: "🎉 You're on the leaderboard!",
+            description: `Ranked #${scoreData.rank} out of ${scoreData.totalParticipants} negotiators`,
+            duration: 5000,
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to save your score. Please try again.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Just joined waitlist, no leaderboard
+        setHasSubmittedEmail(true);
+        setShowEmailDialog(false);
+        
+        toast({
+          title: "✅ You're on the waitlist!",
+          description: "We'll notify you when Banyan launches",
+          duration: 5000,
+        });
+        
+        // Allow user to try again after a brief delay
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Email submission error:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingEmail(false);
+    }
+  }, [userEmail, report, saveScoreToBackend, toast, wantsLeaderboard, username]);
 
   /*-------------------------------------------------------------------------*/
   /* UI SECTIONS                                                             */
@@ -1030,7 +1174,6 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           <div className="bg-white rounded-lg shadow-md p-4">
             <h3 className="text-xl font-bold mb-4">Negotiation Report</h3>
             {renderReportContent()}
-            <Button variant="outline" className="mt-4 w-full" onClick={()=>location.reload()}>Try Again</Button>
           </div>
         ) : (
           activeDrawerTab && (
@@ -1056,66 +1199,83 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         <div className="hidden md:block w-full max-w-2xl mt-8">
           <h2 className="text-2xl font-bold mb-4">Negotiation Report</h2>
           {renderReportContent()}
-          <Button variant="outline" className="mt-4" onClick={()=>location.reload()}>Try Again</Button>
         </div>
       )}
       
-      {/* Leaderboard - shown below call on both mobile and desktop */}
-      <div className="w-full max-w-2xl mt-8">
-        <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
+      {/* Leaderboard Section - collapsible tab below call (hidden when report shows) */}
+      <div className="w-full max-w-2xl mt-8 leaderboard-section">
+        <button
+          onClick={() => setShowLeaderboardSection(!showLeaderboardSection)}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-all ${
+            showLeaderboardSection 
+              ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
+              : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+          } ${
+            savedScoreData && savedScoreData.rank && !showLeaderboardSection 
+              ? 'animate-pulse' 
+              : ''
+          }`}
+        >
+          <span className="font-medium flex items-center gap-2">
+            🏆 Leaderboard
+            {savedScoreData && savedScoreData.rank && (
+              <span className="text-sm font-normal">
+                (You're #{savedScoreData.rank})
+              </span>
+            )}
+          </span>
+          <ChevronDown 
+            className={`h-5 w-5 transition-transform ${
+              showLeaderboardSection ? 'rotate-180' : ''
+            }`} 
+          />
+        </button>
+        
+        {showLeaderboardSection && (
+          <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
+            <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
+          </div>
+        )}
       </div>
     </div>
   )
 
   const renderReport = () => {
-    // Parse the report if needed
-    let parsed = report;
-    
-    if (report?.text && typeof report.text === "string") {
-      try {
-        const cleanedText = report.text.replace(/```json\s*|\s*```/g, "").trim();
-        parsed = JSON.parse(cleanedText);
-      } catch (e) {
-        console.error("Failed to parse report:", e);
-        parsed = null;
-      }
-    }
-    
-    // Extract star count for personalized message
-    const starCount = parsed ? (parsed.rating?.match(/⭐/g) || []).length : 0;
+    // Report is already parsed in the score function!
+    const starCount = report?.starCount || 0;
 
     return (
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Negotiation Report</h1>
-        {parsed ? (
+        {report && !report.error ? (
           <>
             <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
-              {parsed.strengths && (
+              {report.strengths && (
                 <div>
                   <h2 className="font-semibold mb-1">Strengths</h2>
                   <ul className="list-disc pl-5">
-                    {parsed.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                    {report.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
                   </ul>
                 </div>
               )}
-              {parsed.improvements && (
+              {report.improvements && (
                 <div>
                   <h2 className="font-semibold mb-1">Improvements</h2>
                   <ul className="list-disc pl-5">
-                    {parsed.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                    {report.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
                   </ul>
                 </div>
               )}
-              {parsed.outcome && (
+              {report.outcome && (
                   <div>
                     <h2 className="font-semibold mb-1">Outcome</h2>
-                    <p>{parsed.outcome}</p>
+                    <p>{report.outcome}</p>
                   </div>
               )}
-              {parsed.rating && (
+              {report.rating && (
                 <div>
                   <h2 className="font-semibold mb-1">Rating</h2>
-                  <p>{parsed.rating}</p>
+                  <p>{report.rating}</p>
                 </div>
               )}
             </div>
@@ -1125,63 +1285,44 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               <p className="text-sm text-gray-700 mb-3">
                 {starCount >= 4 && "We noticed you're a skilled negotiator! 🎉"}
                 {starCount === 3 && "We noticed you have good negotiation potential! 💪"}
-                {starCount <= 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+                {starCount === 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+                {starCount === 1 && "We noticed you need to practice your negotiation skills. 🎯"}
+                {starCount === 0 && "We noticed you didn't attempt to negotiate. Try speaking up next time! 🗣️"}
               </p>
-              <p className="text-sm font-semibold text-gray-800 mb-3">
+              <p className="text-sm font-semibold text-gray-800">
                 Join Banyan to master money management and negotiation skills.
               </p>
-              <a 
-                href="https://banyan.money" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors"
-              >
-                Join the Waitlist →
-              </a>
             </div>
           </>
         ) : (
           <p>Loading…</p>
         )}
-        <Button variant="outline" className="mt-6" onClick={()=>location.reload()}>Try Again</Button>
       </div>
     );
   }
 
   const renderReportContent = () => {
-    // Parse the report if needed
-    let parsed = report;
-    
-    if (report?.text && typeof report.text === "string") {
-      try {
-        const cleanedText = report.text.replace(/```json\s*|\s*```/g, "").trim();
-        parsed = JSON.parse(cleanedText);
-      } catch (e) {
-        console.error("Failed to parse report:", e);
-        return <p>Error loading report. Please try again.</p>;
-      }
-    }
-
-    if (!parsed || parsed.error) {
+    // Report is already parsed!
+    if (!report || report.error) {
       return <p>Loading report...</p>;
     }
 
-    // Extract star count for large display
-    const starCount = (parsed.rating?.match(/⭐/g) || []).length;
+    const starCount = report.starCount || 0;
+    const totalStars = 5; // Always 5 stars
 
     return (
       <>
         {/* Large star rating display */}
-        {parsed.rating && (
+        {report.rating && (
           <div className="text-center mb-6">
             <div className="text-4xl mb-2">
-              {[...Array(starCount)].map((_, i) => (
+              {[...Array(totalStars)].map((_, i) => (
                 <span 
                   key={i} 
-                  className="inline-block animate-star-appear"
+                  className={`inline-block ${i < starCount ? 'animate-star-appear' : ''}`}
                   style={{ animationDelay: `${i * 0.2}s` }}
                 >
-                  ⭐
+                  {i < starCount ? '⭐' : '☆'}
                 </span>
               ))}
             </div>
@@ -1191,6 +1332,32 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               {starCount === 3 && "Good Effort"}
               {starCount === 2 && "Needs Improvement"}
               {starCount === 1 && "Try Again"}
+              {starCount === 0 && "No Negotiation Detected"}
+            </p>
+          </div>
+        )}
+        
+        {/* Join Waitlist/Leaderboard button - prominent at the top */}
+        {!hasSubmittedEmail && (
+          <div className="text-center mb-6">
+            <Button 
+              size="lg"
+              className="bg-emerald-600 hover:bg-emerald-700 px-8" 
+              onClick={() => setShowEmailDialog(true)}
+            >
+              🏆 Join Waitlist & Leaderboard
+            </Button>
+          </div>
+        )}
+        
+        {/* Quick success message with rank for short attention spans */}
+        {savedScoreData && savedScoreData.rank && starCount > 0 && (
+          <div className="text-center mb-4 animate-bounce-once">
+            <p className="text-2xl">
+              {starCount >= 4 ? '🏆' : starCount === 3 ? '🥈' : '💪'} 
+              <span className="ml-2 text-lg font-bold text-gray-700">
+                You're #{savedScoreData.rank}!
+              </span>
             </p>
           </div>
         )}
@@ -1198,71 +1365,107 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         {/* Percentile display if available */}
         {savedScoreData && savedScoreData.percentile !== null && (
           <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-            <h3 className="font-semibold mb-3 text-center text-gray-800">Your Performance</h3>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <p className="text-sm text-gray-600">Percentile</p>
-                <p className="text-2xl font-bold text-emerald-600">
-                  Top {savedScoreData.percentile}%
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Global Rank</p>
-                <p className="text-2xl font-bold text-emerald-600">
-                  #{savedScoreData.rank || 'N/A'} 
-                  {savedScoreData.totalParticipants > 0 && (
-                    <span className="text-sm font-normal text-gray-600"> of {savedScoreData.totalParticipants}</span>
-                  )}
-                </p>
-              </div>
+            <div className="text-center">
+              <p className="text-lg font-bold text-emerald-600">
+                🎯 You ranked #{savedScoreData.rank || 'N/A'} out of {savedScoreData.totalParticipants} negotiators!
+              </p>
+              <p className="text-sm text-gray-600 mt-1">
+                Top {savedScoreData.percentile}% performance
+              </p>
+              <button
+                onClick={() => {
+                  setShowLeaderboardSection(true);
+                  // Scroll to leaderboard
+                  setTimeout(() => {
+                    document.querySelector('.leaderboard-section')?.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'start' 
+                    });
+                  }, 100);
+                }}
+                className="mt-3 text-sm text-emerald-600 hover:text-emerald-700 underline font-medium"
+              >
+                View Full Leaderboard →
+              </button>
             </div>
           </div>
         )}
         
         <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
-          {parsed.outcome && (
+          {report.outcome && (
               <div>
                 <h3 className="font-semibold mb-1">Outcome</h3>
-                <p>{parsed.outcome}</p>
+                <p>{report.outcome}</p>
               </div>
           )}
-          {parsed.strengths && (
+          {report.strengths && (
             <div>
               <h3 className="font-semibold mb-1">Strengths</h3>
               <ul className="list-disc pl-5">
-                {parsed.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                {report.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
               </ul>
             </div>
           )}
-          {parsed.improvements && (
+          {report.improvements && (
             <div>
               <h3 className="font-semibold mb-1">Areas for Improvement</h3>
               <ul className="list-disc pl-5">
-                {parsed.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                {report.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
               </ul>
             </div>
           )}
         </div>
         
-        {/* Personalized message and CTA */}
+        {/* Personalized message - NO BUTTON HERE */}
         <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
           <p className="text-sm text-gray-700 mb-3">
             {starCount >= 4 && "We noticed you're a skilled negotiator! 🎉"}
             {starCount === 3 && "We noticed you have good negotiation potential! 💪"}
-            {starCount <= 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+            {starCount === 2 && "We noticed you could benefit from more financial literacy skills. 📚"}
+            {starCount === 1 && "We noticed you need to practice your negotiation skills. 🎯"}
+            {starCount === 0 && "Don't give up! Speaking up is the first step to saving money. 💬"}
           </p>
-          <p className="text-sm font-semibold text-gray-800 mb-3">
-            Join Banyan to master money management and negotiation skills.
+          <p className="text-sm font-semibold text-gray-800">
+            {starCount === 0 
+              ? "Practice makes perfect. Try again and negotiate for a better deal!"
+              : "Join Banyan to master money management and negotiation skills."}
           </p>
-          <a 
-            href="https://banyan.money" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors"
-          >
-            Join the Waitlist →
-          </a>
+          
+          {/* Button for 0 stars - inside the message box */}
+          {starCount === 0 && !hasSubmittedEmail && (
+            <Button 
+              size="lg"
+              className="mt-4 bg-emerald-600 hover:bg-emerald-700 px-8" 
+              onClick={() => location.reload()}
+            >
+              Try Again
+            </Button>
+          )}
         </div>
+        
+        {/* Button for 1+ stars - outside the message box */}
+        {starCount > 0 && (
+          <div className="mt-8 text-center">
+            {!hasSubmittedEmail ? (
+              <Button 
+                size="lg"
+                className="bg-emerald-600 hover:bg-emerald-700 px-8" 
+                onClick={() => setShowEmailDialog(true)}
+              >
+                Join Waitlist & Try Again
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="px-8" 
+                onClick={() => location.reload()}
+              >
+                Try Another Negotiation
+              </Button>
+            )}
+          </div>
+        )}
       </>
     );
   }
@@ -1301,6 +1504,104 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           © {new Date().getFullYear()} Banyan Financial Education. All rights reserved.
         </div>
       </footer>
+      
+      {/* Email Dialog for Leaderboard */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl">
+              🏆 Join Banyan Waitlist & Leaderboard
+            </DialogTitle>
+            <DialogDescription className="text-center pt-2">
+              Enter your email to join the waitlist and compete on the leaderboard!
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Show score outside of DialogDescription to avoid hydration error */}
+          <div className="text-center mb-4">
+            <div className="text-lg font-semibold">
+              Your Score: {(() => {
+                // Just use the already-calculated star count!
+                const starCount = report?.starCount || 0;
+                return [...Array(5)].map((_, i) => (
+                  <span key={i}>{i < starCount ? '⭐' : '☆'}</span>
+                ));
+              })()}
+            </div>
+          </div>
+          
+          <form onSubmit={handleEmailSubmit} className="space-y-4 pt-4">
+            <div>
+              <Input
+                type="email"
+                placeholder="your@email.com"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                required
+                className="w-full"
+                disabled={isSubmittingEmail}
+              />
+            </div>
+            
+            <div>
+              <Input
+                type="text"
+                placeholder="Choose a username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="w-full"
+                disabled={isSubmittingEmail}
+                maxLength={20}
+              />
+              <p className="text-xs text-gray-500 mt-1">This will be shown on the leaderboard</p>
+            </div>
+            
+            {/* ALWAYS show checkbox for leaderboard */}
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="leaderboard-opt-in"
+                checked={wantsLeaderboard}
+                onCheckedChange={(checked) => setWantsLeaderboard(checked as boolean)}
+                disabled={isSubmittingEmail}
+              />
+              <label 
+                htmlFor="leaderboard-opt-in" 
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Add my score to the public leaderboard
+              </label>
+            </div>
+            
+            <div className="text-xs text-gray-500 text-center space-y-1">
+              <p>By submitting, you'll join the Banyan waitlist</p>
+              <p className="text-xs italic">You can try multiple times to improve your score!</p>
+            </div>
+            
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowEmailDialog(false);
+                  // Allow trying again without email
+                  setTimeout(() => location.reload(), 100);
+                }}
+                disabled={isSubmittingEmail}
+              >
+                Skip & Try Again
+              </Button>
+              <Button
+                type="submit"
+                disabled={!userEmail || isSubmittingEmail}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {isSubmittingEmail ? 'Saving...' : 'Join Waitlist'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }
