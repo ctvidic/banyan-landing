@@ -8,38 +8,74 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Helper to extract bill amounts from outcome text
 function extractBillAmounts(outcome: string): { reduction: number; finalBill: number } {
-  // Look for patterns like "reduced from $89 to $64" or "bill reduced to $70"
-  const reducedToMatch = outcome.match(/reduced.*?to\s*\$(\d+)/i)
-  const fromToMatch = outcome.match(/from\s*\$(\d+)\s*to\s*\$(\d+)/i)
+  console.log('Extracting bill amounts from outcome:', outcome)
   
   let reduction = 0
   let finalBill = 89 // Default starting bill
+  const startingBill = 89
   
+  // Pattern 1: "reduced from $X to $Y" or "from $X to $Y"
+  const fromToMatch = outcome.match(/from\s*\$(\d+)\s*to\s*\$(\d+)/i)
   if (fromToMatch) {
     const initial = parseInt(fromToMatch[1])
     finalBill = parseInt(fromToMatch[2])
     reduction = initial - finalBill
-  } else if (reducedToMatch) {
-    finalBill = parseInt(reducedToMatch[1])
-    reduction = 89 - finalBill // Assume starting bill of $89
+    console.log(`Matched from/to pattern: $${initial} to $${finalBill}, reduction: $${reduction}`)
+    return { reduction, finalBill }
   }
   
-  // Look for credit mentions (e.g., "$10 credit")
+  // Pattern 2: "reduced to $X" or "bill reduced to $X"
+  const reducedToMatch = outcome.match(/reduced.*?to\s*\$(\d+)/i)
+  if (reducedToMatch) {
+    finalBill = parseInt(reducedToMatch[1])
+    reduction = startingBill - finalBill
+    console.log(`Matched reduced to pattern: final bill $${finalBill}, reduction: $${reduction}`)
+    return { reduction, finalBill }
+  }
+  
+  // Pattern 3: "$X/month" or "$X per month" (without "reduced" keyword)
+  const monthlyMatch = outcome.match(/\$(\d+)(?:\/month|\s*per\s*month)/i)
+  if (monthlyMatch && !outcome.toLowerCase().includes('remains') && !outcome.toLowerCase().includes('still')) {
+    finalBill = parseInt(monthlyMatch[1])
+    reduction = startingBill - finalBill
+    console.log(`Matched monthly pattern: $${finalBill}/month, reduction: $${reduction}`)
+    return { reduction, finalBill }
+  }
+  
+  // Pattern 4: "back to $X" (e.g., "back to $69")
+  const backToMatch = outcome.match(/back\s*to\s*\$(\d+)/i)
+  if (backToMatch) {
+    finalBill = parseInt(backToMatch[1])
+    reduction = startingBill - finalBill
+    console.log(`Matched back to pattern: $${finalBill}, reduction: $${reduction}`)
+    return { reduction, finalBill }
+  }
+  
+  // Pattern 5: Credit mentions (e.g., "$10 credit" or "one-time $5 credit")
   const creditMatch = outcome.match(/\$(\d+)\s*credit/i)
-  if (creditMatch && reduction === 0) {
+  if (creditMatch) {
+    // For credits, the bill stays the same but we count it as a small reduction
     reduction = parseInt(creditMatch[1])
-    finalBill = 89 - reduction
+    finalBill = startingBill // Bill stays at $89 with one-time credit
+    console.log(`Matched credit pattern: $${reduction} credit, bill stays at $${finalBill}`)
+    return { reduction: Math.min(reduction, 10), finalBill } // Cap credit reduction at $10
   }
   
   // Handle "no negotiation" or "remains at $89" cases
   if (outcome.toLowerCase().includes('no negotiation') || 
-      outcome.toLowerCase().includes('remains at $89') ||
-      outcome.toLowerCase().includes('bill remains')) {
+      outcome.toLowerCase().includes('remains at') ||
+      outcome.toLowerCase().includes('still at') ||
+      outcome.toLowerCase().includes('bill remains') ||
+      outcome.toLowerCase().includes('no reduction')) {
     reduction = 0
-    finalBill = 89
+    finalBill = startingBill
+    console.log('No reduction detected')
+    return { reduction, finalBill }
   }
   
-  return { reduction, finalBill }
+  // If no pattern matches, log a warning
+  console.warn(`Could not extract bill amounts from outcome: "${outcome}"`)
+  return { reduction: 0, finalBill: startingBill }
 }
 
 // Generate anonymous user ID using fingerprinting
@@ -68,7 +104,20 @@ export async function POST(request: Request) {
     
     // Use the pre-calculated star count from the report, or calculate it if missing
     const ratingStars = report.starCount || (report.rating?.match(/⭐/g) || []).length || 0
-    const { reduction, finalBill } = extractBillAmounts(report.outcome || '')
+    
+    // Use AI-provided values if available, otherwise fall back to parsing
+    let reduction = report.reduction
+    let finalBill = report.finalBill
+    
+    // If AI didn't provide values (older reports), fall back to parsing
+    if (typeof reduction !== 'number' || typeof finalBill !== 'number') {
+      console.log('AI did not provide bill amounts, falling back to parsing')
+      const extracted = extractBillAmounts(report.outcome || '')
+      reduction = extracted.reduction
+      finalBill = extracted.finalBill
+    } else {
+      console.log(`Using AI-provided values: finalBill=$${finalBill}, reduction=$${reduction}`)
+    }
     
     // Handle 0 stars (no negotiation) - DB requires minimum 1
     const starsToSave = Math.max(1, ratingStars)

@@ -212,7 +212,7 @@ export default function BillNegotiatorClient() {
     // console.log("BN_CLIENT: Transcript for scoring:", transcript);
     try {
       const r = await fetch("/api/openai/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer's negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean). Do not nest the result under any other key. 
+        body:JSON.stringify({prompt:`You are a negotiation coach. Based only on this transcript, evaluate the customer's negotiation performance. Respond ONLY with a flat JSON object with these keys: strengths (array of strings), improvements (array of strings), outcome (string), rating (string), confettiWorthy (boolean), finalBill (number), reduction (number). Do not nest the result under any other key. 
 
 CRITICAL SCORING RULES:
 - If the customer says nothing or only greets without negotiating: ☆☆☆☆☆ (0 stars - display as empty stars)
@@ -220,10 +220,16 @@ CRITICAL SCORING RULES:
 - If the customer makes minimal effort but gets no reduction: ⭐☆☆☆☆ (1 star)
 - If the customer tries to negotiate but only gets a small credit (<$10 off monthly): ⭐⭐☆☆☆ (2 stars)
 - If the customer negotiates and gets $10-19 monthly reduction: ⭐⭐⭐☆☆ (3 stars)
-- If the customer negotiates well and gets $20+ reduction or back to $69: ⭐⭐⭐⭐☆ (4 stars)
-- If the customer negotiates excellently and gets below $69 or significant extras: ⭐⭐⭐⭐⭐ (5 stars)
+- If the customer negotiates well and gets back to original price $69 exactly: ⭐⭐⭐⭐☆ (4 stars)
+- If the customer negotiates excellently and gets below original price (<$69, e.g. $64): ⭐⭐⭐⭐⭐ (5 stars)
 
-For outcome, state the final result. If no negotiation happened, say "No negotiation attempted - bill remains at $89/month"
+For outcome, state the final result in a clear sentence (e.g., "Successfully reduced bill from $89 to $64 per month")
+
+IMPORTANT: Calculate these numeric values:
+- finalBill: The final monthly bill amount after negotiation (just the number, e.g., 64 for $64/month)
+- reduction: The amount saved per month (e.g., 25 if reduced from $89 to $64)
+- For one-time credits, set finalBill to 89 and reduction to 0 (since the monthly bill doesn't change)
+- Starting bill is always $89
 
 confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (significant reduction).
 
