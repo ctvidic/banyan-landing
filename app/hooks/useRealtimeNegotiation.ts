@@ -344,13 +344,13 @@ export function useRealtimeNegotiation({
             voice: agentVoice,
             tools: currentAgentConfig.tools, // Added tools from AgentConfig
             input_audio_transcription: { model: "whisper-1", language: "en" }, // Using whisper-1 as a common choice
-            turn_detection: { // Default VAD settings from openai-realtime-agents example
+            turn_detection: {
               type: "server_vad",
-              threshold: 0.8, // Increased from 0.7 to be even less sensitive to noise
-              prefix_padding_ms: 300,
-              silence_duration_ms: 800, // Increased from 500ms to require longer pause before responding
-              create_response: true, // Important: tells server to respond after VAD detects end of user speech
-              interrupt_response: true // Allows agent to be interrupted
+              threshold: 0.9, // Even less sensitive to noise
+              prefix_padding_ms: 500, // More padding before speech
+              silence_duration_ms: 2000, // 2 seconds of silence required before considering speech ended
+              create_response: true, // Keep this true for agent to respond
+              interrupt_response: true // Still allow interruptions
             },
             // start_first_turn: true,
             // For MVP, no client-side tools are defined here. 
