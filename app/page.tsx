@@ -297,7 +297,7 @@ export default function Home() {
             transition={{ duration: 0.5 }}
           >
               <div className="flex items-center gap-3 mb-6">
-                <Genmoji name="focused-learning-face" size={48} />
+                <Genmoji name="teen-success" size={48} />
                 <h3 className="text-xl font-bold text-gray-900">For Teens</h3>
             </div>
               <ul className="space-y-4">
@@ -370,7 +370,7 @@ export default function Home() {
                   <BookOpen className="h-5 w-5 text-gray-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold text-gray-800">Curriculum You Can Trust</p>
-                    <p className="text-sm text-gray-600">Stanford-researched, parent-approved, teen-tested. No get-rich-quick schemes.</p>
+                    <p className="text-sm text-gray-600">Research-based, parent-approved, teen-tested. No get-rich-quick schemes.</p>
               </div>
                 </li>
               </ul>
@@ -665,10 +665,10 @@ export default function Home() {
             transition={{ delay: 0.4 }}
           >
             {[
-              { stat: '2,847', label: 'Active Members' },
-              { stat: '$142K', label: 'Total Invested' },
-              { stat: '89', label: 'Businesses Started' },
-              { stat: '4.9/5', label: 'Member Rating' },
+              { stat: '1,000+', label: 'Waitlist Members' },
+              { stat: '$40/mo', label: 'Teen Earning Potential' },
+              { stat: '20+', label: 'Learning Modules' },
+              { stat: '2025', label: 'Launch Year' },
             ].map((item) => (
               <div key={item.label} className="text-center">
                 <div className="text-2xl font-bold text-gray-900">{item.stat}</div>
@@ -1045,11 +1045,11 @@ export default function Home() {
         <div className="container relative">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <div className="inline-flex items-center rounded-full border border-gray-200 px-4 py-1.5 text-sm font-medium bg-white text-gray-700 mb-4">
-              Success Stories
+              Early Feedback
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">From <span className="text-gray-400">Allowance</span> to <span className="text-emerald-600">Assets</span></h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">From <span className="text-gray-400">Skeptics</span> to <span className="text-emerald-600">Believers</span></h2>
             <p className="text-lg text-gray-600">
-              Real results from families who started early
+              What early preview families are saying
             </p>
           </div>
 
@@ -1058,7 +1058,7 @@ export default function Home() {
             <TestimonialCard
               quote={<>This app actually makes learning about money fun. I've started investing and even opened my own small business. My parents are impressed with how much I've learned!</>}
               author="Jake M."
-              role="High school student"
+              role="Beta tester"
               avatar="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
             />
             
@@ -1066,7 +1066,7 @@ export default function Home() {
             <TestimonialCard
               quote={<>Finally, a financial education app my daughter actually uses! She's learning real skills while earning money. The parent controls give me peace of mind while she explores investing.</>}
               author="Maria Rodriguez"
-              role="Mother of two"
+              role="Early preview parent"
               avatar="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8d29tYW4lMjBoZWFkc2hvdHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=80"
             />
             
@@ -1074,7 +1074,7 @@ export default function Home() {
             <TestimonialCard
               quote={<>The gamification keeps me motivated to learn every day. I love competing with friends on the leaderboard and earning rewards for completing lessons. Best financial app for teens!</>}
               author="Sophia L."
-              role="Banyan user"
+              role="Preview user"
               avatar="https://images.unsplash.com/photo-1554151228-14d9def656e4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
             />
           </div>
@@ -1368,20 +1368,20 @@ export default function Home() {
             transition={{ delay: 0.3 }}
           >
             <div className="text-center">
-              <div className="text-3xl font-bold text-emerald-300">94%</div>
-              <div className="text-sm opacity-80">Teen satisfaction</div>
+              <div className="text-3xl font-bold text-emerald-300">20+</div>
+              <div className="text-sm opacity-80">Learning modules</div>
             </div>
             <div className="w-px h-12 bg-white/20"></div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-emerald-300">4.9★</div>
-              <div className="text-sm opacity-80">Parent rating</div>
+              <div className="text-3xl font-bold text-emerald-300">FDIC</div>
+              <div className="text-sm opacity-80">Bank-insured</div>
             </div>
             <div className="w-px h-12 bg-white/20"></div>
             <div className="text-center">
               <div className="text-3xl font-bold text-emerald-300">
-                $2.4M
+                2025
               </div>
-              <div className="text-sm opacity-80">Teen earnings</div>
+              <div className="text-sm opacity-80">Launch year</div>
             </div>
           </motion.div>
         </div>
