@@ -96,7 +96,7 @@ export default function BillNegotiatorClient() {
   // call state
   const [messages,  setMsgs]      = useState<Message[]>([])
   // const [stepId,    setStepId]    = useState("greeting") // Removed for MVP
-  const [activeDrawerTab, setActiveDrawerTab] = useState<null|"transcript"|"mission"|"tips"|"leaderboard">(null)
+  const [activeDrawerTab, setActiveDrawerTab] = useState<null|"transcript"|"mission"|"tips">(null)
   const [report,    setReport]    = useState<any>(TEST_MODE ? MOCK_REPORT : null)
   // const roleRef = useRef<RealtimeAgentRole>("agent_frontline") // To be replaced by agent config state
   const { toast } = useToast()
@@ -930,10 +930,6 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
               onClick={()=>setActiveDrawerTab("tips")}
             >Tips</button>
-            <button
-              className={`px-3 py-1 rounded-md text-sm font-medium ${activeDrawerTab==="leaderboard" ? "bg-emerald-100 text-emerald-700" : "text-gray-500"}`}
-              onClick={()=>setActiveDrawerTab("leaderboard")}
-            >Leaderboard</button>
           </div>
           <button
             className="ml-auto text-gray-400 hover:text-gray-700 text-xl font-bold md:block"
@@ -956,9 +952,6 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         )}
         {activeDrawerTab==="mission" && renderMission()}
         {activeDrawerTab==="tips" && renderTips()}
-        {activeDrawerTab==="leaderboard" && (
-          <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
-        )}
       </div>
     </aside>
   )
@@ -1000,7 +993,6 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
         <Button variant="outline" onClick={()=>setActiveDrawerTab("transcript")} className="hidden md:inline-flex"> Transcript </Button>
         <Button variant="outline" onClick={()=>setActiveDrawerTab("mission")} className="hidden md:inline-flex"> Mission </Button>
         <Button variant="outline" onClick={()=>setActiveDrawerTab("tips")} className="hidden md:inline-flex"> Tips </Button>
-        <Button variant="outline" onClick={()=>setActiveDrawerTab("leaderboard")} className="hidden md:inline-flex"> Leaderboard </Button>
         <Button
           className={`px-4 py-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background ${isCallEndedByAgent ? 'bg-gray-400 hover:bg-gray-500 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}`}
           onClick={endCallByUser}
@@ -1031,10 +1023,6 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
             className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="tips" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
             onClick={()=>setActiveDrawerTab(activeDrawerTab === "tips" ? null : "tips")}
           >Tips</button>
-          <button
-            className={`px-4 py-2 rounded-md text-sm font-medium ${activeDrawerTab==="leaderboard" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"}`}
-            onClick={()=>setActiveDrawerTab(activeDrawerTab === "leaderboard" ? null : "leaderboard")}
-          >Leaderboard</button>
         </div>
 
         {/* Tab content OR Report */}
@@ -1058,9 +1046,6 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
               )}
               {activeDrawerTab==="mission" && renderMission()}
               {activeDrawerTab==="tips" && renderTips()}
-              {activeDrawerTab==="leaderboard" && (
-                <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
-              )}
             </div>
           )
         )}
@@ -1074,6 +1059,11 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
           <Button variant="outline" className="mt-4" onClick={()=>location.reload()}>Try Again</Button>
         </div>
       )}
+      
+      {/* Leaderboard - shown below call on both mobile and desktop */}
+      <div className="w-full max-w-2xl mt-8">
+        <BillNegotiatorLeaderboard currentUserId={savedScoreData?.userId} />
+      </div>
     </div>
   )
 
@@ -1225,14 +1215,6 @@ confettiWorthy should be true ONLY if the customer achieved a truly excellent ne
                   )}
                 </p>
               </div>
-            </div>
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => setActiveDrawerTab("leaderboard")}
-                className="text-sm text-emerald-600 hover:text-emerald-700 underline font-medium"
-              >
-                View Full Leaderboard →
-              </button>
             </div>
           </div>
         )}
