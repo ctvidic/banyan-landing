@@ -157,7 +157,7 @@ export default function Home() {
                 whileHover={{ scale: 1.02, y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <LineChart className="h-4 w-4 text-emerald-600" />
+                <span className="text-base">📈</span>
                 <span className="font-medium text-gray-700">Portfolio Building</span>
               </motion.div>
               <motion.div 
@@ -165,7 +165,7 @@ export default function Home() {
                 whileHover={{ scale: 1.02, y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <CreditCard className="h-4 w-4 text-emerald-600" />
+                <span className="text-base">💳</span>
                 <span className="font-medium text-gray-700">Premium Debit Card</span>
               </motion.div>
               <motion.div 
@@ -173,8 +173,8 @@ export default function Home() {
                 whileHover={{ scale: 1.02, y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Users className="h-4 w-4 text-emerald-600" />
-                <span className="font-medium text-gray-700">Founder Network</span>
+                <span className="text-base">🎮</span>
+                <span className="font-medium text-gray-700">Gamified Learning</span>
               </motion.div>
             </div>
             <div className="flex flex-col md:flex-row gap-4 mt-2">
