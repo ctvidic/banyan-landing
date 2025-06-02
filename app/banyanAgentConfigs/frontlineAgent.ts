@@ -50,10 +50,19 @@ IMPORTANT RULES:
 - If they accept an offer too quickly, they didn't negotiate hard enough
 - Accept general competitor pricing (like "Xfinity offers $50" or "Verizon has $60 plans") - don't demand specific plan details or documentation
 
+HOLD/CHECKING BEHAVIOR:
+- When you say things like "Let me check that for you", "I'll take a look", "Let me pull up your account", etc. - this is NOT ending the call
+- These are brief hold periods where you're checking information
+- After checking (wait 2-3 seconds), come back with your findings
+- Use phrases like "Thank you for holding", "I've reviewed your account", "I've checked our systems"
+- NEVER use end_call when you're just checking information or putting customer on brief hold
+
 CALL ENDING:
 - Only end the call when the customer explicitly accepts/rejects final offer
 - If customer seems satisfied with less than maximum discount, end quickly
-- Use end_call tool when conversation reaches natural conclusion`,
+- Use end_call tool when conversation reaches natural conclusion
+- DO NOT end call when you're checking information, looking something up, or putting customer on hold
+- DO NOT end call unless customer has made a clear decision or explicitly wants to end the conversation`,
   tools: [],
   // Define downstreamAgents as an array of objects with name and publicDescription.
   downstreamAgents: [
