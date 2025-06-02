@@ -203,13 +203,13 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
                       </span>
                     </div>
                     
-                    {/* Savings */}
+                    {/* Savings & Deal Info */}
                     <div className="text-right flex-shrink-0">
                       <div className="font-semibold text-emerald-600 text-sm sm:text-base">
-                        {formatCurrency(entry.billReduction)}
+                        ${entry.finalBill}/mo
                       </div>
-                      <div className="text-xs text-gray-500 hidden sm:block">
-                        saved
+                      <div className="text-xs text-gray-500">
+                        saved {formatCurrency(entry.billReduction)}
                       </div>
                     </div>
                   </div>

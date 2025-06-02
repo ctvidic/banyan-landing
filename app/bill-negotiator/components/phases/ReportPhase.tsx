@@ -73,6 +73,26 @@ export function ReportPhase({
         </div>
       )}
       
+      {/* Effective Rate Summary - show prominently */}
+      {(report.dealStructure || report.finalBill) && (
+        <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Your Effective Monthly Rate</p>
+              <p className="text-2xl font-bold text-gray-800">
+                ${report.dealStructure?.effectiveMonthlyRate || report.finalBill}/month
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-600">Monthly Savings</p>
+              <p className="text-xl font-semibold text-emerald-600">
+                ${report.reduction || (89 - (report.dealStructure?.effectiveMonthlyRate || report.finalBill || 89))}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Percentile display if available */}
       {savedScoreData && savedScoreData.percentile !== null && (
         <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
@@ -96,11 +116,28 @@ export function ReportPhase({
       <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
         {report.outcome && (
             <div>
-              <h3 className="font-semibold mb-1">Outcome</h3>
+              <h3 className="font-semibold mb-1">Deal Achieved</h3>
               <p>{report.outcome}</p>
+              {report.dealStructure && (
+                <div className="mt-2 p-2 bg-white rounded border border-gray-200">
+                  <p className="text-xs text-gray-600">
+                    <strong>Effective Monthly Rate:</strong> ${report.dealStructure.effectiveMonthlyRate || report.finalBill}/month
+                  </p>
+                  {report.dealStructure.details && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      <strong>Deal Structure:</strong> {report.dealStructure.details}
+                    </p>
+                  )}
+                  {report.dealStructure.contractLength && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      <strong>Contract:</strong> {report.dealStructure.contractLength} months
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
         )}
-        {report.strengths && (
+        {report.strengths && report.strengths.length > 0 && (
           <div>
             <h3 className="font-semibold mb-1">Strengths</h3>
             <ul className="list-disc pl-5">
@@ -108,7 +145,7 @@ export function ReportPhase({
             </ul>
           </div>
         )}
-        {report.improvements && (
+        {report.improvements && report.improvements.length > 0 && (
           <div>
             <h3 className="font-semibold mb-1">Areas for Improvement</h3>
             <ul className="list-disc pl-5">
