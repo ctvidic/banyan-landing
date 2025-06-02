@@ -1,44 +1,53 @@
 export const SCORING_PROMPT = `You are a negotiation coach evaluating customer performance. Analyze the transcript and return ONLY a flat JSON object with these keys: strengths (array), improvements (array), outcome (string), rating (string), confettiWorthy (boolean), finalBill (number), reduction (number), dealStructure (object).
 
-CALCULATING EFFECTIVE MONTHLY RATE:
-1. One-time credits: Spread over 12 months (e.g., $120 credit = $10/month reduction for a year)
+CRITICAL: IDENTIFY THE FINAL ACCEPTED DEAL
+1. Read through the ENTIRE transcript
+2. Identify ALL offers made by the agent(s)
+3. Find the LAST offer that the customer either:
+   - Explicitly accepted ("OK", "I'll take it", "That works", "Deal", etc.)
+   - Implicitly accepted (agent says "I've applied that to your account")
+   - Was discussing when the call ended
+4. IGNORE all previous offers that were rejected or superseded
+5. If no deal was accepted, use the current bill of $89
+
+CALCULATING EFFECTIVE MONTHLY RATE (for the FINAL deal only):
+1. One-time credits: Spread over 12 months (e.g., $120 credit = $10/month reduction)
 2. Varying monthly rates: Calculate weighted average (e.g., "$64 for 6 months, then $74 for 6 months" = $69 average)
 3. Limited-time discounts: Consider full term impact (e.g., "$10 off for 6 months" = $5/month average over a year)
-4. Autopay: Include in calculations (reduces bill by $5/month)
+4. Autopay: Include if part of final deal (reduces bill by $5/month)
 5. Bundle pricing: Only count internet portion, not TV/mobile add-ons
 
-STAR RATING BASED ON EFFECTIVE MONTHLY RATE:
-- No negotiation attempted: ☆☆☆☆☆ (0 stars)
-- Only got one-time credit or minimal reduction (effective $85+): ⭐☆☆☆☆ (1 star)
-- Small ongoing reduction (effective $80-84): ⭐⭐☆☆☆ (2 stars)
+STAR RATING BASED ON FINAL DEAL'S EFFECTIVE RATE:
+- No deal accepted/negotiation failed: ☆☆☆☆☆ (0 stars)
+- Minimal reduction (effective $85+): ⭐☆☆☆☆ (1 star)
+- Small reduction (effective $80-84): ⭐⭐☆☆☆ (2 stars)
 - Moderate reduction (effective $70-79): ⭐⭐⭐☆☆ (3 stars)
 - Back to original price (effective $69): ⭐⭐⭐⭐☆ (4 stars)
 - Below original price (effective <$69): ⭐⭐⭐⭐⭐ (5 stars)
 
-BONUS MODIFIERS (can increase rating by 0.5-1 star):
+BONUS MODIFIERS:
 - Successfully escalated to supervisor: +0.5
-- Negotiated favorable contract terms: +0.5
-- Got price lock beyond offer period: +0.5
+- Negotiated contract terms favorably: +0.5
+- Got price lock guarantee: +0.5
 - Avoided long commitment for good price: +1
 
-REQUIRED CALCULATIONS:
-finalBill: The EFFECTIVE average monthly rate over 12 months
-reduction: Average monthly savings from $89
+REQUIRED OUTPUT:
+finalBill: The EFFECTIVE monthly rate of the FINAL ACCEPTED deal over 12 months
+reduction: Average monthly savings from $89 based on FINAL deal
 dealStructure: {
-  type: "simple" | "graduated" | "complex",
-  details: "e.g., $74/month for 12 months" | "$64 for 6mo, then $74 for 6mo",
-  contractLength: number (in months),
+  type: "simple" | "graduated" | "complex" | "none",
+  details: Description of FINAL accepted deal (e.g., "$74/month for 12 months"),
+  contractLength: number (in months) or 0 if no commitment,
   hasAutopay: boolean,
-  oneTimeCredits: number,
-  effectiveMonthlyRate: number
+  oneTimeCredits: number (total credits in final deal),
+  effectiveMonthlyRate: number (same as finalBill)
 }
 
-Example calculations:
-- "$20 one-time credit + $5/month off" = $84 - ($20/12) = $82.33 effective
-- "$64 for 6 months, then $79 for 6 months" = (64*6 + 79*6)/12 = $71.50 effective
-- "$10 off for 6 months only" = (79*6 + 89*6)/12 = $84 effective
+EXAMPLES OF FINAL DEAL IDENTIFICATION:
+Transcript excerpt: "I can offer $5 off..." Customer: "That's not enough" ... "How about $10 off for 6 months?" Customer: "I need better" ... "Best I can do is $69/month for 12 months" Customer: "OK I'll take that"
+→ FINAL DEAL: $69/month for 12 months (ignore the $5 and $10 offers)
 
-For outcome, describe EXACTLY what deal was achieved with all terms.`;
+For outcome, describe ONLY the final accepted deal with all its terms.`;
 
 export const SCENARIO_CONFIG = {
   startingBill: 89,

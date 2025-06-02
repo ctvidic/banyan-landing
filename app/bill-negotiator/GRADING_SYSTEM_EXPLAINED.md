@@ -2,7 +2,19 @@
 
 ## How We Calculate Your Score
 
-The grading system now properly evaluates complex telecom deals by calculating the **effective monthly rate** over a 12-month period.
+The grading system evaluates your negotiation by calculating the **effective monthly rate** of your **final accepted deal** over a 12-month period.
+
+### Important: Only Your Final Deal Counts!
+
+The scoring system identifies and grades ONLY the final offer you accepted, ignoring all previous offers that were rejected. For example:
+
+**Negotiation Flow:**
+- Agent: "I can offer $5 off for 6 months" → You: "That's not enough"
+- Agent: "How about $10 off for 6 months?" → You: "I need better"  
+- Agent: "Best I can do is $69/month for 12 months" → You: "OK, I'll take that"
+
+**What Gets Scored:** Only the $69/month deal (4 stars!)  
+**What Gets Ignored:** The $5 and $10 offers you rejected
 
 ### Deal Types We Handle
 
@@ -71,4 +83,11 @@ You can earn up to +1 star for:
 **Deal C**: "$64/month for 12 months with supervisor escalation"
 - All months: $64/month
 - Effective: $64/month
-- Grade: ⭐⭐⭐⭐⭐ + bonus (exceptional!) 
+- Grade: ⭐⭐⭐⭐⭐ + bonus (exceptional!)
+
+### How We Identify Your Final Deal
+
+1. **Explicit Acceptance**: You say "OK", "Deal", "I'll take it", "That works"
+2. **Agent Confirmation**: Agent says "I've applied that to your account"
+3. **Call Ended During Discussion**: The last offer being discussed
+4. **No Deal Reached**: You pay full price ($89/month) 
