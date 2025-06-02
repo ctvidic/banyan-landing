@@ -120,7 +120,7 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
         <Tabs value={timeframe} onValueChange={setTimeframe}>
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 gap-1">
+          <TabsList className="grid w-full grid-cols-2 mb-4 gap-1">
             <TabsTrigger value="today" className="text-xs sm:text-sm px-2 sm:px-3">
               <span className="sm:hidden">Today</span>
               <span className="hidden sm:inline">Today</span>
