@@ -151,23 +151,23 @@ export default function HeroAnimation() {
               </div>
             </div>
             {/* App Content */}
-            <div className="relative h-[calc(100%-80px)] overflow-hidden">
+            <div className="relative h-[calc(100%-80px)] overflow-hidden rounded-b-[2.4rem]">
               <motion.div
                 className="absolute inset-0"
                 animate={{
                   y: [
                     "0%",      // Start at screen 1
                     "0%",      // Hold on screen 1
-                    "-102%",   // Slight overshoot past screen 2
+                    "-100.5%", // Minimal overshoot past screen 2
                     "-100%",   // Settle on screen 2
                     "-100%",   // Hold on screen 2
-                    "-202%",   // Slight overshoot past screen 3
+                    "-200.5%", // Minimal overshoot past screen 3
                     "-200%",   // Settle on screen 3
                     "-200%",   // Hold on screen 3
-                    "-302%",   // Slight overshoot past screen 4
+                    "-300.5%", // Minimal overshoot past screen 4
                     "-300%",   // Settle on screen 4
                     "-300%",   // Hold on screen 4
-                    "2%",      // Slight overshoot when returning
+                    "0.5%",    // Minimal overshoot when returning
                     "0%"       // Back to start
                   ]
                 }}
@@ -257,9 +257,9 @@ export default function HeroAnimation() {
                 </div>
 
                 {/* Screen 2: Fullscreen Panda Video */}
-                <div className="h-full relative bg-black">
+                <div className="h-full relative bg-gradient-to-b from-emerald-500 to-emerald-600 overflow-hidden">
                   <OptimizedVideo 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-top"
                     src="/panda-optimized.mp4"
                     poster="/panda-poster.jpg"
                   />
