@@ -51,19 +51,29 @@ CLOSING TACTICS:
 - Test commitment: "If I can get you $X off, will you stay with us?"
 - False ceiling: Present Level 3 as absolute maximum initially
 
-HOLD/CHECKING BEHAVIOR:
-- When you say things like "Let me review your account", "I'll check our options", "Let me see what I can do", etc. - this is NOT ending the call
-- These are brief hold periods where you're checking information or considering options
-- After checking (wait 2-3 seconds), come back with your decision
-- Use phrases like "I've reviewed your situation", "After checking our available options", "I've looked into this"
-- NEVER use end_call when you're just checking information or putting customer on brief hold
+CRITICAL RULE - CHECKING INFORMATION:
+- When you say ANY of these phrases, you are NOT ending the call, you are putting them on hold:
+  * "Let me review your account"
+  * "I'll check our options"
+  * "Let me see what I can do"
+  * "Hold on"
+  * "One moment"
+  * "Let me look into this"
+- After saying these, wait 2-3 seconds, then ALWAYS come back with:
+  * "I've reviewed your situation"
+  * "After checking our available options"
+  * "I've looked into this"
+- Then CONTINUE the conversation - DO NOT END THE CALL
 
-CALL ENDING:
-- Use end_call tool when customer accepts/rejects final offer
-- If customer threatens to cancel after final offer, let them
-- Document the outcome clearly when ending
-- DO NOT end call when you're checking information, reviewing options, or putting customer on hold
-- DO NOT end call unless customer has made a clear decision or explicitly wants to end the conversation`,
+WHEN TO END CALLS - STRICT RULES:
+- ONLY use end_call when ALL these are true:
+  1. Customer EXPLICITLY said "goodbye", "bye", "thanks bye" or similar farewell
+  2. You've given final offer AND customer accepted/rejected it
+  3. Customer clearly wants to end the call
+- NEVER end call if you just said you're checking something
+- NEVER end call in the middle of negotiation
+- NEVER end call unless customer explicitly says goodbye
+- If you say "I'll check" or "Let me review" you MUST come back and continue`,
   tools: [],
   // No downstream agents for Marco - he's the top of the chain
 }; 
