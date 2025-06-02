@@ -1054,52 +1054,28 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {/* Teen Testimonial 1 */}
+            {/* Teen Testimonial */}
             <TestimonialCard
-              quote={<>Made my first $500 trading stocks at 16! The app taught me everything from basics to options. Now my friends ask ME for investment advice</>}
+              quote={<>This app actually makes learning about money fun. I've started investing and even opened my own small business. My parents are impressed with how much I've learned!</>}
               author="Jake M."
-              role="16-year-old trader"
+              role="High school student"
               avatar="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
             />
             
-            {/* Parent Testimonial 1 */}
+            {/* Parent Testimonial */}
             <TestimonialCard
-              quote={<>My daughter went from zero financial knowledge to starting her own Etsy business. The LLC module was incredible - she did everything herself!</>}
+              quote={<>Finally, a financial education app my daughter actually uses! She's learning real skills while earning money. The parent controls give me peace of mind while she explores investing.</>}
               author="Maria Rodriguez"
-              role="Mom of entrepreneur"
+              role="Mother of two"
               avatar="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8d29tYW4lMjBoZWFkc2hvdHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=800&q=80"
             />
             
-            {/* Teen Testimonial 2 */}
+            {/* Mixed Testimonial */}
             <TestimonialCard
-              quote={<>127-day streak! 🔥 Learning finance is actually fun now. Already earned $120 back and put it all in my investment account. Stanford, here I come!</>}
+              quote={<>The gamification keeps me motivated to learn every day. I love competing with friends on the leaderboard and earning rewards for completing lessons. Best financial app for teens!</>}
               author="Sophia L."
-              role="Future CEO, age 15"
+              role="Banyan user"
               avatar="https://images.unsplash.com/photo-1554151228-14d9def656e4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            />
-            
-            {/* Parent Testimonial 2 */}
-            <TestimonialCard
-              quote="Worth every penny. My son learned more practical skills in 3 months than I did in college. The parent controls give me confidence while he learns."
-              author="David Chen"
-              role="Tech exec dad"
-              avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            />
-            
-            {/* Teen Testimonial 3 */}
-            <TestimonialCard
-              quote="The negotiation module literally helped me get a $3/hour raise at my job! Plus the investing community is 🔥 - we share tips daily"
-              author="Alex Thompson"
-              role="17, part-time barista"
-              avatar="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            />
-            
-            {/* Parent Testimonial 3 */}
-            <TestimonialCard
-              quote="My twins compete for the top leaderboard spot! They've both started side hustles and actually SAVE money now. This app changed our family."
-              author="Jennifer Park"
-              role="Mom of twin entrepreneurs"
-              avatar="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             />
           </div>
         </div>

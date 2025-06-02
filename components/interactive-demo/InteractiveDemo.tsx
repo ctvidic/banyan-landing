@@ -194,6 +194,8 @@ export default function InteractiveDemo() {
   const handlers = useSwipeable({
     onSwipedUp: () => changeSlide(1),
     onSwipedDown: () => changeSlide(-1),
+    onSwipedLeft: () => changeSlide(1),  // Add left swipe for next
+    onSwipedRight: () => changeSlide(-1), // Add right swipe for previous
     preventScrollOnSwipe: true,
     trackMouse: true
   });
@@ -228,7 +230,7 @@ export default function InteractiveDemo() {
   }
 
   return (
-    <div className="w-full flex justify-center md:items-center py-8 md:py-0"> {/* Added py-8 for mobile vertical spacing if needed, md:py-0 to reset on desktop */}
+    <div className="w-full flex justify-center items-center min-h-[500px] md:py-8"> {/* Changed to min-h and added items-center */}
       {/* Container for Phone Mockup + External Arrows (Desktop) */}
       <div className="relative md:flex md:items-center md:space-x-4">
         
@@ -291,30 +293,67 @@ export default function InteractiveDemo() {
         </div>
 
         {/* Screen Content Area for Mobile - Visible only on screens smaller than md */}
-        <div {...handlers} className="w-full h-screen bg-white flex flex-col items-stretch justify-between md:hidden relative overflow-hidden">
-           {/* Apply swipe handlers to the mobile view as well */}
-           {/* Added scrollbar-hide utilities here */}
-          <AnimatePresence initial={false} custom={swipeDirection}>
-            <motion.div
-              key={activeScreen.id}
-              custom={swipeDirection}
-              variants={slideVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="w-full h-full absolute top-0 left-0 flex flex-col" // Added flex flex-col
-            >
-              <div className="flex-grow overflow-y-auto scrollbar-hide [-ms-overflow-style:none] [scrollbar-width:none] p-4">
-                {activeScreen.type === 'lesson' && (
-                  <LessonSlide title={activeScreen.data.title} content={activeScreen.data.content} imageSrc={activeScreen.data.imageSrc} />
-                )}
-                {activeScreen.type === 'quiz' && (
-                  <QuizQuestionSlide screen={activeScreen} onAnswer={handleAnswerQuizQuestion} currentQuizNumber={currentQuizNo} totalQuizQuestions={totalQuizNo} />
-                )}
-                {activeScreen.type === 'emailForm' && <EmailForm title={activeScreen.title} onSubmitEmail={handleEmailSubmit} />}
+        <div className="w-full max-w-lg mx-auto md:hidden">
+          <div {...handlers} className="relative bg-white rounded-2xl shadow-lg overflow-hidden" style={{ minHeight: '500px', maxHeight: '80vh' }}>
+            {/* Progress Indicator for Mobile */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200 z-20">
+              <div 
+                className="h-full bg-emerald-500 transition-all duration-300"
+                style={{ width: `${((currentScreenIndex + 1) / screens.length) * 100}%` }}
+              />
+            </div>
+            
+            {/* Swipe Hint for Mobile */}
+            {currentScreenIndex === 0 && (
+              <div className="absolute bottom-4 left-0 right-0 text-center z-20 animate-bounce">
+                <p className="text-xs text-gray-500">Swipe left to continue →</p>
               </div>
-            </motion.div>
-          </AnimatePresence>
+            )}
+            
+            <AnimatePresence initial={false} custom={swipeDirection}>
+              <motion.div
+                key={activeScreen.id}
+                custom={swipeDirection}
+                variants={slideVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="absolute inset-0 flex flex-col"
+              >
+                <div className="flex-grow overflow-y-auto scrollbar-hide [-ms-overflow-style:none] [scrollbar-width:none] p-6">
+                  {activeScreen.type === 'lesson' && (
+                    <LessonSlide title={activeScreen.data.title} content={activeScreen.data.content} imageSrc={activeScreen.data.imageSrc} />
+                  )}
+                  {activeScreen.type === 'quiz' && (
+                    <QuizQuestionSlide screen={activeScreen} onAnswer={handleAnswerQuizQuestion} currentQuizNumber={currentQuizNo} totalQuizQuestions={totalQuizNo} />
+                  )}
+                  {activeScreen.type === 'emailForm' && <EmailForm title={activeScreen.title} onSubmitEmail={handleEmailSubmit} />}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+            
+            {/* Navigation Dots for Mobile */}
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
+              {screens.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    if (index < currentScreenIndex || (index === currentScreenIndex)) {
+                      setCurrentScreenIndex(index);
+                    }
+                  }}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === currentScreenIndex
+                      ? 'bg-emerald-600 w-6'
+                      : index < currentScreenIndex
+                      ? 'bg-emerald-400'
+                      : 'bg-gray-300'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
