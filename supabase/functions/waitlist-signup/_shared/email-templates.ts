@@ -1,4 +1,5 @@
 // Welcome email template for new signups (HTML formatted)
+// Email is much nicer now
 export function getWelcomeEmailHtml(): string {
   return `
 <!DOCTYPE html>
@@ -9,43 +10,36 @@ export function getWelcomeEmailHtml(): string {
   <title>Welcome to Banyan!</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #10b981, #059669); padding: 30px 20px; border-radius: 10px; text-align: center; margin-bottom: 30px;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Banyan! 🌱</h1>
+  <div style="padding: 20px 0; text-align: left; margin-bottom: 20px;">
+    <h1 style="color: #10b981; margin: 0; font-size: 24px; font-weight: normal;">Thanks for joining Banyan!</h1>
   </div>
   
-  <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
-    <p style="font-size: 18px; margin-bottom: 15px;"><strong>Hey there! 👋</strong></p>
+  <div style="margin-bottom: 25px;">
+    <p style="font-size: 16px; margin-bottom: 15px;">Hi there,</p>
     
-    <p style="margin-bottom: 15px;">Welcome to the Banyan waitlist! We're thrilled to have you join us on this journey to revolutionize how teens learn about money.</p>
+    <p style="margin-bottom: 15px;">Thank you for your interest in Banyan. We're working hard to create a unique platform where teenagers can develop real financial literacy skills through hands-on learning.</p>
     
-    <h3 style="color: #10b981; margin-bottom: 15px;">Here's what happens next:</h3>
+    <p style="margin-bottom: 15px;">As an early supporter, you'll be the first to know when we launch. We're currently in development and expect to have something ready to share in the coming months.</p>
     
-    <div style="margin-bottom: 20px;">
-      <p style="margin-bottom: 10px;"><strong>🌱 We're building something special</strong><br>
-      A platform where teens actually EARN while they learn about finance</p>
-      
-      <p style="margin-bottom: 10px;"><strong>💰 Your teen could earn up to $40/month</strong><br>
-      Just by mastering money skills</p>
-      
-      <p style="margin-bottom: 10px;"><strong>📚 Real-world finance education</strong><br>
-      That actually sticks</p>
-    </div>
+    <p style="margin-bottom: 15px;">What makes Banyan different:</p>
+    
+    <ul style="margin-bottom: 20px; padding-left: 20px;">
+      <li style="margin-bottom: 8px;">Practical financial education designed specifically for teens</li>
+      <li style="margin-bottom: 8px;">Interactive learning experiences that make complex topics accessible</li>
+      <li style="margin-bottom: 8px;">A safe environment to practice real-world money management</li>
+    </ul>
+    
+    <p style="margin-bottom: 15px;">If you have any questions or feedback, please don't hesitate to reply to this email. We'd love to hear from you.</p>
   </div>
   
-  <p style="margin-bottom: 20px;">We'll keep you in the loop as we get closer to launch. In the meantime, feel free to reply to this email if you have any questions!</p>
+  <p style="margin-bottom: 20px;">Best regards,<br>
+  The Banyan Team</p>
   
-  <p style="margin-bottom: 20px;"><strong>Thanks for believing in what we're building,<br>
-  The Banyan Team</strong></p>
+  <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 30px 0;">
   
-  <div style="background: #e5f7f0; padding: 15px; border-radius: 5px; margin-top: 25px;">
-    <p style="margin: 0; font-size: 14px;"><strong>P.S.</strong> Got friends who'd love this? Feel free to share - the more the merrier! 🎉</p>
-  </div>
-  
-  <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-  
-  <div style="text-align: center; color: #666; font-size: 12px;">
-    <p style="margin: 0;">© Banyan Financial Education</p>
-    <p style="margin: 0;">Teaching money skills that matter</p>
+  <div style="color: #666; font-size: 14px;">
+    <p style="margin: 0;">Banyan Financial Education</p>
+    <p style="margin: 5px 0; font-size: 12px; color: #999;">You're receiving this because you signed up for our waitlist.</p>
   </div>
 </body>
 </html>
@@ -55,26 +49,25 @@ export function getWelcomeEmailHtml(): string {
 // Welcome email template for plain text version
 export function getWelcomeEmailText(): string {
   return `
-Hey there! 👋
+Hi there,
 
-Welcome to the Banyan waitlist! We're thrilled to have you join us on this journey to revolutionize how teens learn about money.
+Thank you for your interest in Banyan. We're working hard to create a unique platform where teenagers can develop real financial literacy skills through hands-on learning.
 
-Here's what happens next:
+As an early supporter, you'll be the first to know when we launch. We're currently in development and expect to have something ready to share in the coming months.
 
-🌱 We're building something special - a platform where teens actually EARN while they learn about finance
-💰 Your teen could earn up to $40/month just by mastering money skills  
-📚 Real-world finance education that actually sticks
+What makes Banyan different:
+- Practical financial education designed specifically for teens
+- Interactive learning experiences that make complex topics accessible
+- A safe environment to practice real-world money management
 
-We'll keep you in the loop as we get closer to launch. In the meantime, feel free to reply to this email if you have any questions!
+If you have any questions or feedback, please don't hesitate to reply to this email. We'd love to hear from you.
 
-Thanks for believing in what we're building,
+Best regards,
 The Banyan Team
 
-P.S. Got friends who'd love this? Feel free to share - the more the merrier! 🎉
-
 ---
-© Banyan Financial Education
-Teaching money skills that matter
+Banyan Financial Education
+You're receiving this because you signed up for our waitlist.
 `.trim()
 }
 

@@ -83,11 +83,16 @@ serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: fromEmail,
+        from: `Banyan <${fromEmail}>`,
         to: email,
-        subject: '🌿 Welcome to the Banyan Waitlist!',
+        reply_to: fromEmail,
+        subject: 'Welcome to Banyan',
         html: getWelcomeEmailHtml(),
-        text: getWelcomeEmailText()
+        text: getWelcomeEmailText(),
+        headers: {
+          'X-Entity-Ref-ID': crypto.randomUUID(),
+          'List-Unsubscribe': `<mailto:${fromEmail}?subject=Unsubscribe>`,
+        }
       }),
     })
 
@@ -99,9 +104,9 @@ serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: fromEmail,
+        from: `Banyan Notifications <${fromEmail}>`,
         to: adminEmail,
-        subject: '🎉 New Banyan Waitlist Signup',
+        subject: 'New Banyan Waitlist Signup',
         html: getAdminNotificationHtml(email),
         text: getAdminNotificationHtml(email)
       }),

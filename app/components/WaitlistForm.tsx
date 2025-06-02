@@ -47,33 +47,81 @@ export function WaitlistForm() {
     try {
       // Get Supabase URL from environment variables
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      if (!supabaseUrl) {
-        throw new Error("Configuration error. Please try again.")
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      // Log environment variables (partially masked for security)
+      console.log("Debug - Environment check:", {
+        supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : "NOT SET",
+        supabaseAnonKey: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 10)}...` : "NOT SET",
+        origin: window.location.origin
+      })
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error("Configuration error: Missing environment variables")
       }
 
+      const requestUrl = `${supabaseUrl}/functions/v1/waitlist-signup`
+      const requestBody = { email: email.toLowerCase().trim() }
+      
+      // Log request details
+      console.log("Debug - Request details:", {
+        url: requestUrl,
+        method: 'POST',
+        body: requestBody,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey.substring(0, 10)}...`,
+        }
+      })
+
       // Call the Edge Function
-      const response = await fetch(`${supabaseUrl}/functions/v1/waitlist-signup`, {
+      const response = await fetch(requestUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'apikey': supabaseAnonKey, // Add this header as well
+          'x-client-info': 'supabase-js/2.0.0', // Add this header for JWT verification
         },
-        body: JSON.stringify({ email: email.toLowerCase().trim() }),
+        body: JSON.stringify(requestBody),
+      })
+
+      // Log response details
+      console.log("Debug - Response details:", {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        ok: response.ok
       })
 
       const data = await response.json()
+      console.log("Debug - Response data:", data)
 
       if (response.ok && data.success) {
         // Success! Show success message
         setShowSuccess(true)
         setEmail("") // Clear the form
       } else {
-        // Handle API errors
-        setSubmitError(data.error || "Something went wrong. Please try again.")
+        // Handle API errors with more detail
+        if (response.status === 401) {
+          console.error("401 Unauthorized - Check Supabase configuration")
+          setSubmitError("Authentication error. Please try again later.")
+        } else if (response.status === 403) {
+          console.error("403 Forbidden - CORS or permissions issue")
+          setSubmitError("Permission error. Please try again later.")
+        } else {
+          setSubmitError(data.error || `Error: ${response.status} - ${response.statusText}`)
+        }
       }
     } catch (error) {
       // Handle network errors
       console.error("Submission error:", error)
+      if (error instanceof Error) {
+        console.error("Error details:", {
+          message: error.message,
+          stack: error.stack
+        })
+      }
       setSubmitError("Network error. Please check your connection and try again.")
     } finally {
       setIsSubmitting(false)
@@ -95,7 +143,7 @@ export function WaitlistForm() {
           
           <div className="space-y-4">
             <p className="text-sm text-white/70">
-              Check your email for a welcome message.
+              Check your email for a welcome message. Be sure to check your spam folder or promotions tab if you don't see it!
             </p>
             <Button 
               onClick={() => setShowSuccess(false)}
