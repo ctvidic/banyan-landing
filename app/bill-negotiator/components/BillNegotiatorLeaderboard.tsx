@@ -125,14 +125,6 @@ export default function BillNegotiatorLeaderboard({ currentUserId }: { currentUs
               <span className="sm:hidden">Today</span>
               <span className="hidden sm:inline">Today</span>
             </TabsTrigger>
-            <TabsTrigger value="week" className="text-xs sm:text-sm px-2 sm:px-3">
-              <span className="sm:hidden">Week</span>
-              <span className="hidden sm:inline">This Week</span>
-            </TabsTrigger>
-            <TabsTrigger value="month" className="text-xs sm:text-sm px-2 sm:px-3">
-              <span className="sm:hidden">Month</span>
-              <span className="hidden sm:inline">This Month</span>
-            </TabsTrigger>
             <TabsTrigger value="all" className="text-xs sm:text-sm px-2 sm:px-3">
               <span className="sm:hidden">All</span>
               <span className="hidden sm:inline">All Time</span>

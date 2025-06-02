@@ -198,14 +198,68 @@ export default function BillNegotiatorClientV2() {
     setIsCallEndedByAgent(true)
     setUserRequestedDisconnect(true)
     
+    // Calculate call duration
+    const callDuration = sessionStartTime ? (Date.now() - sessionStartTime) / 1000 : 0 // in seconds
+    
     // Trigger scoring when user ends call
     const finalTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n")
-    score(finalTranscript).then((finalReport) => {
-      if (finalReport && !finalReport.error && !hasSubmittedEmail) {
+    
+    // Check if user never spoke or only said greeting
+    const userMessages = messages.filter(m => m.role === "user")
+    const hasNegotiated = userMessages.some(m => {
+      const text = m.text.toLowerCase()
+      // Check if message contains negotiation-related content
+      return text.includes("bill") || text.includes("price") || text.includes("$") || 
+             text.includes("increase") || text.includes("reduce") || text.includes("discount") ||
+             text.includes("expensive") || text.includes("cancel") || text.includes("supervisor")
+    })
+    
+    // If call is under 20 seconds, max 1 star
+    if (callDuration < 20 && callDuration > 0) {
+      const rushReport = {
+        strengths: [],
+        improvements: [
+          "Call was too short to negotiate effectively",
+          "Take more time to build your case",
+          "Real negotiations require patience and persistence"
+        ],
+        outcome: "Rushed call - no meaningful negotiation possible in under 20 seconds",
+        rating: userMessages.length === 0 ? "☆☆☆☆☆" : "⭐☆☆☆☆",
+        starCount: userMessages.length === 0 ? 0 : 1,
+        confettiWorthy: false,
+        finalBill: 89,
+        reduction: 0
+      }
+      setReport(rushReport)
+      if (!hasSubmittedEmail) {
         setShowEmailDialog(true)
       }
-    })
-  }, [messages, score, hasSubmittedEmail, setShowEmailDialog])
+    }
+    // If no transcript or no negotiation, ensure 0 stars
+    else if (!finalTranscript.trim() || userMessages.length === 0 || !hasNegotiated) {
+      const noNegotiationReport = {
+        strengths: [],
+        improvements: ["Customer did not attempt to negotiate", "Need to speak up about the bill increase"],
+        outcome: "No negotiation attempted - bill remains at $89",
+        rating: "☆☆☆☆☆",
+        starCount: 0,
+        confettiWorthy: false,
+        finalBill: 89,
+        reduction: 0
+      }
+      setReport(noNegotiationReport)
+      if (!hasSubmittedEmail) {
+        setShowEmailDialog(true)
+      }
+    } else {
+      // Normal scoring for actual negotiations
+      score(finalTranscript).then((finalReport) => {
+        if (finalReport && !finalReport.error && !hasSubmittedEmail) {
+          setShowEmailDialog(true)
+        }
+      })
+    }
+  }, [messages, score, hasSubmittedEmail, setShowEmailDialog, setReport, sessionStartTime])
 
   // Main render
   return (
