@@ -66,8 +66,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Report is required' }, { status: 400 })
     }
     
-    // Extract numeric values from report
-    const ratingStars = (report.rating?.match(/⭐/g) || []).length
+    // Use the pre-calculated star count from the report, or calculate it if missing
+    const ratingStars = report.starCount || (report.rating?.match(/⭐/g) || []).length || 0
     const { reduction, finalBill } = extractBillAmounts(report.outcome || '')
     
     // Handle 0 stars (no negotiation) - DB requires minimum 1

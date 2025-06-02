@@ -168,6 +168,15 @@ export default function BillNegotiatorClient() {
     
     const sessionDuration = Math.floor((Date.now() - sessionStartTime) / 1000); // in seconds
     
+    console.log("BN_CLIENT: Saving score to backend:", {
+      starCount: scoreReport.starCount,
+      rating: scoreReport.rating,
+      outcome: scoreReport.outcome,
+      sessionDuration,
+      email,
+      username
+    });
+    
     try {
       const response = await fetch('/api/bill-negotiator/save-score', {
         method: 'POST',
@@ -231,7 +240,28 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
 
       const j = await r.json(); 
       console.log("BN_CLIENT: Score API response JSON:", JSON.stringify(j, null, 2));
-      setReport(j);
+      
+      // Parse the report ONCE here if needed
+      let finalReport = j;
+      if (j.text && typeof j.text === "string") {
+        console.log("BN_CLIENT: Report has text property, parsing it ONCE");
+        try {
+          const cleanedText = j.text.replace(/```json\s*|\s*```/g, "").trim();
+          finalReport = JSON.parse(cleanedText);
+          // Add star count to the report object
+          finalReport.starCount = (finalReport.rating?.match(/⭐/g) || []).length;
+          console.log("BN_CLIENT: Parsed report with star count:", finalReport.starCount);
+        } catch (e) {
+          console.error("BN_CLIENT: Failed to parse report:", e);
+          finalReport = { error: "Failed to parse report", details: String(e) };
+        }
+      } else if (j.rating) {
+        // Already parsed, just add star count
+        finalReport.starCount = (j.rating?.match(/⭐/g) || []).length;
+        console.log("BN_CLIENT: Direct report with star count:", finalReport.starCount);
+      }
+      
+      setReport(finalReport);
       
       // Check if user hasn't submitted email yet
       if (!j.error && !hasSubmittedEmail) {
@@ -1205,56 +1235,41 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
   )
 
   const renderReport = () => {
-    // Parse the report if needed
-    let parsed = report;
-    
-    if (report?.text && typeof report.text === "string") {
-      try {
-        const cleanedText = report.text.replace(/```json\s*|\s*```/g, "").trim();
-        parsed = JSON.parse(cleanedText);
-      } catch (e) {
-        console.error("Failed to parse report:", e);
-        parsed = null;
-      }
-    }
-    
-    // Extract star count for personalized message
-    const starCount = parsed ? (parsed.rating?.match(/⭐/g) || []).length : 0;
-    const emptyStarCount = parsed ? (parsed.rating?.match(/☆/g) || []).length : 0;
-    const totalStars = Math.max(5, starCount + emptyStarCount);
+    // Report is already parsed in the score function!
+    const starCount = report?.starCount || 0;
 
     return (
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Negotiation Report</h1>
-        {parsed ? (
+        {report && !report.error ? (
           <>
             <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
-              {parsed.strengths && (
+              {report.strengths && (
                 <div>
                   <h2 className="font-semibold mb-1">Strengths</h2>
                   <ul className="list-disc pl-5">
-                    {parsed.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                    {report.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
                   </ul>
                 </div>
               )}
-              {parsed.improvements && (
+              {report.improvements && (
                 <div>
                   <h2 className="font-semibold mb-1">Improvements</h2>
                   <ul className="list-disc pl-5">
-                    {parsed.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                    {report.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
                   </ul>
                 </div>
               )}
-              {parsed.outcome && (
+              {report.outcome && (
                   <div>
                     <h2 className="font-semibold mb-1">Outcome</h2>
-                    <p>{parsed.outcome}</p>
+                    <p>{report.outcome}</p>
                   </div>
               )}
-              {parsed.rating && (
+              {report.rating && (
                 <div>
                   <h2 className="font-semibold mb-1">Rating</h2>
-                  <p>{parsed.rating}</p>
+                  <p>{report.rating}</p>
                 </div>
               )}
             </div>
@@ -1281,32 +1296,18 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
   }
 
   const renderReportContent = () => {
-    // Parse the report if needed
-    let parsed = report;
-    
-    if (report?.text && typeof report.text === "string") {
-      try {
-        const cleanedText = report.text.replace(/```json\s*|\s*```/g, "").trim();
-        parsed = JSON.parse(cleanedText);
-      } catch (e) {
-        console.error("Failed to parse report:", e);
-        return <p>Error loading report. Please try again.</p>;
-      }
-    }
-
-    if (!parsed || parsed.error) {
+    // Report is already parsed!
+    if (!report || report.error) {
       return <p>Loading report...</p>;
     }
 
-    // Extract star count for personalized message
-    const starCount = parsed ? (parsed.rating?.match(/⭐/g) || []).length : 0;
-    const emptyStarCount = parsed ? (parsed.rating?.match(/☆/g) || []).length : 0;
-    const totalStars = Math.max(5, starCount + emptyStarCount);
+    const starCount = report.starCount || 0;
+    const totalStars = 5; // Always 5 stars
 
     return (
       <>
         {/* Large star rating display */}
-        {parsed.rating && (
+        {report.rating && (
           <div className="text-center mb-6">
             <div className="text-4xl mb-2">
               {[...Array(totalStars)].map((_, i) => (
@@ -1385,25 +1386,25 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
         )}
         
         <div className="bg-gray-50 p-4 rounded-lg text-sm space-y-4 overflow-y-auto" style={{maxHeight: 400}}>
-          {parsed.outcome && (
+          {report.outcome && (
               <div>
                 <h3 className="font-semibold mb-1">Outcome</h3>
-                <p>{parsed.outcome}</p>
+                <p>{report.outcome}</p>
               </div>
           )}
-          {parsed.strengths && (
+          {report.strengths && (
             <div>
               <h3 className="font-semibold mb-1">Strengths</h3>
               <ul className="list-disc pl-5">
-                {parsed.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                {report.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
               </ul>
             </div>
           )}
-          {parsed.improvements && (
+          {report.improvements && (
             <div>
               <h3 className="font-semibold mb-1">Areas for Improvement</h3>
               <ul className="list-disc pl-5">
-                {parsed.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                {report.improvements.map((s: string, i: number) => <li key={i}>{s}</li>)}
               </ul>
             </div>
           )}
@@ -1514,7 +1515,8 @@ confettiWorthy should be true ONLY if the customer achieved 4 or 5 stars (signif
           <div className="text-center mb-4">
             <div className="text-lg font-semibold">
               Your Score: {(() => {
-                const starCount = report && report.rating ? (report.rating.match(/⭐/g) || []).length : 0;
+                // Just use the already-calculated star count!
+                const starCount = report?.starCount || 0;
                 return [...Array(5)].map((_, i) => (
                   <span key={i}>{i < starCount ? '⭐' : '☆'}</span>
                 ));
