@@ -119,8 +119,17 @@ export async function POST(request: Request) {
     const ratingStars = report.starCount || (report.rating?.match(/⭐/g) || []).length || 0
     
     // Use AI-provided values directly (simplified scoring should always provide these)
-    let reduction = report.reduction
-    let finalBill = report.finalBill
+    let reduction: number = typeof report.reduction === 'number' ? report.reduction : 0
+    let finalBill: number = typeof report.finalBill === 'number' ? report.finalBill : 89
+    
+    // Prefer explicit numeric keys if present
+    if (report.offerType === "credit" && typeof report.creditAmount === "number") {
+      reduction = Math.round((report.creditAmount / 12) * 100) / 100
+      finalBill = Math.round((89 - reduction) * 100) / 100
+    } else if (report.offerType === "monthlyDiscount" && typeof report.discountPerMonth === "number") {
+      reduction = report.discountPerMonth
+      finalBill = 89 - reduction
+    }
     
     // Only fall back to parsing if AI didn't provide values
     if (typeof reduction !== 'number' || typeof finalBill !== 'number') {
@@ -130,6 +139,12 @@ export async function POST(request: Request) {
       finalBill = extracted.finalBill
     } else {
       console.log(`Using AI-provided values: finalBill=$${finalBill}, reduction=$${reduction}`)
+    }
+    
+    // Fallback safeguard
+    if (typeof reduction !== 'number' || typeof finalBill !== 'number') {
+      reduction = 0
+      finalBill = 89
     }
     
     // Cross-check with parser to catch AI mistakes

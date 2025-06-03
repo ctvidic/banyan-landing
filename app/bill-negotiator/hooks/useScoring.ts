@@ -6,10 +6,13 @@ interface ScoreReport {
   improvements?: string[];
   outcome?: string;
   rating?: string;
+  starCount?: number;
   confettiWorthy?: boolean;
+  offerType?: "credit" | "monthlyDiscount" | "none";
+  creditAmount?: number;
+  discountPerMonth?: number;
   finalBill?: number;
   reduction?: number;
-  starCount?: number;
   error?: string;
   details?: string;
   text?: string;

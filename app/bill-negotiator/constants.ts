@@ -1,4 +1,10 @@
-export const SCORING_PROMPT = `You are a negotiation coach. Analyze the transcript and return ONLY a flat JSON object with these keys: strengths (array), improvements (array), outcome (string), rating (string), confettiWorthy (boolean), finalBill (number), reduction (number).
+export const SCORING_PROMPT = `You are a negotiation coach. Analyze the transcript and return ONLY a flat JSON object with these keys: strengths (array), improvements (array), outcome (string), rating (string), starCount (number), confettiWorthy (boolean), offerType ("credit"|"monthlyDiscount"|"none"), creditAmount (number), discountPerMonth (number), finalBill (number), reduction (number).
+
+EXPLANATION OF NEW REQUIRED KEYS
+- offerType: "credit" for one-time credit, "monthlyDiscount" for ongoing monthly discount, "none" if no deal.
+- creditAmount: the credit dollar amount if offerType="credit", else 0.
+- discountPerMonth: monthly dollar reduction if offerType="monthlyDiscount", else 0.
+- finalBill and reduction must be computed from these numbers as explained below.
 
 STEP 1: IDENTIFY THE FINAL DEAL
 Read the ENTIRE transcript and find the LAST offer that was:
