@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup-security": "node scripts/setup-security.js"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",

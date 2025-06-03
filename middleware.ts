@@ -1,35 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-
-// Simple in-memory rate limiting (replace with Redis in production)
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
-
-function getClientIdentifier(request: NextRequest): string {
-  // Use IP address as identifier (in production, combine with user ID if authenticated)
-  const forwarded = request.headers.get('x-forwarded-for');
-  const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
-  return ip;
-}
-
-function checkRateLimit(clientId: string): boolean {
-  const now = Date.now();
-  const limit = 10; // 10 requests per minute
-  const window = 60 * 1000; // 1 minute
-
-  const clientData = requestCounts.get(clientId);
-  
-  if (!clientData || now > clientData.resetTime) {
-    requestCounts.set(clientId, { count: 1, resetTime: now + window });
-    return true;
-  }
-
-  if (clientData.count >= limit) {
-    return false;
-  }
-
-  clientData.count++;
-  return true;
-}
+import { 
+  getClientIdentifier, 
+  checkEnhancedRateLimit, 
+  isSuspiciousRequest 
+} from '@/lib/security';
 
 export function middleware(request: NextRequest) {
   // Only apply to API routes
@@ -42,11 +17,35 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check rate limit
-  const clientId = getClientIdentifier(request);
-  if (!checkRateLimit(clientId)) {
+  // Check for suspicious requests
+  if (isSuspiciousRequest(request)) {
     return NextResponse.json(
-      { error: 'Too many requests. Please try again later.' },
+      { error: 'Request blocked' },
+      { status: 403 }
+    );
+  }
+
+  // Determine operation type for enhanced rate limiting
+  const pathname = request.nextUrl.pathname;
+  let operation = 'general';
+  
+  if (pathname.includes('/openai/chat')) {
+    operation = 'openai_chat';
+  } else if (pathname.includes('/session') || pathname.includes('realtime')) {
+    operation = 'openai_realtime';
+  } else if (pathname.includes('/bill-negotiator/')) {
+    operation = 'bill_negotiator';
+  }
+
+  // Check enhanced rate limit
+  const clientId = getClientIdentifier(request);
+  if (!checkEnhancedRateLimit(clientId, operation)) {
+    return NextResponse.json(
+      { 
+        error: 'Too many requests. Please try again later.',
+        operation,
+        retryAfter: operation === 'openai_realtime' ? '24 hours' : '1 hour'
+      },
       { status: 429 }
     );
   }
@@ -61,31 +60,27 @@ export function middleware(request: NextRequest) {
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   response.headers.set('Access-Control-Max-Age', '86400');
 
-  // Security headers
+  // Enhanced security headers
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.openai.com; media-src 'self' blob:; worker-src 'self' blob:;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.openai.com https://*.supabase.co; media-src 'self' blob:; worker-src 'self' blob:;"
   );
   response.headers.set(
     'Permissions-Policy',
     'camera=(), microphone=(self), geolocation=(), payment=()'
   );
 
-  // Add rate limit headers
-  response.headers.set('X-RateLimit-Limit', '10');
-  response.headers.set('X-RateLimit-Window', '60s');
+  // Add enhanced rate limit headers
+  response.headers.set('X-RateLimit-Operation', operation);
+  response.headers.set('X-Client-ID', clientId.slice(0, 10) + '***'); // Partial client ID for debugging
 
   return response;
 }
 
 export const config = {
-  matcher: [
-    '/api/:path*',
-    // Exclude static files
-    '/((?!_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: '/api/:path*',
 }; 
