@@ -7,12 +7,35 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Helper to extract bill amounts from outcome text
+// Simplified parser: detects either "$X off per month" or "$X credit" and computes reduction/finalBill accordingly
 function extractBillAmounts(outcome: string): { reduction: number; finalBill: number } {
   console.log('Extracting bill amounts from outcome:', outcome)
   
   let reduction = 0
   let finalBill = 89 // Default starting bill
   const startingBill = 89
+  
+  // Pattern A: One-time credit
+  const creditPattern = /\$(\d+)\s*(?:one[-\s]?time)?\s*credit/i
+  const creditMatch2 = outcome.match(creditPattern)
+  if (creditMatch2) {
+    const credit = parseInt(creditMatch2[1])
+    reduction = Math.round((credit / 12) * 100) / 100 // round to cents
+    finalBill = Math.round((startingBill - reduction) * 100) / 100
+    console.log(`Detected one-time credit: $${credit}, effective reduction $${reduction}, finalBill $${finalBill}`)
+    return { reduction, finalBill }
+  }
+  
+  // Pattern B: Monthly discount
+  const monthlyPattern = /\$(\d+)\s*off\s*(?:per\s*month|\/month|monthly)/i
+  const monthlyMatch2 = outcome.match(monthlyPattern)
+  if (monthlyMatch2) {
+    const discount = parseInt(monthlyMatch2[1])
+    reduction = discount
+    finalBill = startingBill - discount
+    console.log(`Detected monthly discount: $${discount}, finalBill $${finalBill}`)
+    return { reduction, finalBill }
+  }
   
   // Pattern 1: "reduced from $X to $Y" or "from $X to $Y"
   const fromToMatch = outcome.match(/from\s*\$(\d+)\s*to\s*\$(\d+)/i)
@@ -49,16 +72,6 @@ function extractBillAmounts(outcome: string): { reduction: number; finalBill: nu
     reduction = startingBill - finalBill
     console.log(`Matched back to pattern: $${finalBill}, reduction: $${reduction}`)
     return { reduction, finalBill }
-  }
-  
-  // Pattern 5: Credit mentions (e.g., "$10 credit" or "one-time $5 credit")
-  const creditMatch = outcome.match(/\$(\d+)\s*credit/i)
-  if (creditMatch) {
-    // For credits, the bill stays the same but we count it as a small reduction
-    reduction = parseInt(creditMatch[1])
-    finalBill = startingBill // Bill stays at $89 with one-time credit
-    console.log(`Matched credit pattern: $${reduction} credit, bill stays at $${finalBill}`)
-    return { reduction: Math.min(reduction, 10), finalBill } // Cap credit reduction at $10
   }
   
   // Handle "no negotiation" or "remains at $89" cases
@@ -117,6 +130,14 @@ export async function POST(request: Request) {
       finalBill = extracted.finalBill
     } else {
       console.log(`Using AI-provided values: finalBill=$${finalBill}, reduction=$${reduction}`)
+    }
+    
+    // Cross-check with parser to catch AI mistakes
+    const parsed = extractBillAmounts(report.outcome || '')
+    if (Math.abs(parsed.finalBill - finalBill) > 1) {
+      console.warn('AI values inconsistent with parser, overriding with parsed values')
+      finalBill = parsed.finalBill
+      reduction = parsed.reduction
     }
     
     // Handle 0 stars (no negotiation) - DB requires minimum 1
