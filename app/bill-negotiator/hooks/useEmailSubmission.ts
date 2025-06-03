@@ -4,9 +4,14 @@ import { useToast } from '@/hooks/use-toast';
 interface EmailSubmissionOptions {
   report: any;
   sessionStartTime: number | null;
+  finalOffer: {offerType:string;amount:number}|null;
 }
 
-export function useEmailSubmission(report: any, sessionStartTime: number | null) {
+export function useEmailSubmission(
+  report: any, 
+  sessionStartTime: number | null, 
+  finalOffer: {offerType:string;amount:number} | null = null
+) {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [username, setUsername] = useState("");

@@ -41,6 +41,7 @@ export function useRealtimeNegotiation({
   const [isTransferInProgress, setIsTransferInProgress] = useState<boolean>(false);
   const [userAudioStream, setUserAudioStream] = useState<MediaStream | null>(null);
   const [agentAudioStream, setAgentAudioStream] = useState<MediaStream | null>(null);
+  const [finalOfferState, setFinalOfferState] = useState<{offerType:string;amount:number}|null>(null);
   
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
@@ -1293,13 +1294,11 @@ export function useRealtimeNegotiation({
     connect,
     disconnect,
     sessionStatus,
-    messages: internalMessages, // Expose internal messages
+    messages: internalMessages,
     isAgentSpeaking,
-    isUserSpeaking, // Expose user speaking state
-    userAudioStream, // Expose user audio stream for visualization
-    agentAudioStream, // Expose agent audio stream for visualization
-    // TODO: Expose other necessary functions like sending user audio/text
-    // Add a way to get the current message count or duration if needed by UI
-    // TODO: Consider how to handle UI updates for warnings (e.g. visual timer)
+    isUserSpeaking,
+    userAudioStream,
+    agentAudioStream,
+    finalOffer: finalOfferState,
   };
 } 

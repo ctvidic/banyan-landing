@@ -46,93 +46,85 @@ export default function BillNegotiatorClientV2() {
   const [isTransferInProgress, setIsTransferInProgress] = useState(false)
   const [currentAgentConfig, setCurrentAgentConfig] = useState<AgentConfig>(frontlineAgentConfig)
   
-  // Scoring & Email
+  // --- Stage 1: Callbacks with no external hook dependencies ---
+  const handleMessagesUpdate = useCallback((newMessages: Message[]) => setMessages(newMessages), [])
+  const handleAgentSpeakingChange = useCallback((s: boolean) => setIsRealtimeAgentSpeaking(s), [])
+  const handleSessionStatusChange = useCallback((st: RealtimeSessionStatus) => setCurrentSessionStatus(st), [])
+  const handleUserSpeakingChange = useCallback((s: boolean) => setIsUserSpeaking(s), [])
+
+  // --- Stage 2: Hooks that depend only on Stage 1 callbacks or props ---
   const { report, score, setReport } = useScoring()
-  const { 
-    showEmailDialog, 
-    setShowEmailDialog,
-    userEmail,
-    setUserEmail,
-    username,
-    setUsername,
-    wantsLeaderboard,
-    setWantsLeaderboard,
-    isSubmittingEmail,
-    hasSubmittedEmail,
-    savedScoreData,
-    handleEmailSubmit
-  } = useEmailSubmission(report, sessionStartTime)
-  
-  const { toast } = useToast()
+  const { toast } = useToast() // Toast can be initialized early
 
-  // Test mode setup (simplified)
-  const TEST_MODE = false
+  // --- Stage 3: Define ALL callbacks needed by useRealtimeNegotiation ---
+  // These might now use `toast` if needed, but not `finalOffer` or `useEmailSubmission` outputs yet.
 
-  // Callbacks for realtime hook
-  const handleMessagesUpdate = useCallback((newMessages: Message[]) => {
-    setMessages(newMessages)
-  }, [])
-
-  const handleAgentSpeakingChange = useCallback((isSpeaking: boolean) => {
-    setIsRealtimeAgentSpeaking(isSpeaking)
-  }, [])
-
-  const handleSessionStatusChange = useCallback((status: RealtimeSessionStatus) => {
-    setCurrentSessionStatus(status)
-  }, [])
-
-  const handleUserSpeakingChange = useCallback((isSpeaking: boolean) => {
-    setIsUserSpeaking(isSpeaking)
-  }, [])
-
-  const handleAgentInitiatedCallEnd = useCallback(() => {
+  const onAgentEndedCallCallback = useCallback(() => {
     setIsCallEndedByAgent(true)
-    // Trigger scoring
-    const finalTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n")
-    score(finalTranscript).then((finalReport) => {
-      if (finalReport && !finalReport.error && !hasSubmittedEmail) {
-        setShowEmailDialog(true)
-      }
-    })
-  }, [messages, score, hasSubmittedEmail, setShowEmailDialog])
+    // Actual scoring and dialog showing will be handled by a useEffect watching isCallEndedByAgent & report
+  }, [setIsCallEndedByAgent])
 
-  const handleAgentTransferRequested = useCallback((targetAgentName: string, transferArgs: { reason?: string; conversation_summary?: string }) => {
-    console.log(`BN_CLIENT: Agent transfer requested to ${targetAgentName}`)
+  const onAgentTransferRequestedCallback = useCallback((targetAgentName: string, _transferArgs: any) => {
     setIsTransferInProgress(true)
-    
     if (targetAgentName.includes("supervisor") || targetAgentName === supervisorAgentConfig.name) {
       setCurrentAgentConfig(supervisorAgentConfig)
-      toast({
-        title: "Transferring Call",
-        description: `Connecting to supervisor: ${supervisorAgentConfig.publicDescription.split(',')[0]}`,
-        duration: 3000,
-      })
-      
-      setTimeout(() => {
-        setIsTransferInProgress(false)
-      }, 500)
+      toast({ title: "Transferring Call", description: `Connecting to supervisor: ${supervisorAgentConfig.publicDescription.split(',')[0]}`, duration: 3000 })
+      setTimeout(() => setIsTransferInProgress(false), 500)
     } else {
-      console.error(`Unknown target agent: ${targetAgentName}`)
+      console.error("Unknown target agent: ", targetAgentName)
       setIsTransferInProgress(false)
     }
-  }, [toast])
+  }, [toast, setIsTransferInProgress, setCurrentAgentConfig])
 
-  // Realtime hook
+  // --- Stage 4: useRealtimeNegotiation Hook ---
   const {
     connect: realtimeConnect,
     disconnect: realtimeDisconnect,
     userAudioStream,
     agentAudioStream,
+    finalOffer,
+  }: {
+    connect: () => Promise<void>;
+    disconnect: () => void;
+    userAudioStream: MediaStream | null;
+    agentAudioStream: MediaStream | null;
+    finalOffer: { offerType: string; amount: number } | null;
+    sessionStatus: RealtimeSessionStatus;
+    messages: Message[];
+    isAgentSpeaking: boolean;
+    isUserSpeaking: boolean;
   } = useRealtimeNegotiation({
     onMessagesUpdate: handleMessagesUpdate,
     onAgentSpeakingChange: handleAgentSpeakingChange,
     onSessionStatusChange: handleSessionStatusChange,
-    onUserSpeakingChange: handleUserSpeakingChange,
     currentAgentConfig: currentAgentConfig,
-    onUserTranscriptCompleted: (transcript: string) => { console.log("User transcript:", transcript) },
-    onAgentEndedCall: handleAgentInitiatedCallEnd,
-    onAgentTransferRequested: handleAgentTransferRequested,
+    onUserTranscriptCompleted: (transcript: string) => { console.log("User transcript:", transcript); },
+    onAgentEndedCall: onAgentEndedCallCallback,
+    onAgentTransferRequested: onAgentTransferRequestedCallback,
+    onUserSpeakingChange: handleUserSpeakingChange,
   })
+
+  // --- Stage 5: Hooks that depend on useRealtimeNegotiation outputs (like finalOffer) ---
+  const { 
+    showEmailDialog, setShowEmailDialog,
+    userEmail, setUserEmail,
+    username, setUsername,
+    wantsLeaderboard, setWantsLeaderboard,
+    isSubmittingEmail, hasSubmittedEmail,
+    savedScoreData, handleEmailSubmit,
+  } = useEmailSubmission(report, sessionStartTime, finalOffer as {offerType: string; amount: number} | null)
+
+  // --- Stage 6: useEffects for dependent logic ---
+  useEffect(() => {
+    if (isCallEndedByAgent && !userRequestedDisconnect && messages.length > 0) { // ensure messages exist before scoring
+      const finalTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n")
+      score(finalTranscript).then((finalReport) => {
+        if (finalReport && !finalReport.error && !hasSubmittedEmail) {
+          setShowEmailDialog(true)
+        }
+      })
+    }
+  }, [isCallEndedByAgent, userRequestedDisconnect, messages, score, hasSubmittedEmail, setShowEmailDialog])
 
   // Connection management
   useEffect(() => {
