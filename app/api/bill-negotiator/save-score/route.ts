@@ -105,18 +105,13 @@ export async function POST(request: Request) {
     // Use the pre-calculated star count from the report, or calculate it if missing
     const ratingStars = report.starCount || (report.rating?.match(/⭐/g) || []).length || 0
     
-    // Use dealStructure.effectiveMonthlyRate if available (for complex offers)
+    // Use AI-provided values directly (simplified scoring should always provide these)
     let reduction = report.reduction
     let finalBill = report.finalBill
     
-    // Check if we have a dealStructure with effective rate
-    if (report.dealStructure && typeof report.dealStructure.effectiveMonthlyRate === 'number') {
-      finalBill = report.dealStructure.effectiveMonthlyRate
-      reduction = 89 - finalBill // Starting bill is always $89
-      console.log(`Using dealStructure effective rate: $${finalBill}/month, reduction=$${reduction}`)
-    } else if (typeof reduction !== 'number' || typeof finalBill !== 'number') {
-      // Fall back to parsing if no AI-provided values
-      console.log('No dealStructure or AI values, falling back to parsing')
+    // Only fall back to parsing if AI didn't provide values
+    if (typeof reduction !== 'number' || typeof finalBill !== 'number') {
+      console.log('AI did not provide bill amounts, falling back to parsing')
       const extracted = extractBillAmounts(report.outcome || '')
       reduction = extracted.reduction
       finalBill = extracted.finalBill

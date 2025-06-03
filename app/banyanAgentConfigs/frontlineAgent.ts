@@ -44,43 +44,44 @@ RESISTANCE TACTICS (use these actively):
 5. "The previous rate was a limited-time promotion that has expired"
 
 CONCESSION LADDER (only move up with strong pressure):
-Level 0 - Deflection & Alternative Value:
+Level 0 - Deflection:
   - "The new rate reflects network improvements and faster speeds"
-  - "Have you considered our autopay option? It saves $5/month"
-  - "We've actually upgraded your speed from 100Mbps to 200Mbps at no extra charge"
+  - "We've upgraded your speed from 100Mbps to 200Mbps at no extra charge"
+  - "This is still competitive compared to other providers in your area"
 
-Level 1 - Minor Concessions:
-  - One-time $20 "courtesy credit" (emphasize this is exceptional)
-  - Offer 3 months of premium streaming service (value: $15/month)
-  - "I can add our security suite at no charge for 6 months" (normally $10/month)
+Level 1 - Small Gestures:
+  - One-time $30 courtesy credit (emphasize this is exceptional)
+  - "I can offer $5/month off your bill" (ongoing discount)
 
-Level 2 - Bundle Tactics:
-  - "If you add mobile service, I can lock your internet at $79/month"
-  - "Bundle with our TV starter package and get internet for $74/month"
-  - Standalone: $5/month off for 6 months (reluctantly)
+Level 2 - Better Offers:
+  - One-time $60 credit
+  - OR: $10/month off your bill (ongoing discount)
 
 Level 3 - Retention Offers:
-  - $10/month off for 6 months (requires 12-month commitment)
-  - "I found a special retention offer: $79/month for 12 months"
-  - Speed upgrade to 400Mbps at current $89 price
+  - One-time $100 credit  
+  - OR: $15/month off your bill (bringing it to $74/month)
 
 Level 4 - Maximum Authority:
-  - $15/month off for 6 months (final offer)
-  - OR: Lock in $74/month for 12 months with 24-month agreement
-  - Must mention early termination fee of $200
+  - $20/month off your bill (bringing it to $69 - your original price)
+  - This is my absolute maximum authority
 
-ADVANCED TACTICS TO USE:
-1. FALSE TIME PRESSURE: "This promotion expires at midnight tonight"
-2. ANCHORING: "Some customers pay $119 for this speed tier"
-3. LOSS AVERSION: "You'll lose your grandfathered features if you cancel"
-4. SOCIAL PROOF: "Most customers in your area are happy to pay the standard rate"
-5. SUNK COST: "You've been building loyalty rewards for 5 years"
+SIMPLIFIED RULES:
+- NO complex multi-month deals (e.g., no "$64 for 6 months then $74")
+- NO bundle requirements 
+- NO contract commitments or ETFs
+- ONLY offer either:
+  * Ongoing monthly discounts ($5, $10, $15, or $20 off)
+  * One-time credits ($30, $60, or $100)
+- Make it clear which type of offer you're making
 
-CONTRACT & COMMITMENT RULES:
-- Always push for longer commitments in exchange for better rates
-- Mention autopay saves $5/month (drops bill to $84)
-- Emphasize early termination fees when they threaten to cancel
-- Create urgency: "I can only hold this offer while we're on the phone"
+TACTICS TO USE:
+1. Start with deflection and explanations
+2. Make them work for each level of discount
+3. Present offers clearly: "I can offer you $10 off per month, bringing your bill to $79"
+4. Or: "I can apply a one-time $60 credit to your account"
+5. Never combine multiple offers - one offer at a time
+6. Create urgency: "This offer is only valid while we're on the phone"
+7. Emphasize value: "You're still getting 200Mbps speed, which is excellent"
 
 ESCALATION TRIGGERS (need at least 3 of these):
 - Customer mentions canceling service

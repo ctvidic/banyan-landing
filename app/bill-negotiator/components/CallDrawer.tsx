@@ -32,21 +32,20 @@ export function CallDrawer({ activeTab, onTabChange, messages, isMobile = false 
 
   const renderTips = () => (
     <div>
-      <h3 className="font-semibold mb-2">Advanced Negotiation Playbook</h3>
+      <h3 className="font-semibold mb-2">Negotiation Strategy Guide</h3>
       <ul className="list-disc pl-5 text-gray-700 text-sm space-y-2">
-        <li><strong>The Loyalty Opener:</strong> "I've been a customer for X years, paying on time, and this 30% increase with no notice is unacceptable."</li>
-        <li><strong>Competition Card:</strong> "AT&T offered me $55/month" or "Xfinity has 400Mbps for $60" - specific speeds/prices help.</li>
-        <li><strong>Reject & Escalate:</strong> When offered $5 off: "That's insulting for a loyal customer. I need to speak with retention/supervisor."</li>
-        <li><strong>Bundle Defense:</strong> "I only need internet. Don't try to sell me services I don't want to justify your price increase."</li>
-        <li><strong>The Ultimatum:</strong> "I have the competitor's number ready. Either match my old rate or I'm switching today."</li>
-        <li><strong>Contract Negotiation:</strong> "I'll accept $74 but with no contract" or "I want a 24-month price lock guarantee."</li>
-        <li><strong>Speed Play:</strong> "I don't need faster speeds. I was happy with 100Mbps at $69."</li>
-        <li><strong>Calculate Total:</strong> If offered credits: "So that's $20 credit plus $5 off = effectively $84 this month, then $84 ongoing?"</li>
-        <li><strong>Supervisor Magic Words:</strong> "What's your best retention offer?" and "What would it take to keep me as a customer?"</li>
-        <li><strong>The Close:</strong> When you get $69 or better: "OK, I'll accept that. Please email confirmation of this rate and terms."</li>
+        <li><strong>Open Strong:</strong> "I've been a loyal customer for X years. This 30% increase with no notice is unacceptable."</li>
+        <li><strong>Use Competition:</strong> "AT&T offers $55/month" or "Verizon has $60 plans" - mention specific competitors and prices.</li>
+        <li><strong>Reject Low Offers:</strong> If offered only $5 off: "That's not enough. I need you to do better or transfer me to someone who can."</li>
+        <li><strong>Escalate Fast:</strong> "I need to speak with retention or a supervisor who has real authority to help me."</li>
+        <li><strong>Be Clear:</strong> "I want my bill back to $69 or I'm canceling today."</li>
+        <li><strong>Understand Credits:</strong> A "$60 credit" only saves you $5/month over a year. Push for monthly discounts instead.</li>
+        <li><strong>Know the Levels:</strong> Frontline max is $20 off. Supervisors can do $30 off. Don't settle for less than you deserve.</li>
+        <li><strong>Magic Words:</strong> With supervisor: "What's your best retention offer?" and "What will it take to keep me?"</li>
+        <li><strong>Close the Deal:</strong> When you get a good offer: "OK, I'll accept that. Please confirm the new rate."</li>
       </ul>
       <div className="mt-3 p-2 bg-amber-50 rounded text-xs">
-        <strong>Pro tip:</strong> The supervisor has more authority. If the frontline agent won't budge after 2-3 attempts, escalate immediately.
+        <strong>Quick Guide:</strong> Credits are worse than Monthly Discounts. Supervisors have more power than Frontline. Goal: Get to $69 or below!
       </div>
     </div>
   );

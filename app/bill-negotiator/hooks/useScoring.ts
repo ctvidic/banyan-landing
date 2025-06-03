@@ -10,14 +10,6 @@ interface ScoreReport {
   finalBill?: number;
   reduction?: number;
   starCount?: number;
-  dealStructure?: {
-    type: "simple" | "graduated" | "complex";
-    details: string;
-    contractLength?: number;
-    hasAutopay?: boolean;
-    oneTimeCredits?: number;
-    effectiveMonthlyRate: number;
-  };
   error?: string;
   details?: string;
   text?: string;

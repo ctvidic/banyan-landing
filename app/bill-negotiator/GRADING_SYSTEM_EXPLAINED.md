@@ -16,6 +16,13 @@ The scoring system identifies and grades ONLY the final offer you accepted, igno
 **What Gets Scored:** Only the $69/month deal (4 stars!)  
 **What Gets Ignored:** The $5 and $10 offers you rejected
 
+### How We Identify Your Final Deal
+
+1. **Explicit Acceptance**: You say "OK", "Deal", "I'll take it", "That works"
+2. **Agent Confirmation**: Agent says "I've applied that to your account"
+3. **Call Ended During Discussion**: The last offer being discussed
+4. **No Deal Reached**: You pay full price ($89/month)
+
 ### Deal Types We Handle
 
 #### 1. **Simple Monthly Discounts**
@@ -85,9 +92,71 @@ You can earn up to +1 star for:
 - Effective: $64/month
 - Grade: ⭐⭐⭐⭐⭐ + bonus (exceptional!)
 
-### How We Identify Your Final Deal
+# Bill Negotiator - Simple & Fair Grading System
 
-1. **Explicit Acceptance**: You say "OK", "Deal", "I'll take it", "That works"
-2. **Agent Confirmation**: Agent says "I've applied that to your account"
-3. **Call Ended During Discussion**: The last offer being discussed
-4. **No Deal Reached**: You pay full price ($89/month) 
+## How We Calculate Your Score
+
+The grading system evaluates your negotiation based on your **final accepted deal**. Your starting bill is $89/month.
+
+### Important: Only Your Final Deal Counts!
+
+The scoring system grades ONLY the final offer you accepted, ignoring all rejected offers.
+
+**Example:**
+- Agent: "I can offer $5 off" → You: "Not enough"
+- Agent: "How about $10 off?" → You: "Need better"  
+- Agent: "Best I can do is $20 off" → You: "OK, deal"
+
+**What Gets Scored:** Only the $20 off (final bill: $69/month) → 4 stars!
+
+### Two Types of Offers
+
+#### Type A: Monthly Discount
+- **What it is:** Permanent reduction to your monthly bill
+- **Example:** "$15 off per month"
+- **Calculation:** $89 - $15 = $74/month
+- **Your bill:** $74 every month going forward
+
+#### Type B: One-Time Credit
+- **What it is:** A credit applied once to your account
+- **Example:** "$120 credit"
+- **Your monthly bill:** Still $89 (no change)
+- **For scoring:** We spread it over 12 months
+- **Effective rate:** $89 - ($120÷12) = $79/month
+
+### Star Rating System
+
+| Your Effective Monthly Rate | Stars | What It Means |
+|-----------------------------|-------|---------------|
+| $85-89 | ⭐ | Minimal savings |
+| $80-84 | ⭐⭐ | Small savings |
+| $70-79 | ⭐⭐⭐ | Good negotiation! |
+| $69 | ⭐⭐⭐⭐ | Back to original price! |
+| $59-68 | ⭐⭐⭐⭐⭐ | Exceptional deal! |
+
+**Bonus:** +0.5 star if you successfully escalated to a supervisor
+
+### Clear Examples
+
+**Example 1: Monthly Discount**
+- Deal: "$20 off per month"
+- Your new bill: $89 - $20 = $69/month
+- Rating: ⭐⭐⭐⭐ (4 stars!)
+
+**Example 2: One-Time Credit**
+- Deal: "$60 credit"
+- Your bill stays: $89/month
+- Effective over 12 months: $89 - ($60÷12) = $84/month
+- Rating: ⭐⭐ (2 stars)
+
+**Example 3: Best Possible Deal**
+- Deal: "$30 off per month" (with supervisor)
+- Your new bill: $89 - $30 = $59/month
+- Rating: ⭐⭐⭐⭐⭐ + bonus = 5 stars!
+
+### Why This System Is Fair
+
+1. **Simple Math**: No complex calculations or confusing deals
+2. **Transparent**: You know exactly what you're getting
+3. **Rewards Persistence**: Better deals require more negotiation
+4. **Real Savings**: Focuses on actual monthly reduction 

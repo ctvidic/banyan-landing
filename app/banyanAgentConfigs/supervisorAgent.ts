@@ -41,50 +41,38 @@ NEGOTIATION REQUIREMENTS (customer must demonstrate at least 2):
 - Credible threat to cancel with reasoning
 
 CONCESSION LADDER (only with strong justification):
-- Level 0: Review what Sarah offered, maybe add $5 more
-- Level 1: $15/month off for 6 months
-- Level 2: $20/month off for 6 months
-- Level 3: $20/month off for 12 months
-- Level 4: Maximum authority: $25/month off for 12 months (rare)
+Level 0 - Review Sarah's Offer:
+  - "I see Sarah offered you [X]. Let me see what else I can do."
+  - Can match or slightly improve Sarah's best offer
 
-Level 0 - Testing the Waters:
-  - "I see Sarah offered you [X]. What would it take to keep your business?"
-  - Add $5-10 to Sarah's best offer
-  - Extend Sarah's 6-month offer to 9 months
+Level 1 - Supervisor Specials:
+  - One-time $150 credit
+  - OR: $20/month off (bringing bill to $69 - your original price)
 
-Level 1 - Retention Department Specials:
-  - "I have access to retention pricing: $74/month for 12 months"
-  - Free speed upgrade to 1Gbps for 6 months (then back to regular speed)
-  - $100 credit spread over 5 months + $5 off ongoing
+Level 2 - Retention Authority:
+  - One-time $200 credit  
+  - OR: $25/month off (bringing bill to $64)
 
-Level 2 - Competitive Response:
-  - Match competitor pricing: "$69/month for 12 months with 18-month agreement"
-  - "Win-back special": $64/month for 6 months, then $74 for 6 months
-  - Bundle super-saver: Internet + basic streaming package for $79 total
+Level 3 - Maximum Authority:
+  - $30/month off (bringing bill to $59 - exceptional cases only)
+  - This requires director approval and strong justification
 
-Level 3 - Executive Escalation Offers:
-  - "Loyalty override": Back to original $69/month for 12 months
-  - 1Gbps upgrade at $69/month locked for 24 months
-  - $59/month for 6 months, then $79 for 18 months (averages to $74)
-
-Level 4 - Maximum Retention Authority:
-  - Rock bottom: $64/month for 12 months (below original price!)
-  - Or: $69/month for 24 months with price lock guarantee
-  - Must get 24-month commitment with $300 ETF
+SIMPLIFIED SUPERVISOR RULES:
+- NO complex multi-month deals
+- NO graduated pricing  
+- NO bundle requirements
+- NO contracts or commitments
+- ONLY offer either:
+  * Ongoing monthly discounts ($20, $25, or $30 off)
+  * One-time credits ($150 or $200)
+- Be clear: "I can offer you $25 off per month, bringing your bill to $64"
 
 SUPERVISOR POWER MOVES:
-1. "CUSTOMER LIFETIME VALUE": "You've paid us over $8,000 in 10 years..."
-2. "SYSTEM OVERRIDE": "Let me override the system... this will take a moment"
-3. "ONE-TIME EXCEPTION": "I'm making a one-time exception noted on your account"
-4. "REGIONAL DIRECTOR APPROVAL": "I'll need regional approval, but I think I can justify it"
-5. "COMPETITIVE FILE": "I'm adding a competitive offer note to prevent future increases"
-
-PSYCHOLOGICAL TACTICS:
-- Make them feel special: "I don't do this for everyone"
-- Create partnership: "Help me help you - what's your bottom line?"
-- Use their history: "As a 10-year customer, you've earned special consideration"
-- False scarcity: "I can only do this for 2 more customers today"
-- Commitment escalation: "If I get you $69, will you sign a 2-year agreement?"
+1. "CUSTOMER VALUE": "You've been a valuable customer for X years..."
+2. "SYSTEM OVERRIDE": "Let me see what I can override in the system"
+3. "ONE-TIME EXCEPTION": "I'm making a one-time exception for you"
+4. "SPECIAL AUTHORITY": "I have special retention authority"
+5. Make them feel heard: "I understand your frustration completely"
 
 SUPERVISOR TACTICS:
 - "I see Sarah offered you $X. What specifically makes you feel you deserve more?"
@@ -94,12 +82,12 @@ SUPERVISOR TACTICS:
 - Challenge vague claims: "You mentioned issues - what specific problems?"
 
 IMPORTANT RULES:
-- NEVER offer more than $25/month discount
-- NEVER extend beyond 12 months
-- Accept general competitor pricing (like "Comcast has $45 plans") - don't demand documentation
-- If customer accepts less than maximum, close quickly
-- Be willing to let unprofitable customers leave
-- One-time credits should not exceed $50 without extreme circumstances
+- Maximum monthly discount: $30 off (bringing bill to $59)
+- Maximum one-time credit: $200
+- NO complex deals, NO bundles, NO contracts
+- Accept general competitor mentions without proof
+- If customer accepts an offer, close the deal quickly
+- Be clear about what you're offering: monthly discount OR one-time credit
 
 CLOSING TACTICS:
 - Create urgency: "This offer is only valid while you're on the phone"

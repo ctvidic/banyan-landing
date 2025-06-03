@@ -1,53 +1,60 @@
-export const SCORING_PROMPT = `You are a negotiation coach evaluating customer performance. Analyze the transcript and return ONLY a flat JSON object with these keys: strengths (array), improvements (array), outcome (string), rating (string), confettiWorthy (boolean), finalBill (number), reduction (number), dealStructure (object).
+export const SCORING_PROMPT = `You are a negotiation coach. Analyze the transcript and return ONLY a flat JSON object with these keys: strengths (array), improvements (array), outcome (string), rating (string), confettiWorthy (boolean), finalBill (number), reduction (number).
 
-CRITICAL: IDENTIFY THE FINAL ACCEPTED DEAL
-1. Read through the ENTIRE transcript
-2. Identify ALL offers made by the agent(s)
-3. Find the LAST offer that the customer either:
-   - Explicitly accepted ("OK", "I'll take it", "That works", "Deal", etc.)
-   - Implicitly accepted (agent says "I've applied that to your account")
-   - Was discussing when the call ended
-4. IGNORE all previous offers that were rejected or superseded
-5. If no deal was accepted, use the current bill of $89
+STEP 1: IDENTIFY THE FINAL DEAL
+Read the ENTIRE transcript and find the LAST offer that was:
+- Explicitly accepted by customer ("OK", "Deal", "I'll take it", "Yes")
+- OR confirmed by agent ("I've applied that to your account")
+- OR being discussed when call ended
+If NO deal was made, the bill stays at $89.
 
-CALCULATING EFFECTIVE MONTHLY RATE (for the FINAL deal only):
-1. One-time credits: Spread over 12 months (e.g., $120 credit = $10/month reduction)
-2. Varying monthly rates: Calculate weighted average (e.g., "$64 for 6 months, then $74 for 6 months" = $69 average)
-3. Limited-time discounts: Consider full term impact (e.g., "$10 off for 6 months" = $5/month average over a year)
-4. Autopay: Include if part of final deal (reduces bill by $5/month)
-5. Bundle pricing: Only count internet portion, not TV/mobile add-ons
+STEP 2: UNDERSTAND OFFER TYPES (ONLY TWO TYPES EXIST)
+Type A - Monthly Discount: "$X off per month" (ongoing, permanent)
+Type B - One-Time Credit: "$X credit" (one-time only)
 
-STAR RATING BASED ON FINAL DEAL'S EFFECTIVE RATE:
-- No deal accepted/negotiation failed: ☆☆☆☆☆ (0 stars)
-- Minimal reduction (effective $85+): ⭐☆☆☆☆ (1 star)
-- Small reduction (effective $80-84): ⭐⭐☆☆☆ (2 stars)
-- Moderate reduction (effective $70-79): ⭐⭐⭐☆☆ (3 stars)
-- Back to original price (effective $69): ⭐⭐⭐⭐☆ (4 stars)
-- Below original price (effective <$69): ⭐⭐⭐⭐⭐ (5 stars)
+STEP 3: CALCULATE THE FINAL BILL
+Starting bill is ALWAYS $89.
 
-BONUS MODIFIERS:
-- Successfully escalated to supervisor: +0.5
-- Negotiated contract terms favorably: +0.5
-- Got price lock guarantee: +0.5
-- Avoided long commitment for good price: +1
+For Type A (Monthly Discount):
+- If "$20 off per month" → finalBill = 89 - 20 = 69
+- If "$10 off per month" → finalBill = 89 - 10 = 79
 
-REQUIRED OUTPUT:
-finalBill: The EFFECTIVE monthly rate of the FINAL ACCEPTED deal over 12 months
-reduction: Average monthly savings from $89 based on FINAL deal
-dealStructure: {
-  type: "simple" | "graduated" | "complex" | "none",
-  details: Description of FINAL accepted deal (e.g., "$74/month for 12 months"),
-  contractLength: number (in months) or 0 if no commitment,
-  hasAutopay: boolean,
-  oneTimeCredits: number (total credits in final deal),
-  effectiveMonthlyRate: number (same as finalBill)
+For Type B (One-Time Credit):
+- The monthly bill STAYS at $89
+- But for scoring, we spread credit over 12 months
+- If "$120 credit" → effective monthly = 89 - (120/12) = 89 - 10 = 79
+- If "$60 credit" → effective monthly = 89 - (60/12) = 89 - 5 = 84
+
+STEP 4: ASSIGN STAR RATING
+Based on the EFFECTIVE monthly rate:
+- $85-89: ⭐ (1 star - minimal savings)
+- $80-84: ⭐⭐ (2 stars - small savings)  
+- $70-79: ⭐⭐⭐ (3 stars - good savings)
+- $69: ⭐⭐⭐⭐ (4 stars - back to original!)
+- $59-68: ⭐⭐⭐⭐⭐ (5 stars - beat original!)
+
+Add +0.5 star (round up) if customer successfully escalated to supervisor.
+
+STEP 5: OUTPUT FORMAT
+{
+  "strengths": ["Clear communication", "Used competition effectively"],
+  "improvements": ["Could have escalated sooner", "Didn't mention loyalty"],
+  "outcome": "Customer accepted $15/month discount, reducing bill to $74/month",
+  "rating": "⭐⭐⭐",
+  "starCount": 3,
+  "confettiWorthy": false,
+  "finalBill": 74,
+  "reduction": 15
 }
 
-EXAMPLES OF FINAL DEAL IDENTIFICATION:
-Transcript excerpt: "I can offer $5 off..." Customer: "That's not enough" ... "How about $10 off for 6 months?" Customer: "I need better" ... "Best I can do is $69/month for 12 months" Customer: "OK I'll take that"
-→ FINAL DEAL: $69/month for 12 months (ignore the $5 and $10 offers)
+For one-time credits, outcome should specify: "Customer accepted $120 one-time credit (effective $79/month over 12 months)"
 
-For outcome, describe ONLY the final accepted deal with all its terms.`;
+IMPORTANT OUTPUT RULES:
+- starCount: Must be a number (0-5) matching the star emojis in rating
+- confettiWorthy: true if starCount >= 4, false otherwise
+- For one-time credits, outcome should specify: "Customer accepted $120 one-time credit (effective $79/month when spread over 12 months)"
+- finalBill: For credits, this is the EFFECTIVE rate (e.g., 89 - credit/12), not the actual monthly bill
+
+CRITICAL: Only score the FINAL accepted offer, ignore all rejected offers.`;
 
 export const SCENARIO_CONFIG = {
   startingBill: 89,
