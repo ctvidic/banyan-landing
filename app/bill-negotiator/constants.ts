@@ -8,21 +8,28 @@ Read the ENTIRE transcript and find the LAST offer that was:
 If NO deal was made, the bill stays at $89.
 
 STEP 2: UNDERSTAND OFFER TYPES (ONLY TWO TYPES EXIST)
-Type A - Monthly Discount: "$X off per month" (ongoing, permanent)
-Type B - One-Time Credit: "$X credit" (one-time only)
+Type A - Monthly Discount: Contains "off per month" or "off your bill" or "/month off"
+Type B - One-Time Credit: Contains "credit" or "one-time" (NO monthly reduction)
+
+CRITICAL: DO NOT CONFUSE THESE TWO TYPES!
+- "$60 credit" is NOT the same as "$60 off per month"
+- "$60 credit" = Type B (one-time)
+- "$60 off per month" = Type A (monthly)
 
 STEP 3: CALCULATE THE FINAL BILL
 Starting bill is ALWAYS $89.
 
 For Type A (Monthly Discount):
-- If "$20 off per month" → finalBill = 89 - 20 = 69
-- If "$10 off per month" → finalBill = 89 - 10 = 79
+- Customer's actual new monthly bill = $89 - discount
+- Example: "$20 off per month" → finalBill = 89 - 20 = 69
+- Example: "$10 off per month" → finalBill = 89 - 10 = 79
 
 For Type B (One-Time Credit):
-- The monthly bill STAYS at $89
-- But for scoring, we spread credit over 12 months
-- If "$120 credit" → effective monthly = 89 - (120/12) = 89 - 10 = 79
-- If "$60 credit" → effective monthly = 89 - (60/12) = 89 - 5 = 84
+- Customer's actual monthly bill STAYS at $89
+- For scoring only: effective rate = $89 - (credit ÷ 12)
+- Example: "$120 credit" → effective = 89 - (120÷12) = 89 - 10 = 79
+- Example: "$60 credit" → effective = 89 - (60÷12) = 89 - 5 = 84
+- Example: "$30 credit" → effective = 89 - (30÷12) = 89 - 2.50 = 86.50
 
 STEP 4: ASSIGN STAR RATING
 Based on the EFFECTIVE monthly rate:
@@ -34,25 +41,39 @@ Based on the EFFECTIVE monthly rate:
 
 Add +0.5 star (round up) if customer successfully escalated to supervisor.
 
-STEP 5: OUTPUT FORMAT
+STEP 5: OUTPUT FORMAT AND RULES
+
+For Monthly Discounts (Type A), your outcome MUST say:
+"Customer accepted $[X] off per month, reducing bill from $89 to $[Y]/month"
+
+For One-Time Credits (Type B), your outcome MUST say:
+"Customer accepted $[X] one-time credit (bill stays $89/month, but effective rate is $[Y]/month when spread over 12 months)"
+
+Example outputs:
+
+For $20/month discount:
 {
-  "strengths": ["Clear communication", "Used competition effectively"],
-  "improvements": ["Could have escalated sooner", "Didn't mention loyalty"],
-  "outcome": "Customer accepted $15/month discount, reducing bill to $74/month",
-  "rating": "⭐⭐⭐",
-  "starCount": 3,
-  "confettiWorthy": false,
-  "finalBill": 74,
-  "reduction": 15
+  "strengths": ["Used competition effectively", "Escalated to supervisor"],
+  "improvements": ["Could have mentioned loyalty earlier"],
+  "outcome": "Customer accepted $20 off per month, reducing bill from $89 to $69/month",
+  "rating": "⭐⭐⭐⭐",
+  "starCount": 4,
+  "confettiWorthy": true,
+  "finalBill": 69,
+  "reduction": 20
 }
 
-For one-time credits, outcome should specify: "Customer accepted $120 one-time credit (effective $79/month over 12 months)"
-
-IMPORTANT OUTPUT RULES:
-- starCount: Must be a number (0-5) matching the star emojis in rating
-- confettiWorthy: true if starCount >= 4, false otherwise
-- For one-time credits, outcome should specify: "Customer accepted $120 one-time credit (effective $79/month when spread over 12 months)"
-- finalBill: For credits, this is the EFFECTIVE rate (e.g., 89 - credit/12), not the actual monthly bill
+For $60 credit:
+{
+  "strengths": ["Clear communication", "Persistent"],
+  "improvements": ["Should have pushed for monthly discount instead of credit"],
+  "outcome": "Customer accepted $60 one-time credit (bill stays $89/month, but effective rate is $84/month when spread over 12 months)",
+  "rating": "⭐⭐",
+  "starCount": 2,
+  "confettiWorthy": false,
+  "finalBill": 84,
+  "reduction": 5
+}
 
 CRITICAL: Only score the FINAL accepted offer, ignore all rejected offers.`;
 

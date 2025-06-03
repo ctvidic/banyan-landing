@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   // New structured call
   const { sysPrompt, messages } = body
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",                    // cheaper & faster; change if you like
+    model: "gpt-4o",                    // Using full model for better accuracy
     messages: [
       { role: "system", content: sysPrompt },
       ...messages,
