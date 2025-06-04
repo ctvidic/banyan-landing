@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Preview - Banyan Waitlist</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .preview-section {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+    .preview-header {
+      background: #10b981;
+      color: white;
+      padding: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .preview-meta {
+      background: #f8f9fa;
+      padding: 15px 20px;
+      border-bottom: 1px solid #e5e5e5;
+      font-size: 14px;
+      color: #666;
+    }
+    .preview-content {
+      padding: 20px;
+    }
+    .email-frame {
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .plain-text {
+      white-space: pre-wrap;
+      font-family: monospace;
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 4px;
+    }
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .comparison {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align: center; color: #333; margin-bottom: 40px;">Banyan Waitlist Email Preview</h1>
+    
+    <!-- HTML Email Preview -->
+    <div class="preview-section">
+      <div class="preview-header">HTML Email Version</div>
+      <div class="preview-meta">
+        <strong>From:</strong> Banyan &lt;your-email@domain.com&gt;<br>
+        <strong>To:</strong> user@example.com<br>
+        <strong>Subject:</strong> Welcome to Banyan
+      </div>
+      <div class="preview-content">
+        <div class="email-frame">
+          <!-- Email HTML content -->
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="padding: 20px 0; text-align: left; margin-bottom: 20px;">
+              <h1 style="color: #10b981; margin: 0; font-size: 24px; font-weight: normal;">Thanks for joining Banyan!</h1>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+              <p style="font-size: 16px; margin-bottom: 15px;">Hi there,</p>
+              
+              <p style="margin-bottom: 15px;">Thank you for your interest in Banyan. We're working hard to create a unique platform where teenagers can develop real financial literacy skills through hands-on learning.</p>
+              
+              <p style="margin-bottom: 15px;">As an early supporter, you'll be among the first to know when we launch. We're currently in development and expect to have something ready to share in the coming months.</p>
+              
+              <p style="margin-bottom: 15px;">What makes Banyan different:</p>
+              
+              <ul style="margin-bottom: 20px; padding-left: 20px;">
+                <li style="margin-bottom: 8px;">Practical financial education designed specifically for teens</li>
+                <li style="margin-bottom: 8px;">Interactive learning experiences that make complex topics accessible</li>
+                <li style="margin-bottom: 8px;">A safe environment to practice real-world money management</li>
+              </ul>
+              
+              <p style="margin-bottom: 15px;">If you have any questions or feedback, please don't hesitate to reply to this email. We'd love to hear from you.</p>
+            </div>
+            
+            <p style="margin-bottom: 20px;">Best regards,<br>
+            The Banyan Team</p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 30px 0;">
+            
+            <div style="color: #666; font-size: 14px;">
+              <p style="margin: 0;">Banyan Financial Education</p>
+              <p style="margin: 5px 0; font-size: 12px; color: #999;">You're receiving this because you signed up for our waitlist.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plain Text Email Preview -->
+    <div class="preview-section">
+      <div class="preview-header">Plain Text Email Version</div>
+      <div class="preview-meta">
+        <strong>From:</strong> Banyan &lt;your-email@domain.com&gt;<br>
+        <strong>To:</strong> user@example.com<br>
+        <strong>Subject:</strong> Welcome to Banyan
+      </div>
+      <div class="preview-content">
+        <div class="plain-text">Hi there,
+
+Thank you for your interest in Banyan. We're working hard to create a unique platform where teenagers can develop real financial literacy skills through hands-on learning.
+
+As an early supporter, you'll be among the first to know when we launch. We're currently in development and expect to have something ready to share in the coming months.
+
+What makes Banyan different:
+- Practical financial education designed specifically for teens
+- Interactive learning experiences that make complex topics accessible
+- A safe environment to practice real-world money management
+
+If you have any questions or feedback, please don't hesitate to reply to this email. We'd love to hear from you.
+
+Best regards,
+The Banyan Team
+
+---
+Banyan Financial Education
+You're receiving this because you signed up for our waitlist.</div>
+      </div>
+    </div>
+
+    <!-- Side by Side Comparison -->
+    <div class="preview-section">
+      <div class="preview-header">Before vs After Comparison</div>
+      <div class="preview-content">
+        <div class="comparison">
+          <div>
+            <h3 style="color: #666; margin-bottom: 15px;">❌ Before (Promotional)</h3>
+            <ul style="color: #666; line-height: 1.8;">
+              <li>Subject: "🌿 Welcome to the Banyan Waitlist!"</li>
+              <li>Heavy use of emojis (🌱 💰 📚 🎉)</li>
+              <li>Gradient backgrounds</li>
+              <li>"Earn up to $40/month" messaging</li>
+              <li>"Share with friends" call-to-action</li>
+              <li>Generic "Team" signature</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color: #10b981; margin-bottom: 15px;">✅ After (Personal)</h3>
+            <ul style="color: #333; line-height: 1.8;">
+              <li>Subject: "Welcome to Banyan"</li>
+              <li>Clean, minimal design</li>
+              <li>Educational focus</li>
+              <li>Professional team signature</li>
+              <li>Clear value proposition</li>
+              <li>Encourages replies</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="preview-section">
+      <div class="preview-header">Email Deliverability Tips</div>
+      <div class="preview-content">
+        <h3 style="color: #333; margin-bottom: 15px;">Why This Design Helps:</h3>
+        <ol style="line-height: 1.8;">
+          <li><strong>Personal tone:</strong> Emails from real people go to primary inbox</li>
+          <li><strong>No promotional language:</strong> Avoids spam triggers</li>
+          <li><strong>Clean design:</strong> Less HTML = better deliverability</li>
+          <li><strong>Reply encouragement:</strong> Engagement signals improve reputation</li>
+          <li><strong>Clear unsubscribe:</strong> Shows legitimacy to email providers</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</body>
+</html> 
