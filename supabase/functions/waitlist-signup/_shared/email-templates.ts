@@ -84,14 +84,56 @@ export function getAdminNotificationHtml(email: string): string {
   })
   
   return `
-🎉 New Waitlist Signup!
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Waitlist Signup</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="padding: 20px 0; text-align: left; margin-bottom: 20px;">
+    <h1 style="color: #10b981; margin: 0; font-size: 20px; font-weight: normal;">🎉 New Banyan Waitlist Signup!</h1>
+  </div>
+  
+  <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+    <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${email}</p>
+    <p style="margin: 0 0 10px 0;"><strong>Time:</strong> ${timestamp}</p>
+    <p style="margin: 0;"><strong>Source:</strong> Landing Page</p>
+  </div>
+  
+  <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 20px 0;">
+  
+  <div style="color: #666; font-size: 14px;">
+    <p style="margin: 0;">View all signups in your <a href="https://zmkodllxauzgwaebwmtj.supabase.co/project/zmkodllxauzgwaebwmtj" style="color: #10b981;">Supabase dashboard</a>.</p>
+  </div>
+</body>
+</html>
+`.trim()
+}
+
+// Admin notification template (plain text version)
+export function getAdminNotificationText(email: string): string {
+  const timestamp = new Date().toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })
+  
+  return `
+🎉 New Banyan Waitlist Signup!
 
 Email: ${email}
 Time: ${timestamp}
 Source: Landing Page
 
 ---
-Total signups can be viewed in your Supabase dashboard.
+View all signups in your Supabase dashboard:
+https://zmkodllxauzgwaebwmtj.supabase.co/project/zmkodllxauzgwaebwmtj
 `.trim()
 }
 

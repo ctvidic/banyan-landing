@@ -282,8 +282,7 @@ enabled = true
 policy = "oneshot"
 # Port to attach the Chrome inspector for debugging edge functions.
 inspector_port = 8083
-# The Deno major version to use.
-deno_major_version = 1
+# The Deno major version configuration is deprecated and no longer needed
 
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
