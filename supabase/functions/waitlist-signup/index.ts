@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { corsHeaders, validateEmail } from "./_shared/validation.ts"
-import { getWelcomeEmailHtml, getWelcomeEmailText, getAdminNotificationHtml } from "./_shared/email-templates.ts"
+import { getWelcomeEmailHtml, getWelcomeEmailText, getAdminNotificationHtml, getAdminNotificationText } from "./_shared/email-templates.ts"
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -34,6 +34,8 @@ serve(async (req) => {
     const resendApiKey = Deno.env.get('RESEND_API_KEY')!
     const fromEmail = Deno.env.get('FROM_EMAIL')!
     const adminEmail = Deno.env.get('ADMIN_EMAIL')!
+    // Parse comma-separated admin emails into array
+    const adminEmails = adminEmail.split(',').map(email => email.trim())
 
     // Try to insert email into database
     const { data, error } = await supabase
@@ -105,10 +107,10 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: `Banyan Notifications <${fromEmail}>`,
-        to: adminEmail,
+        to: adminEmails,
         subject: 'New Banyan Waitlist Signup',
         html: getAdminNotificationHtml(email),
-        text: getAdminNotificationHtml(email)
+        text: getAdminNotificationText(email)
       }),
     })
 
