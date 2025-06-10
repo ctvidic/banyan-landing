@@ -796,9 +796,44 @@ export function useRealtimeNegotiation({
   const handleServerEvent = useCallback((eventString: string) => {
     let serverEvent;
     try {
-      serverEvent = JSON.parse(eventString);
+      // Validate the eventString before parsing
+      if (!eventString || typeof eventString !== 'string') {
+        console.error("REALTIME_HOOK_DEBUG: Invalid event string received:", typeof eventString, eventString);
+        return;
+      }
+
+      // Trim whitespace that might cause parsing issues
+      const trimmedEventString = eventString.trim();
+      
+      // Check if the string looks like JSON (starts with { or [)
+      if (!trimmedEventString.startsWith('{') && !trimmedEventString.startsWith('[')) {
+        console.error("REALTIME_HOOK_DEBUG: Non-JSON event string received (likely error message):", trimmedEventString.substring(0, 200));
+        
+        // If it looks like an error message, handle it gracefully
+        if (trimmedEventString.toLowerCase().includes('error') || 
+            trimmedEventString.toLowerCase().includes('internal') ||
+            trimmedEventString.toLowerCase().includes('server')) {
+          console.error("REALTIME_HOOK_DEBUG: Server error detected, setting session status to ERROR");
+          setSessionStatus("ERROR");
+          return;
+        }
+        
+        // For other non-JSON strings, just log and continue
+        return;
+      }
+
+      serverEvent = JSON.parse(trimmedEventString);
     } catch (error) {
-      console.error("REALTIME_HOOK_DEBUG: Failed to parse server event JSON:", error, "Event string:", eventString);
+      console.error("REALTIME_HOOK_DEBUG: Failed to parse server event JSON:", error);
+      console.error("REALTIME_HOOK_DEBUG: Event string:", eventString?.substring(0, 500) + (eventString?.length > 500 ? '...' : ''));
+      console.error("REALTIME_HOOK_DEBUG: Event string type:", typeof eventString);
+      console.error("REALTIME_HOOK_DEBUG: Event string length:", eventString?.length);
+      
+      // If we consistently get parsing errors, it might indicate a connection issue
+      if (sessionStatus === "CONNECTED") {
+        console.warn("REALTIME_HOOK_DEBUG: JSON parsing failed on connected session, possible connection degradation");
+      }
+      
       return;
     }
 

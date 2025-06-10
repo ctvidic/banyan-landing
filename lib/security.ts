@@ -122,7 +122,7 @@ export const saveScoreSchema = z.object({
 });
 
 export const chatRequestSchema = z.object({
-  prompt: z.string().max(5000).optional(),
+  prompt: z.string().max(15000).optional(),
   sysPrompt: z.string().max(2000).optional(),
   messages: z.array(z.object({
     role: z.enum(['user', 'assistant']),
@@ -136,7 +136,7 @@ export function sanitizeString(input: string): string {
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
     .replace(/<[^>]+>/g, '') // Remove HTML tags
     .trim()
-    .slice(0, 1000); // Limit length
+    .slice(0, 10000); // Increased from 1000 to 10000 to allow for transcripts
 }
 
 // Validate email format

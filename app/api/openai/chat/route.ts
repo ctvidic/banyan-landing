@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    console.log('Chat API received request. Body keys:', Object.keys(body));
+    console.log('Prompt length:', body.prompt?.length);
     
     // Validate and sanitize input
     const validationResult = chatRequestSchema.safeParse(body);
@@ -37,12 +39,21 @@ export async function POST(req: NextRequest) {
     // Legacy support - sanitize prompt
     if (prompt) {
       const sanitizedPrompt = sanitizeString(prompt);
+      console.log('Original prompt length:', prompt.length);
+      console.log('Sanitized prompt length:', sanitizedPrompt.length);
+      console.log('First 200 chars of sanitized prompt:', sanitizedPrompt.substring(0, 200));
+      console.log('Last 200 chars of sanitized prompt:', sanitizedPrompt.substring(sanitizedPrompt.length - 200));
+      
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [{ role: "user", content: sanitizedPrompt }],
         max_tokens: 1000, // Limit response length
         temperature: 0.7,
       });
+      
+      console.log('OpenAI response received. Content type:', typeof completion.choices[0].message.content);
+      console.log('OpenAI response first 200 chars:', completion.choices[0].message.content?.substring(0, 200));
+      
       return NextResponse.json({ text: completion.choices[0].message.content });
     }
 

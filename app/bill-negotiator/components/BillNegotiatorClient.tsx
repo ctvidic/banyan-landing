@@ -117,7 +117,27 @@ export default function BillNegotiatorClientV2() {
   // --- Stage 6: useEffects for dependent logic ---
   useEffect(() => {
     if (isCallEndedByAgent && !userRequestedDisconnect && messages.length > 0) { // ensure messages exist before scoring
-      const finalTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n")
+      // Filter out system messages and non-conversational content
+      const conversationalMessages = messages.filter(m => {
+        // Exclude system messages
+        if (m.text.startsWith("[System:") || m.text.startsWith("[Transcribing") || m.text === "[inaudible]") {
+          return false;
+        }
+        // Exclude simulated messages
+        if (m.id.startsWith("simulated-user-") || m.id.startsWith("system-")) {
+          return false;
+        }
+        return true;
+      });
+      
+      if (conversationalMessages.length === 0) {
+        console.warn("BN_CLIENT: No conversational messages found for scoring");
+        return;
+      }
+      
+      const finalTranscript = conversationalMessages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n")
+      console.log("BN_CLIENT: Sending transcript for scoring:", finalTranscript.substring(0, 200) + "...");
+      
       score(finalTranscript).then((finalReport) => {
         if (finalReport && !finalReport.error && !hasSubmittedEmail) {
           setShowEmailDialog(true)
@@ -203,11 +223,25 @@ export default function BillNegotiatorClientV2() {
     // Calculate call duration
     const callDuration = sessionStartTime ? (Date.now() - sessionStartTime) / 1000 : 0 // in seconds
     
+    // Filter out system messages and non-conversational content
+    const conversationalMessages = messages.filter(m => {
+      // Exclude system messages
+      if (m.text.startsWith("[System:") || m.text.startsWith("[Transcribing") || m.text === "[inaudible]") {
+        return false;
+      }
+      // Exclude simulated messages
+      if (m.id.startsWith("simulated-user-") || m.id.startsWith("system-")) {
+        return false;
+      }
+      return true;
+    });
+    
     // Trigger scoring when user ends call
-    const finalTranscript = messages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n")
+    const finalTranscript = conversationalMessages.map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n")
+    console.log("BN_CLIENT: User ended call. Transcript for scoring:", finalTranscript.substring(0, 200) + "...");
     
     // Check if user never spoke or only said greeting
-    const userMessages = messages.filter(m => m.role === "user")
+    const userMessages = conversationalMessages.filter(m => m.role === "user")
     const hasNegotiated = userMessages.some(m => {
       const text = m.text.toLowerCase()
       // Check if message contains negotiation-related content
