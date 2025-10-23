@@ -18,7 +18,6 @@ import { motion } from "framer-motion"
 import React, { useState, useRef, useEffect } from "react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import InteractiveDemo from "@/components/interactive-demo/InteractiveDemo"
-import { DebugEnvVars } from "@/components/DebugEnvVars"
 
 // Parent Dashboard Card Component (Optional Helper)
 const ParentDashboardCard = () => {
@@ -1411,9 +1410,6 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
-
-      {/* Debug Component (only show in development or temporarily) */}
-      <DebugEnvVars />
 
       {/* Footer */}
       <footer className="py-12 md:py-16 bg-gray-900 text-gray-300">
